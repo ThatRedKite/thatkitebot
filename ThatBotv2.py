@@ -3,7 +3,7 @@ import bottyfuncs as bf
 from discord.ext import commands
 import Cogs
 
-version = "0.3 'coggy'"
+version = "0.3.1"
 tokens = bf.yamler.yamlhandle()
 bot = commands.Bot(command_prefix=tokens["prefix"])
 
