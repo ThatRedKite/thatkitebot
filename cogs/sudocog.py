@@ -1,12 +1,19 @@
 from discord.ext import commands
-from bf import yamler
+from bf.yamler import Yamler
+import psutil
 import discord
+import logging
+import string
+import os
+logging.basicConfig(filename="test.log", level=logging.WARNING, format="%(levelname)s|%(message)s| @ %(asctime)s")
 
 class Sudostuff(commands.Cog):
     def __init__(self, bot):
       self.bot = bot
       self._last_member = None
-      self.banlist = yamler.yamlload("data/banlist.yml")
+      yam = Yamler("data/banlist.yml")
+      self.banlist = yam.load()
+      
 
     @commands.group()
     @commands.is_owner()
@@ -24,6 +31,7 @@ class Sudostuff(commands.Cog):
         if isinstance(error, commands.errors.NotOwner):
             embed = discord.Embed(title="ERROR!", description="__*only ThatRedKite can do this*__")
             embed.color = 0xff0000
+            logging.info(error)
             await ctx.send(embed=embed)
 
     @sudo.command()
@@ -39,6 +47,7 @@ class Sudostuff(commands.Cog):
         }
 
         process = psutil.Process(os.getpid())
+        logging.warning("bot is shutting down")
         process.send_signal(signals[(signal.upper())])
 
     @signal.error
@@ -47,14 +56,16 @@ class Sudostuff(commands.Cog):
             embed = discord.Embed(title="ERROR!", description="Please enter a valid signal!")
             embed.color = 0xff0000
             await ctx.send(embed=embed)
+        logging.error(msg=error)
 
     @sudo.command()
     async def ban(self,ctx,*,banned:str):
         if banned not in self.banlist:
+            yam = Yamler("data/banlist.yml")
             embed = discord.Embed(title="Success!", description="Banned `{0}`".format(banned))
             embed.color = 0x00ff00
             self.banlist.append(banned)
-            yamler.yamlsave("data/banlist.yml", self.banlist)
+            yam.write(self.banlist)
 
         elif banned in banned in self.banlist:
             embed = discord.Embed(title="ERROR!", description="`{0}` is already banned!".format(banned))
@@ -81,10 +92,11 @@ class Sudostuff(commands.Cog):
     @sudo.command()
     async def unban(self,ctx,*,banned:str):
         if banned in self.banlist:
+            yam = Yamler("data/banlist.yml")
             embed = discord.Embed(title="Success!", description="unanned `{0}`".format(banned))
             embed.color = 0x00ff00
             self.banlist.remove(banned)
-            yamler.yamlsave("data/banlist.yml", self.banlist)
+            yam.write(self.banlist)
 
         elif banned not in self.banlist:
             embed = discord.Embed(title="ERROR!", description="`{0}` is not banned!".format(banned))
