@@ -4,7 +4,7 @@ from discord.ext import commands
 import cogs
 import os 
 
-dirname = os.path.dirname(__file__)
+dirname = os.path.dirname(os.path.realpath(__file__))
 
 tokens = Yamler("{0}/data/tokens.yml".format(dirname))
 
