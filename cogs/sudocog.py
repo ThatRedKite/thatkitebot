@@ -24,6 +24,7 @@ class Sudostuff(commands.Cog):
         if ctx.invoked_subcommand is None:
             embed = discord.Embed(title="ERROR!", description="Please enter a valid Command")
             embed.color = 0xff0000
+            await ctx.trigger_typing()
             await ctx.send(embed=embed)
 
     @sudo.error
@@ -32,6 +33,7 @@ class Sudostuff(commands.Cog):
             embed = discord.Embed(title="ERROR!", description="__*only ThatRedKite can do this*__")
             embed.color = 0xff0000
             logging.info(error)
+            await ctx.trigger_typing()
             await ctx.send(embed=embed)
 
     @sudo.command()
@@ -55,6 +57,7 @@ class Sudostuff(commands.Cog):
         if isinstance(error, commands.errors.CommandInvokeError):
             embed = discord.Embed(title="ERROR!", description="Please enter a valid signal!")
             embed.color = 0xff0000
+            await ctx.trigger_typing()
             await ctx.send(embed=embed)
         logging.error(msg=error)
 
@@ -70,6 +73,7 @@ class Sudostuff(commands.Cog):
         elif banned in banned in self.banlist:
             embed = discord.Embed(title="ERROR!", description="`{0}` is already banned!".format(banned))
             embed.color = 0xff0000
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
     @ban.error
@@ -77,6 +81,7 @@ class Sudostuff(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed = discord.Embed(title="ERROR!", description="You gave the command no arguments!")
             embed.color = 0xff0000
+            await ctx.trigger_typing()
             await ctx.send(embed=embed)
 
     @sudo.command()
@@ -84,16 +89,17 @@ class Sudostuff(commands.Cog):
         output = ""
         for ban in self.banlist:
             output += "{0}\n".format(ban)
-        embed = discord.Embed(title="List of banned *things*", description=output)
+        embed = discord.Embed(title="list of banned *things*", description=output)
         embed.set_footer(text="Total bans: {}".format(len(self.banlist)))
         embed.color = 0x00ff00
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
     @sudo.command()
     async def unban(self,ctx,*,banned:str):
         if banned in self.banlist:
             yam = Yamler("data/banlist.yml")
-            embed = discord.Embed(title="Success!", description="unanned `{0}`".format(banned))
+            embed = discord.Embed(title="Success!", description="unbanned `{0}`".format(banned))
             embed.color = 0x00ff00
             self.banlist.remove(banned)
             yam.write(self.banlist)
@@ -101,6 +107,8 @@ class Sudostuff(commands.Cog):
         elif banned not in self.banlist:
             embed = discord.Embed(title="ERROR!", description="`{0}` is not banned!".format(banned))
             embed.color = 0xff0000
+
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
     @unban.error
@@ -108,4 +116,5 @@ class Sudostuff(commands.Cog):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed = discord.Embed(title="ERROR!", description="You gave the command no arguments!")
             embed.color = 0xff0000
+            await ctx.trigger_typing()
             await ctx.send(embed=embed)

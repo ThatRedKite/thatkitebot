@@ -14,4 +14,5 @@ class FunStuff(commands.Cog):
         embed = discord.Embed(title="A motivating quote from InspiroBot")
         embed.color = 0x33cc33
         embed.set_image(url=r.text)
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)
