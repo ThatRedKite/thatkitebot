@@ -1,6 +1,8 @@
 from discord.ext import commands
 import discord
 import requests
+import asyncio
+from bf.url import urlgetter
 
 class FunStuff(commands.Cog):
     def __init__(self, bot, dirname):
@@ -17,3 +19,14 @@ class FunStuff(commands.Cog):
         embed.set_image(url=r.text)
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
+        
+    @commands.command()
+    async def r34(self, ctx, tag1, tag2=""):
+        url = urlgetter(tag1, tag2)
+        embed = discord.Embed(title="here's a naughty pic for you")
+        embed.color = 0xff00cc
+        embed.set_image(url=url)
+        embed.set_footer(text=url)
+        await ctx.trigger_typing()
+        await ctx.send(embed=embed)
+
