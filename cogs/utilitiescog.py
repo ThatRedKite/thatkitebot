@@ -8,7 +8,7 @@ class Utilities(commands.Cog):
 
     def __init__(self, bot, dirname):
         self.dirname = dirname
-        yam = Yamler("{0}/data/banlist.yml".format(self.dirname))
+        yam = Yamler("{0}/data/tokens.yml".format(self.dirname))
         self.bot = bot
         self._last_member = None
         self.version = yam.load()["version"]
