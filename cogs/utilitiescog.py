@@ -7,12 +7,13 @@ from bf.yamler import Yamler
 class Utilities(commands.Cog):
 
     def __init__(self, bot, dirname):
-        file = Yamler("data/tokens.yml")
+        self.dirname = dirname
+        yam = Yamler("{0}/data/banlist.yml".format(self.dirname))
         self.bot = bot
         self._last_member = None
-        self.version = file.load()["version"]
-        self.dirname = dirname
+        self.version = yam.load()["version"]
         
+
     @commands.command()
     async def status(self, ctx):
         """
