@@ -3,10 +3,11 @@ import discord
 import requests
 
 class FunStuff(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, dirname):
         self.bot = bot
         self._last_member = None
-
+        self.dirname = dirname
+        
     @commands.command()
     async def inspirobot(self, ctx):
         payload = {"generate": "true"}

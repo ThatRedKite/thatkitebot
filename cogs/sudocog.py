@@ -5,15 +5,16 @@ import discord
 import logging
 import string
 import os
-logging.basicConfig(filename="test.log", level=logging.WARNING, format="%(levelname)s|%(message)s| @ %(asctime)s")
+
 
 class Sudostuff(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, dirname):
       self.bot = bot
+      self.dirname = dirname
       self._last_member = None
-      yam = Yamler("data/banlist.yml")
+      yam = Yamler("{0}/data/banlist.yml".format(self.dirname))
       self.banlist = yam.load()
-      
+      logging.basicConfig(filename="{0}/test.log".format(self.dirname), level=logging.WARNING, format="%(levelname)s|%(message)s| @ %(asctime)s")
 
     @commands.group()
     @commands.is_owner()
@@ -64,7 +65,7 @@ class Sudostuff(commands.Cog):
     @sudo.command()
     async def ban(self,ctx,*,banned:str):
         if banned not in self.banlist:
-            yam = Yamler("data/banlist.yml")
+            yam = Yamler("{0}/data/banlist.yml".format(self.dirname))
             embed = discord.Embed(title="Success!", description="Banned `{0}`".format(banned))
             embed.color = 0x00ff00
             self.banlist.append(banned)
@@ -98,7 +99,7 @@ class Sudostuff(commands.Cog):
     @sudo.command()
     async def unban(self,ctx,*,banned:str):
         if banned in self.banlist:
-            yam = Yamler("data/banlist.yml")
+            yam = Yamler("{0}/data/banlist.yml".format(self.dirname))
             embed = discord.Embed(title="Success!", description="unbanned `{0}`".format(banned))
             embed.color = 0x00ff00
             self.banlist.remove(banned)
