@@ -2,13 +2,15 @@ from discord.ext import commands
 import discord
 import os
 import psutil
+from bf.yamler import Yamler
 
 class Utilities(commands.Cog):
 
     def __init__(self, bot):
+        file = Yamler("data/tokens.yml")
         self.bot = bot
         self._last_member = None
-        self.version = "0.3.1"
+        self.version = file.load()["version"]
 
     @commands.command()
     async def status(self, ctx):
@@ -20,7 +22,7 @@ class Utilities(commands.Cog):
         cpu = process.cpu_percent(interval=1)
         cores_used = len(process.cpu_affinity())   
         cores_total = psutil.cpu_count()
-        ping = round(self.bot.latency, 1)
+        ping = round(self.bot.latency * 1000, 1)
         ass = process.status()
 
         embed = discord.Embed(title="__Status of {0}__".format(self.bot.user.name, description=" "))
@@ -33,6 +35,7 @@ class Utilities(commands.Cog):
         embed.add_field(name="**Status:**", value="`{0}`".format(ass))
         embed.set_footer(text="version: {}".format(self.version))    
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -48,6 +51,7 @@ class Utilities(commands.Cog):
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         embed.color = 0x00ff00
         embed.set_footer(text="why am I here?")
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -55,4 +59,5 @@ class Utilities(commands.Cog):
         embed = discord.Embed(title="This product is licensed under the MIT License",
                                     description="look at https://opensource.org/licenses/MIT if you want to read it")
         embed.color = 0x00ffff
+        await ctx.trigger_typing()
         await ctx.send(embed=embed)

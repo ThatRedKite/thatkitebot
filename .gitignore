@@ -1,2 +1,5 @@
 *.yml
 *.pyc
+*.log
+*.out
+*.png

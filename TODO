@@ -1,0 +1,8 @@
+open tasks:
+    - reimplement captcha functionality from Y2
+    - make a simple system to save and load settings
+    - add music functionality
+    - make a new help command
+
+closed tasks:
+    - remove typo from unban command
