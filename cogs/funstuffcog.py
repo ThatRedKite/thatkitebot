@@ -22,11 +22,11 @@ class FunStuff(commands.Cog):
         
     @commands.command()
     async def r34(self, ctx, tag1, tag2=""):
+        await ctx.trigger_typing()
         url = urlgetter(tag1, tag2)
         embed = discord.Embed(title="here's a naughty pic for you")
         embed.color = 0xff00cc
         embed.set_image(url=url)
         embed.set_footer(text=url)
-        await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
