@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-
+import asyncio
 class Yamler:
     def __init__(self, path):
         self.path = path
@@ -18,13 +18,8 @@ class Yamler:
             with open(file, "w") as dump:
                 yaml.dump(data, dump, default_flow_style=False)
 
-    def initialize(self):
+    def initialize(self, initdict):
         file = Path(self.path)
-        empty = {
-            "discordtoken": "",
-            "prefix": ""
-        }
-        if not file.exists():
-            self.write(data=empty)
+        if not file.exists() and len(initdict) > 0:
+            self.write(data=initdict)
 
-        

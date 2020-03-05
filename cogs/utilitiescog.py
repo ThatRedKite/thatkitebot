@@ -3,6 +3,9 @@ import discord
 import os
 import psutil
 from bf.yamler import Yamler
+import logging
+from datetime import datetime
+import  subprocess
 
 class Utilities(commands.Cog):
 
@@ -12,8 +15,6 @@ class Utilities(commands.Cog):
         self.bot = bot
         self._last_member = None
         self.version = yam.load()["version"]
-        
-
     @commands.command()
     async def status(self, ctx):
         """
@@ -63,3 +64,65 @@ class Utilities(commands.Cog):
         embed.color = 0x00ffff
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def help(self, ctx):
+        embed = discord.Embed(title="A list of my commands")
+        commands = ""
+        sudocommands = []
+        for command in self.bot.walk_commands():
+                commands += (str(command) + "\n")
+        embed = discord.Embed(title="A list of my commands:")
+
+        embed.add_field(name="__Cool Stuff:__", value=commands)
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        embed.color = 0x00ff00
+        embed.set_footer(text="I follow your orders, or do I?")
+        await ctx.trigger_typing()
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def userinfo(self, ctx, mention):
+        print(mention)
+        newmention = mention.replace("<", "")
+        newmention = newmention.replace("@", "")
+        newmention = newmention.replace("!", "")
+        newmention = newmention.replace(">", "")
+        user :discord.User= self.bot.get_user(int(newmention))
+        username = user.name
+        userid = user.id
+        isbot = user.bot
+        creationtime = user.created_at.strftime("%d.%m.%Y@%H:%M UTC")
+        if isbot is not True:
+            embed = discord.Embed(title=f"UserInfo for the user {username}")
+            embed.add_field(name="Is Bot?", value="❌")
+        else:
+            embed = discord.Embed(title=f"BotInfo for the bot {username}")
+            embed.add_field(name="Is Bot?", value="✅")
+        embed.set_thumbnail(url=str(user.avatar_url))
+        embed.add_field(name="creation date:", value=f"`{creationtime}`")
+        embed.add_field(name="id", value=f"`{userid}`")
+        await ctx.send(embed=embed)
+        creationtime = user.created_at.strftime("%d.%m.%Y@%H:%M UTC")
+
+
+    @commands.command()
+    async def man(self,ctx,*,args):
+        command = ["man"]
+        sep = ';'
+        rest = args.split(sep, 1)[0]
+        construct = rest.split(" ")
+        print(construct)
+        if type(construct) == list:
+            for x in construct:
+                command.append(str(x))
+        with subprocess.Popen(command, stdout=subprocess.PIPE) as idk:
+            text = idk.stdout.read().decode("utf-8")
+            chunk_length = 2010
+            segments = [text[i:i+chunk_length] for i in range(0, len(text), chunk_length)]
+            segments.reverse()
+            for x in segments:
+                xtext = str(x)
+                embed = discord.Embed(title=f"Manual entry for the command {args}", description = xtext)
+                print(len(embed))
+                await ctx.send(embed=embed)
