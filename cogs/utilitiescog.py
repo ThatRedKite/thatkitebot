@@ -6,15 +6,14 @@ from bf.yamler import Yamler
 import logging
 from datetime import datetime
 import  subprocess
-
 class Utilities(commands.Cog):
 
     def __init__(self, bot, dirname):
         self.dirname = dirname
-        yam = Yamler("{0}/data/tokens.yml".format(self.dirname))
+        self.version = "a6.3" 
         self.bot = bot
         self._last_member = None
-        self.version = yam.load()["version"]
+
     @commands.command()
     async def status(self, ctx):
         """
@@ -104,7 +103,6 @@ class Utilities(commands.Cog):
         embed.add_field(name="id", value=f"`{userid}`")
         await ctx.send(embed=embed)
         creationtime = user.created_at.strftime("%d.%m.%Y@%H:%M UTC")
-
 
     @commands.command()
     async def man(self,ctx,*,args):

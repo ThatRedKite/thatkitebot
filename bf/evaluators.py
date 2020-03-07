@@ -46,8 +46,3 @@ class evaluator:
             print(exc)
         finally:
             return COUNTER
-
-
-
-        
-        
