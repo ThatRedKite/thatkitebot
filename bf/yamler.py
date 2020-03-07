@@ -1,6 +1,7 @@
 import yaml
 from pathlib import Path
-
+import asyncio
+import subprocess
 class Yamler:
     def __init__(self, path):
         self.path = path
@@ -14,17 +15,12 @@ class Yamler:
 
     def write(self, data):
         file = Path(self.path)
-        if file.exists():
-            with open(file, "w") as dump:
-                yaml.dump(data, dump, default_flow_style=False)
+        with open(file, "w") as dump:
+            yaml.dump(data, dump, default_flow_style=False)
 
-    def initialize(self):
+    def initialize(self, initdict):
         file = Path(self.path)
-        empty = {
-            "discordtoken": "",
-            "prefix": ""
-        }
         if not file.exists():
-            self.write(data=empty)
-
-        
+            subprocess.run(["touch", file])
+            if initdict != None:
+                self.write(initdict)
