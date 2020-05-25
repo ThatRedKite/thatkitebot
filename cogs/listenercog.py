@@ -1,33 +1,76 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 import  string
 from bf.yamler import  Yamler
 import random
+import asyncio
+from bf import url
+import re
 class Listeners(commands.Cog):
-    def __init__(self, bot, dirname):
-        self.active = 0
-        self.bot = bot
-        self._last_member = None
+    def __init__(self, bot, dirname,):
         self.dirname = dirname
+        self.active = 0
+        self.bot:discord.Client = bot
+        self._last_member = None
+        self.counter = 0
         
     @commands.Cog.listener()
-    async def on_message(self, message :discord.Message):
+    async def on_message(self, message:discord.Message):
         channel :discord.TextChannel = self.bot.get_channel(message.channel.id)
         userid = message.author.id
+        self.banlist = []
         guild :discord.Guild = channel.guild 
-        yam = Yamler("{0}/data/banlist.yml".format(self.dirname))
-        self.banlist = yam.load()
         content = message.content.lower()
         zolllist = ["halt", "halt!", "halt zoll", "halt zoll!","zoll", "zoll!"]
+
         if message.content.lower() in zolllist:
-            emojilist = ["HALTZOLL", "HALTZOLL2"]
-            emoji = discord.utils.get(guild.emojis, name=random.choice(emojilist))
-            await message.add_reaction(emoji)
-        else:
-            for word in content.split(" "):
-                if word in self.banlist and message.author.id == 142705172395589632:
-                    await message.delete()
+            choice = random.randint(0,1)
+            if choice == 0:
+                emojilist = ["HALTZOLL", "HALTZOLL2"]
+                emoji = discord.utils.get(guild.emojis, name=random.choice(emojilist))
+                await message.add_reaction(emoji)
+            if choice == 1:
+                if message.content.lower().startswith("halt") and message.author.id != self.bot.user.id:
+                    await channel.send("ZOLL!")
+                if message.content.lower().startswith("zoll") and message.author.id != self.bot.user.id:
+                    await  channel.send("HALT!")
+        
+        if channel.id == 693167481027690527 and len(re.findall("y[if]+|fu[ry]+", str(message.content).lower())) and message.author.id != self.bot.user.id:
+            if self.counter == 0:
+                await channel.send("🚨 🚨 🚨**__WARNING, do not say that again!__**🚨 🚨 🚨")
+                self.counter += 1
+            elif self.counter == 1:
+                await channel.send("are you sure you wanna say that again????")
+                self.counter += 1
+            elif self.counter == 2:
+                await channel.send("🚨 🚨 🚨**__THIS IS YOUR FINAL WARNING!__**🚨 🚨 🚨")
+                self.counter += 1                
+            else:
+                await channel.send("Well, seems like you didn't listen\ deploying yiff in \n 3 seconds")
+                await asyncio.sleep(1)
+                payload = {"page": "dapi","tags": ["yiff", "cock"],"s": "post","q": "index"}
+                myurl = await url.xml_sequence_parse(payload,"https://rule34.xxx/index.php","sample_url","pid",True)
+                for x in range(5):
+                    choice = random.choice(myurl)
+                    embed = discord.Embed(title="**You have been warned**", url=choice)
+                    embed.color = 0xff00cc
+                    embed.set_image(url=choice)
+                    await channel.send(embed=embed)
+                self.counter = 0
+
+        elif len(re.findall("busbr", str(message.content).lower())) and message.author.id != self.bot.user.id:
+            choice = random.randint(0,100)
+            if choice < 100:
+                emoji = discord.utils.get(guild.emojis, name="busbr_irl")
+                await message.add_reaction(emoji)
+            else:
+                emoji:discord.Emoji = discord.utils.get(guild.emojis, name="busbr_irl")
+                await channel.send(f"<:busbr_irl:{emoji.id}>")
 
     @commands.Cog.listener()
     async def on_ready(self):
         print("Bot is up and running!")
+
+    @commands.Cog.listener()
+    async def on_error(self):        
+        
