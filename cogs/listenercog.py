@@ -70,7 +70,3 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Bot is up and running!")
-
-    @commands.Cog.listener()
-    async def on_error(self):        
-        
