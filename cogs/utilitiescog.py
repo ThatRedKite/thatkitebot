@@ -1,16 +1,17 @@
 from discord.ext import commands
 import discord
-import os
+import os, re
 import psutil
 from bf.yamler import Yamler
 import logging
 from datetime import datetime
 import  subprocess
+from PIL import Image, ImageColor, ImageDraw
 class Utilities(commands.Cog):
 
     def __init__(self, bot, dirname):
         self.dirname = dirname
-        self.version = "a6.3" 
+        self.version = "a7.1" 
         self.bot = bot
         self._last_member = None
 
@@ -70,6 +71,7 @@ class Utilities(commands.Cog):
         commands = ""
         sudocommands = []
         for command in self.bot.walk_commands():
+            if not str(command).startswith("yan") and not str(command).startswith("r34"):
                 commands += (str(command) + "\n")
         embed = discord.Embed(title="A list of my commands:")
 
@@ -82,7 +84,6 @@ class Utilities(commands.Cog):
 
     @commands.command()
     async def userinfo(self, ctx, mention):
-        print(mention)
         newmention = mention.replace("<", "")
         newmention = newmention.replace("@", "")
         newmention = newmention.replace("!", "")
@@ -110,7 +111,6 @@ class Utilities(commands.Cog):
         sep = ';'
         rest = args.split(sep, 1)[0]
         construct = rest.split(" ")
-        print(construct)
         if type(construct) == list:
             for x in construct:
                 command.append(str(x))
@@ -122,5 +122,32 @@ class Utilities(commands.Cog):
             for x in segments:
                 xtext = str(x)
                 embed = discord.Embed(title=f"Manual entry for the command {args}", description = xtext)
-                print(len(embed))
                 await ctx.send(embed=embed)
+    @commands.command()
+    async def color(self,ctx,*,args):
+        
+        if len(args.split(" ")) == 1:
+            color = int(args[0],16)
+            img = Image.new("RGB", (128,128), )
+            img.save(f"{self.dirname}/data/color.png")
+            file = discord.File(f"{self.dirname}/data/color.png", filename="color.png")
+            embed = discord.Embed()
+            embed.color = discord.Color(color)
+            embed.set_image(url="attachment://color.png")
+            embed.set_footer(text=f"color values: HEX:{args}")
+            await ctx.send(file=file, embed=embed)
+            img.close()
+        else:
+            try: 
+                r, g, b = args.split(" ")
+                img = Image.new("RGB", (128,128), (int(r),int(g),int(b)))
+                img.save(f"{self.dirname}/data/color.png")
+                file = discord.File(f"{self.dirname}/data/color.png", filename="color.png")
+                embed = discord.Embed()
+                embed.set_image(url="attachment://color.png")
+                embed.set_footer(text=f"color values: RGB: {args} ; HEX: {'#%02x%02x%02x'.upper() % (int(r),int(g),int(b))}")
+                await ctx.send(file=file, embed=embed)
+                img.close()
+            except Exception as exc:
+                print(exc)
+                await errormsg(ctx, "Please check your inputs!")
