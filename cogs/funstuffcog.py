@@ -261,7 +261,7 @@ class FunStuff(commands.Cog):
 
     @mgame.command()
     async def start(self,ctx,tries:int):
-        guild:discord.Guild = ctx.guildä
+        guild:discord.Guild = ctx.guild
         memberlist = []
         async for member in guild.fetch_members():
             memberlist.append(member)
