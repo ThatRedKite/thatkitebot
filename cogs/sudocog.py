@@ -24,7 +24,7 @@ class Sudostuff(commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             embed = discord.Embed(title="ERROR!", description="Please enter a valid Command")
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
             await ctx.trigger_typing()
             await ctx.send(embed=embed)
 
@@ -32,7 +32,7 @@ class Sudostuff(commands.Cog):
     async def sudo_error(self, ctx, error):
         if isinstance(error, commands.errors.NotOwner):
             embed = discord.Embed(title="ERROR!", description="__*only ThatRedKite can do this*__")
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
             logging.info(error)
             await ctx.trigger_typing()
             await ctx.send(embed=embed)
@@ -57,7 +57,7 @@ class Sudostuff(commands.Cog):
     async def signal_error(self, ctx, error):
         if isinstance(error, commands.errors.CommandInvokeError):
             embed = discord.Embed(title="ERROR!", description="Please enter a valid signal!")
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
             await ctx.trigger_typing()
             await ctx.send(embed=embed)
         logging.error(msg=error)
@@ -72,7 +72,7 @@ class Sudostuff(commands.Cog):
 
         elif banned in banned in self.banlist:
             embed = discord.Embed(title="ERROR!", description="`{0}` is already banned!".format(banned))
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
@@ -80,7 +80,7 @@ class Sudostuff(commands.Cog):
     async def ban_error(self, ctx, error):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed = discord.Embed(title="ERROR!", description="You gave the command no arguments!")
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
             await ctx.trigger_typing()
             await ctx.send(embed=embed)
 
@@ -105,7 +105,7 @@ class Sudostuff(commands.Cog):
 
         elif banned not in self.banlist:
             embed = discord.Embed(title="ERROR!", description="`{0}` is not banned!".format(banned))
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
 
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
@@ -114,7 +114,7 @@ class Sudostuff(commands.Cog):
     async def unban_error(self, ctx, error):
         if isinstance(error, commands.errors.MissingRequiredArgument):
             embed = discord.Embed(title="ERROR!", description="You gave the command no arguments!")
-            embed.color = 0xff0000
+            embed.color = 0xC1121C
             await ctx.trigger_typing()
             await ctx.send(embed=embed)
 
@@ -126,6 +126,11 @@ class Sudostuff(commands.Cog):
         print(settings)
         self.yam2.write(settings)
         embed = discord.Embed(title="Success!", description=f"set `{setting}` to `{parameter}`")
-        embed.color = 0x00ff00
+        embed.color = 0xC1121C
         await ctx.send(embed=embed)
-
+        
+    @sudo.command()
+    async def purgeme(self,ctx,count:int=10):
+        def is_author(m):
+            return m.author == self.bot.user
+        await ctx.channel.purge(limit=count, check=is_author, bulk=True)
