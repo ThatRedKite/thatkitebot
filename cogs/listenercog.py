@@ -35,23 +35,23 @@ class Listeners(commands.Cog):
                 if message.content.lower().startswith("zoll") and message.author.id != self.bot.user.id:
                     await  channel.send("HALT!")
         
-        if channel.id == 693167481027690527 and len(re.findall("y[if]+|fu[ry]+", str(message.content).lower())) and message.author.id != self.bot.user.id:
+        if channel.id == 693167481027690527 and len(re.findall("yi[f]+|fu[ry]+", str(message.content).lower())) and message.author.id != self.bot.user.id:
             if self.counter == 0:
                 await channel.send("🚨 🚨 🚨**__WARNING, do not say that again!__**🚨 🚨 🚨")
                 self.counter += 1
             elif self.counter == 1:
-                await channel.send("are you sure you wanna say that again????")
+                await channel.send("__**are you sure you wanna say that again????**__")
                 self.counter += 1
             elif self.counter == 2:
                 await channel.send("🚨 🚨 🚨**__THIS IS YOUR FINAL WARNING!__**🚨 🚨 🚨")
                 self.counter += 1                
             else:
-                await channel.send("Well, seems like you didn't listen\ deploying yiff in \n 3 seconds")
+                await channel.send("Well, seems like you didn't listen \n deploying yiff in **3 seconds**")
                 await asyncio.sleep(1)
-                payload = {"page": "dapi","tags": ["yiff", "cock"],"s": "post","q": "index"}
-                myurl = await url.xml_sequence_parse(payload,"https://rule34.xxx/index.php","sample_url","pid",True)
+                payload = {"tags": ["canine", "cock", "canine_penis"], "limit": 320}
+                urllist = await url.monosodiumcarbonate(payload, "page")
                 for x in range(5):
-                    choice = random.choice(myurl)
+                    choice = random.choice(urllist)
                     embed = discord.Embed(title="**You have been warned**", url=choice)
                     embed.color = 0xff00cc
                     embed.set_image(url=choice)
@@ -70,3 +70,4 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Bot is up and running!")
+    
