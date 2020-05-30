@@ -7,12 +7,14 @@ from bf.util import errormsg
 from bf.yamler import Yamler
 from bf import url
 from discord.ext import commands
-
+from PIL import Image, ImageDraw, ImageFont, ImageColor
+from datetime import datetime
 class FunStuff(commands.Cog):
     def __init__(self, bot, dirname, settings):
         self.bot = bot
         self._last_member = None
         self.settings = settings
+        self.dirname = dirname
         # Variables for markov game
         self.mgame_id = None
         self.mgame_tries = None
@@ -185,15 +187,12 @@ class FunStuff(commands.Cog):
                 # send error message when nsfw is not enabled in the bot's settings
                 embed.color = 0xC1121C # change color to red
                 await ctx.send(embed=embed)
-
-    @commands.command()
-    async def markov(self, ctx, user, old:int=100, new:int=100):
+    
+    async def mark(self,ctx,user,old:int=200,new:int=200,leng:int=5, leng2:int=20, mode:str="long"):
         guild = ctx.guild
         author:discord.User = ctx.message.author
-
         is_user = True
         is_channel = False
-
         rest = re.findall("<#(\d+)>", user)
         if len(rest) > 0:
             is_user = False
@@ -209,35 +208,42 @@ class FunStuff(commands.Cog):
                 if len(rest) > 0 and not is_channel: 
                     is_user = True
                     chan = self.bot.get_user(int(rest[0]))
-        try:
-            await ctx.send("fetching messages ...")
-            game = discord.Game("processing . . .")
-            await self.bot.change_presence(status=discord.Status.do_not_disturb, activity=game)
-            messages = []
+        await ctx.send("fetching messages ...")
+        game = discord.Game("processing . . .")
+        await self.bot.change_presence(status=discord.Status.do_not_disturb, activity=game)
+        messages = []
+        if is_user and not is_channel:
+            for channel in guild.text_channels:
+                async for message in channel.history(limit=old, oldest_first=True).filter(lambda m: m.author == chan):
+                    messages.append(str(message.content))
+                async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
+                    messages.append(str(message.content))  
+        else:           
+            async for message in chan.history(limit=old, oldest_first=True):
+                messages.append(str(message.content))
+            async for message in chan.history(limit=new):
+                messages.append(str(message.content))
+
+        model = markovify.NewlineText("\n".join(messages))
+        generated_list = []
+        random.shuffle(generated_list)
+        for i in range(leng):
+            if mode == "long":
+                generated = model.make_sentence()
+            else:
+                generated = model.make_short_sentence(leng2)
+            if generated != None: generated_list.append(generated)
+        await ctx.channel.purge(limit=10, check=lambda m: m.content == "fetching messages ..." and m.author.id == self.bot.user.id)
+        await asyncio.sleep(0.7)
+        return generated_list, chan
+
+    @commands.command()
+    async def markov(self, ctx, user, old:int=100, new:int=100, lene:int=5):
+        author:discord.User = ctx.message.author
+        try: 
             with ctx.channel.typing():
-                if is_user and not is_channel:
-                    for channel in guild.text_channels:
-                        async for message in channel.history(limit=old, oldest_first=True):
-                            if message.author == chan:
-                                messages.append(str(message.content + "\n"))
-                        async for message in channel.history(limit=new):
-                            if message.author == chan:
-                                messages.append(str(message.content + "\n"))     
-                else:
-                    async for message in chan.history(limit=old, oldest_first=True):
-                        messages.append(str(message.content + "\n"))
-                    async for message in chan.history(limit=new):
-                        messages.append(str(message.content + "\n"))
-                model = markovify.NewlineText("".join(messages))
-                generated_list = []
-                for i in range (5):
-                    generated = model.make_sentence()
-                    if generated != None: generated_list.append(generated)
+                generated_list, chan = await self.mark(ctx,user,old,new,lene)
                 if len(generated_list) > 0:
-                    def is_author(m):
-                        return m.content == "fetching messages ..." and m.author.id == self.bot.user.id
-                    await ctx.channel.purge(limit=10, check=is_author)
-                    await asyncio.sleep(0.5)
                     embed = discord.Embed(title="**Markov Chain Output:**", description=f"*{'. '.join(generated_list)}*")
                     embed.color = 0x6E3513
                     embed.set_footer(icon_url=author.avatar_url, text=f"generated by {author}  the target was: {chan} settings: {old}o, {new}n")
@@ -246,7 +252,7 @@ class FunStuff(commands.Cog):
                     await ctx.send(ctx, "an error has occured. I could not fetch enough messages!")
         except Exception as exc:
             print(exc)
-            await errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
+            await errormsg(ctx, str(exc))
         finally:
             await self.bot.change_presence(status=discord.Status.online, activity=None)
 
@@ -272,34 +278,10 @@ class FunStuff(commands.Cog):
         self.mgame_name = the_chosen_one.name
         messages = []
         try:
-            await ctx.send("fetching messages ...")
-            game = discord.Game("processing . . .")
-            await self.bot.change_presence(status=discord.Status.do_not_disturb, activity=game)
-            messages = []
-            with ctx.channel.typing():
-                for channel in guild.text_channels:
-                    async for message in channel.history(limit=random.randint(200, 666), oldest_first=True):
-                        if message.author.id == the_chosen_one.id:
-                            messages.append(str(message.content + "\n"))
-                    async for message in channel.history(limit=random.randint(200, 666)):   
-                        if message.author.id == the_chosen_one.id:
-                            messages.append(str(message.content + "\n"))     
-                model = markovify.NewlineText("".join(messages))
-                generated_list = []
-                random.shuffle(generated_list)
-                for i in range (5):
-                    generated = model.make_sentence()
-                    if generated != None: generated_list.append(generated)
-                if len(generated_list) > 0:
-                    def is_author(m):
-                        return m.content == "fetching messages ..." and m.author.id == self.bot.user.id
-                    await ctx.channel.purge(limit=10, check=is_author)
-                    await asyncio.sleep(0.5)
-                    embed = discord.Embed(title="**Who could have said this?**", description=f"*{'. '.join(generated_list)}*")
-                    await ctx.send(embed=embed)
-                else:
-                    await errormsg(ctx,"I could not fetch enough messages, please try again")
-                    self.markov_clear()
+            generated_list, chan = await self.mark(ctx,str(the_chosen_one.id),1000,1000)
+            if len(generated_list) > 0:
+                embed = discord.Embed(title="**Who could have said this?**", description=f"*{'. '.join(generated_list)}*")
+                await ctx.send(embed=embed)
 
         except Exception as exc:
             print(exc)
@@ -334,3 +316,41 @@ class FunStuff(commands.Cog):
     @mgame.command()
     async def stop(self,ctx):
         self.markov_clear()
+    
+    @commands.command()
+    async def quote(self, ctx, user, old:int=100, new:int=100):
+        guild = ctx.guild
+        author:discord.User = ctx.message.author
+        try:
+            with ctx.channel.typing():
+                generated_list, chan = await self.mark(ctx,user,old,new,5,30,mode="short")
+                r = requests.get(chan.avatar_url).content
+                with open(f"{self.dirname}/data/pfp.webp", "wb") as file:
+                    file.write(r)
+                im = Image.open(f"{self.dirname}/data/pfp.webp")
+                if len(generated_list) > 0:
+                    quotestring = f"{random.choice(generated_list)}\n-{chan.name}"
+                    draw = ImageDraw.Draw(im)
+                    a = 3
+                    x,y = im.size
+                    font = ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", int(x / 15))
+                    draw.text((3 - a, (y - int(y / 6)) - a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3 + a, (y - int(y / 6)) + a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3 - a, (y - int(y / 6)) + a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3 + a, (y - int(y / 6)) - a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3, (y - int(y / 6)) - a),  quotestring, (244, 244, 244),font=font)
+                    im.save(f"{self.dirname}/data/pfp_edit.webp")
+                    file = discord.File(f"{self.dirname}/data/pfp_edit.webp", filename="pfp_edit.webp")
+                    embed = discord.Embed()
+                    embed.set_image(url="attachment://pfp_edit.webp")
+                    await ctx.send(file=file, embed=embed)
+                    await asyncio.sleep(2)
+                    os.remove(f"{self.dirname}/data/pfp_edit.webp")
+                    os.remove(f"{self.dirname}/data/pfp.webp")
+                else:
+                    raise Exception
+        except Exception as exc:
+            print(exc)
+            await errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
+        finally:
+            await self.bot.change_presence(status=discord.Status.online, activity=None)
