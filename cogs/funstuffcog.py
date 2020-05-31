@@ -329,22 +329,25 @@ class FunStuff(commands.Cog):
                     file.write(r)
                 im = Image.open(f"{self.dirname}/data/pfp.webp")
                 if len(generated_list) > 0:
-                    quotestring = f"{random.choice(generated_list)}\n-{chan.name}"
+                    quotestring = f"{random.choice(generated_list)}\n-{chan}"
                     draw = ImageDraw.Draw(im)
-                    a = 3
+                    if im.size <= (512,512):
+                        a = 1
+                    else:
+                        a = 3
                     x,y = im.size
-                    font = ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", int(x / 15))
-                    draw.text((3 - a, (y - int(y / 6)) - a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3 + a, (y - int(y / 6)) + a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3 - a, (y - int(y / 6)) + a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3 + a, (y - int(y / 6)) - a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3, (y - int(y / 6)) - a),  quotestring, (244, 244, 244),font=font)
+                    font = ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", int(x / (int(len(quotestring) / 3) + a)))
+                    draw.text((3 - a, (y - int(y / 4.5)) - a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3 + a, (y - int(y / 4.5)) + a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3 - a, (y - int(y / 4.5)) + a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3 + a, (y - int(y / 4.5)) - a), quotestring, (0, 0, 0), font=font)
+                    draw.text((3, (y - int(y / 4.5)) - a),  quotestring, (255, 255, 555),font=font)
                     im.save(f"{self.dirname}/data/pfp_edit.webp")
                     file = discord.File(f"{self.dirname}/data/pfp_edit.webp", filename="pfp_edit.webp")
                     embed = discord.Embed()
                     embed.set_image(url="attachment://pfp_edit.webp")
                     await ctx.send(file=file, embed=embed)
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(1)
                     os.remove(f"{self.dirname}/data/pfp_edit.webp")
                     os.remove(f"{self.dirname}/data/pfp.webp")
                 else:
@@ -354,3 +357,7 @@ class FunStuff(commands.Cog):
             await errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
         finally:
             await self.bot.change_presence(status=discord.Status.online, activity=None)
+    
+    @commands.command()
+    async def fakeword(self, ctx):
+        await ctx.send(embed=await url.word())

@@ -4,3 +4,4 @@ tokens.yml
 *.log
 *.out
 *.png
+test.py

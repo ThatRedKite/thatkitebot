@@ -2,6 +2,8 @@ import  requests
 import random
 from bs4 import BeautifulSoup
 import asyncio
+import discord
+
 async def xml_sequence_parse(payload:dict,sourceurl:str,attr:str,updatevalue:str, islist:bool=False):
     urls = [] # list of gathered urls
     outlist = [] # list of the urls that will be output
@@ -44,4 +46,21 @@ async def monosodiumcarbonate(payload:dict, updatevalue:str):
     return urls
             
 
+async def word():
+    r = requests.get("https://www.thisworddoesnotexist.com/").text
+    bs = BeautifulSoup(r, "html.parser")
+    word = bs.find(id="definition-word").string
+    syllables = bs.find(id="definition-syllables").string
+    definition = bs.find(id="definition-definition").string
+    if syllables:
+        embed = discord.Embed(title=word)
+        embed.add_field(name=syllables.lstrip(), value=definition.lstrip())
+    else:
+        embed = discord.Embed(title=word, description=definition.lstrip())
+    if embed:
+        return embed
 
+ 
+
+
+ 
