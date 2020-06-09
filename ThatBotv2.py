@@ -1,27 +1,28 @@
 import discord
-from bf.yamler import Yamler
+from bf.yamler import Tomler
 from discord.ext import commands
 import cogs
 import os
 import pathlib
-empty = dict(discordtoken="", prefix="")
-dirname = os.path.dirname(os.path.realpath(__file__))
-path = pathlib.Path(f"{dirname}/data/tokens.yml")
-tokens = Yamler(path)
+empty=dict(discordtoken="", prefix="")
+dirname=os.path.dirname(os.path.realpath(__file__))
+tom = Tomler(dirname)
+prefix=tom.prefix
+token = tom.token
+class ThatKiteBot(commands.Bot):
+    def __init__(self, command_prefix, dirname, help_command=None, description=None, **options):
+        super().__init__(command_prefix, help_command=help_command, description=description, **options)
+        self.tom = Tomler(dirname)
+        self.parsed = tom.parsed
+        self.settings = tom.settings
+        self.dirname = dirname
 
-if not path.exists():
-    tokens.initialize(empty)
-    print("Please set up the token and the prefix! in ./data/tokens !!!!! \n The Bot is now terminating!")
-    quit()
-prefix = tokens.load()["prefix"]
-settings = Yamler(f"{dirname}/data/settings.yml").load()       
-bot = commands.Bot(command_prefix=prefix)
-bot.remove_command("help")
-bot.add_cog(cogs.funstuffcog.FunStuff(bot, dirname, settings))
+bot=ThatKiteBot(prefix, dirname)
+bot.add_cog(cogs.funstuffcog.FunStuff(bot, dirname))
 bot.add_cog(cogs.utilitiescog.Utilities(bot, dirname))
 bot.add_cog(cogs.listenercog.Listeners(bot, dirname))
 bot.add_cog(cogs.sudocog.Sudostuff(bot, dirname))
 bot.add_cog(cogs.musiccog.Music(bot,dirname))
-bot.run(tokens.load()["discordtoken"])
-
+bot.remove_command("help")
+bot.run(token)
 

@@ -10,7 +10,6 @@ requests==2.23.0
 requests-async==0.6.2
 requests-unixsocket==0.1.5
 soupsieve==2.0
-urllib3==1.25.8
-PyYAML==5.3.1
 markovify==0.8.0
 youtube-dl==2020.5.8
+toml==0.10.1

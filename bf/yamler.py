@@ -2,7 +2,6 @@ import toml
 from pathlib import Path
 import asyncio
 import subprocess
-import  yaml
 class Tomler:
     def __init__(self, dirname:str): 
         """handles different bot settings using the TOML file format"""
