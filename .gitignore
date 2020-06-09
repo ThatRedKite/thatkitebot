@@ -1,5 +1,4 @@
-banlist.yml
-tokens.yml
+*.toml
 *.pyc
 *.log
 *.out

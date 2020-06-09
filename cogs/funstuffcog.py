@@ -332,7 +332,7 @@ class FunStuff(commands.Cog):
                     im.save(f"{self.dirname}/data/pfp_edit.webp")
                     file=discord.File(f"{self.dirname}/data/pfp_edit.webp", filename="pfp_edit.webp")
                     embed=discord.Embed()
-                    embed.set_image(url="attachment: //pfp_edit.webp")
+                    embed.set_image(url="attachment://pfp_edit.webp")
                     await ctx.send(file=file, embed=embed)
                     await asyncio.sleep(1)
                     os.remove(f"{self.dirname}/data/pfp_edit.webp")
