@@ -1,6 +1,12 @@
-*.toml
+#media files
+*.webp
+*.jpg
+*.png
+#other files
 *.pyc
 *.log
 *.out
-*.png
+#settings file
+*.json
+# test files
 test.py
