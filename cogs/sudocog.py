@@ -6,7 +6,7 @@ import logging
 import string
 import os, re
 
-class Sudostuff(commands.Cog):
+class sudo_commands(commands.Cog):
     def __init__(self, bot, dirname):
         self.bot=bot
         self.dirname=dirname
@@ -63,9 +63,8 @@ class Sudostuff(commands.Cog):
 
     @sudo.command()
     async def setting(self,ctx, setting, parameter:bool):
-        self.bot.tom.update({setting:parameter})
+        self.bot.tom.update({setting:parameter},ctx.guild.id)
         self.bot.settings.update({setting:parameter})
-        print(self.bot.settings)
         embed=discord.Embed(title="Success!", description=f"set `{setting}` to `{parameter}`")
         embed.color=0xC1121C
         await ctx.send(embed=embed)

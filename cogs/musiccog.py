@@ -260,9 +260,8 @@ class VoiceState:
         if self.voice:
             await self.voice.disconnect()
             self.voice=None
-
-
-class Music(commands.Cog):
+            
+class music(commands.Cog):
     def __init__(self, bot: commands.Bot, dirname):
         self.bot=bot
         self.voice_states={}

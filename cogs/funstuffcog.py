@@ -9,7 +9,7 @@ from bf import url
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 from datetime import datetime
-class FunStuff(commands.Cog):
+class fun_stuff(commands.Cog):
     def __init__(self, bot, dirname):
         self.bot=bot
         self._last_member=None
@@ -19,7 +19,6 @@ class FunStuff(commands.Cog):
         self.mgame_tries=None
         self.mgame_name=None
         
-
     @commands.command()
     async def inspirobot(self, ctx):
         payload={"generate": "true"}
@@ -29,196 +28,69 @@ class FunStuff(commands.Cog):
         embed.set_image(url=r.text)
         await ctx.send(embed=embed)
 
-    @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
-    async def r34(self, ctx, *, tags):
-        def is_author(m):
-            return not m.content.startswith("[KEEP]")
-        await ctx.channel.purge(limit=1, check=is_author, bulk=False)  
-        if self.bot.settings["nsfw"]:
-            #  only proceed if nsfw is enabled in the bot's settings
-            payload={ 
-            "page": "dapi",
-            "tags": tags,
-            "s": "post",
-            "q": "index"
-            }
-            await ctx.trigger_typing()
-            myurl=await url.xml_sequence_parse(payload, "https://rule34.xxx/index.php", "sample_url", "pid") #  get a sample_url
-            embed=discord.Embed(title="Link To picture", url=myurl)
-            embed.color=0xff00cc #  change color to magenta
-            embed.set_image(url=myurl) 
-            await ctx.send(embed=embed) 
-        else:
-            embed=discord.Embed(title="ERROR!", description="nsfw content is disabled")
-            #  send error message when nsfw is not enabled in the bot's settings
-            embed.color=0xC1121C #  change color to red
-            await ctx.send(embed=embed)
-
-    @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
-    async def yan(self, ctx, *, tags):
-        def is_author(m):
-            return not m.content.startswith("[KEEP]")
-        await ctx.channel.purge(limit=1, check=is_author, bulk=False)  
-        if self.bot.settings["nsfw"]:
-            #  only proceed if nsfw is enabled in the bot's settings
-            payload={"limit": 100,"tags": tags}
-            await ctx.trigger_typing()
-            myurl=await url.xml_sequence_parse(payload, "https: //yande.re/post.xml", "sample_url", "page", False) #  get a sample_url
-            embed=discord.Embed(title="Link To picture", url=myurl)
-            embed.color=0xff00cc
-            #  change color to magenta
-            embed.set_image(url=myurl) 
-            await ctx.send(embed=embed) 
-        else:
-            embed=discord.Embed(title="ERROR!", description="nsfw content is disabled")
-            #  send error message when nsfw is not enabled in the bot's settings
-            embed.color=0xC1121C #  change color to red
-            await ctx.send(embed=embed)
-
-    @commands.is_owner()
-    @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
-    async def testcommand(self, ctx, *, tags):
-        def is_author(m):
-            return not m.content.startswith("[KEEP]")
-        await ctx.channel.purge(limit=1, check=is_author, bulk=False)  
-        if self.bot.settings["nsfw"]:
-            #  only proceed if nsfw is enabled in the bot's settings
-            payload={"tags": tags, "limit": 320}
-            await ctx.trigger_typing()
-            urllist=await url.monosodiumcarbonate(payload, "page")
-            for x in range(0, 10):
-                try:
-                    myurl=random.choice(urllist)
-                    embed=discord.Embed(title="Link To picture", url=myurl)
-                    embed.color=0xff00cc
-                    #  change color to magenta
-                    embed.set_image(url=myurl) 
-                    await ctx.send(embed=embed)
-                except Exception:
-                    continue
-        else:
-            embed=discord.Embed(title="ERROR!", description="nsfw content is disabled")
-            #  send error message when nsfw is not enabled in the bot's settings
-            embed.color=0xC1121C #  change color to red
-            await ctx.send(embed=embed)
-
-    @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
-    async def yanspam(self, ctx, count: int, *, tags):
-        def is_author(m):
-            return not m.content.startswith("[KEEP]")
-        await ctx.channel.purge(limit=1, check=is_author, bulk=False)  
-        if self.bot.settings["nsfw"]:
-            #  only proceed if nsfw is enabled in the bot's settings
-            if 0 < count <= 10:
-            #  only proceed if count is below 10
-                payload={"limit": 100,"tags": tags}
-                await ctx.trigger_typing()
-                urllist=await url.xml_sequence_parse(payload, "https: //yande.re/post.xml", "sample_url", "page", True)
-                for x in range(0, count):
-                    choice=random.choice(urllist)
-                    embed=discord.Embed(title="Link To picture", url=choice)
-                    embed.color=0xff00cc#  change color to magenta
-                    embed.set_image(url=choice) 
-                    await ctx.send(embed=embed)                
-            else:
-                embed=discord.Embed(title="ERROR!", description="enter a number between 0 and 10")
-                # send error message when count is too high
-                embed.color=0xC1121C # change color to red
-                await ctx.send(embed=embed)
-        else:
-            embed=discord.Embed(title="ERROR!", description="nsfw content is disabled")
-            # send error message when nsfw is not enabled in the bot's settings
-            embed.color=0xC1121C # change color to red
-            await ctx.send(embed=embed)
-    
-    @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
-    async def r34spam(self, ctx, count: int, *, tags):
-            def is_author(m):
-                return not m.content.startswith("[KEEP]")
-            await ctx.channel.purge(limit=1, check=is_author, bulk=False)            
-            if self.bot.settings["nsfw"]:
-                #  only proceed if nsfw is enabled in the bot's settings
-                if 0 < count <= 10:
-                #  only proceed if count is below 10
-                    payload={ 
-                    "page": "dapi",
-                    "tags": tags,
-                    "s": "post",
-                    "q": "index"
-                    }
-                    await ctx.trigger_typing()
-                    urllist=await url.xml_sequence_parse(payload, "https: //rule34.xxx/index.php", "sample_url", "pid", True)
-                    for x in range(0, count):
-                        myurl=random.choice(urllist) 
-                        embed=discord.Embed(title="Link To picture", url=myurl)
-                        embed.color=0xff00cc#  change color to magenta
-                        embed.set_image(url=myurl) 
-                        await ctx.send(embed=embed)                
-                else:
-                    embed=discord.Embed(title="ERROR!", description="enter a number between 0 and 10")
-                    #  send error message when count is too high
-                    embed.color=0xC1121C #  change color to red
-                    await ctx.send(embed=embed)
-            else:
-                embed=discord.Embed(title="ERROR!", description="nsfw content is disabled")
-                #  send error message when nsfw is not enabled in the bot's settings
-                embed.color=0xC1121C #  change color to red
-                await ctx.send(embed=embed)
-    
-    async def mark(self, ctx, user, old: int=200, new: int=200, leng: int=5, leng2: int=20, mode: str="long"):
+    async def mark(self, ctx,user, old: int=200, new: int=200, leng: int=5, leng2: int=20, mode: str="long"):
+        # some general variables
         guild=ctx.guild
         author: discord.User=ctx.message.author
-        is_user=True
+        message:discord.Message = ctx.message
+        # change the bot's status to "do not disturb" and set its game
+        await self.bot.change_presence(status=discord.Status.dnd, activity=discord.Game("processing . . ."))
+        # this code is used to
+        is_user=False
         is_channel=False
-        rest=re.findall("<#(\d+)>", user)
-        if len(rest) > 0:
-            is_user=False
-            is_channel=True
-            chan=ctx.guild.get_channel(int(rest[0]))
-        if not is_channel:
-            rest=re.findall("<@!(\d+)>$", user)
-            if len(rest) > 0:
+        user_mentions = message.mentions
+        channel_mentions = message.channel_mentions
+        if len(user_mentions) > 0:
+            # set :chan: to the first user mentioned
+            chan = user_mentions[0] 
+            is_user = True 
+        elif len(user_mentions) == 0 and len(channel_mentions) > 0:
+            # set :chan: to the first channel mentioned
+            chan = channel_mentions[0]
+            is_channel = True
+        else:
+            rest=re.findall("(\d+)", user)
+            if len(rest) > 0 and not is_channel: 
                 is_user=True
+                # set :chan: to the user mentioned by id
                 chan=self.bot.get_user(int(rest[0]))
             else:
-                rest=re.findall("(\d+)", user)
-                if len(rest) > 0 and not is_channel: 
-                    is_user=True
-                    chan=self.bot.get_user(int(rest[0]))
-        else:
-            chan=ctx.message.channel
+                chan=ctx.channel # set :chan: to the current channel
+                is_channel=True 
 
-        await ctx.send("fetching messages ...")
-        game=discord.Game("processing . . .")
-        await self.bot.change_presence(status=discord.Status.do_not_disturb, activity=game)
+        # The variable :chan: tells the message fetcher which user's / channel's
+        # messages to fetch. The :is_user: / :is_channel: tell it the type.
+        # Only the first user / channel is used
+
         messages=[]
         if is_user and not is_channel:
             for channel in guild.text_channels:
-                async for message in channel.history(limit=old, oldest_first=True).filter(lambda m: m.author == chan):
+                # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
+                async for message in channel.history(limit=old,oldest_first=True).filter(lambda m: m.author == chan):
                     messages.append(str(message.content))
+
+                # add :new: messages of the user :chan: to the list :messages:
                 async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
                     messages.append(str(message.content))  
-        else:           
+        else:
+            # add :old: messages :chan: to the list :messages:           
             async for message in chan.history(limit=old, oldest_first=True):
                 messages.append(str(message.content))
+            # add :new: messages :chan: to the list :messages: 
             async for message in chan.history(limit=new):
                 messages.append(str(message.content))
-                
+        # generate a model based on the messages in :messages:
         model=markovify.NewlineText("\n".join(messages))
         generated_list=[]
+        # generate :leng: sentences
         for i in range(leng):
             if mode == "long":
                 generated=model.make_sentence()
             else:
                 generated=model.make_short_sentence(leng2)
+            # only add sentences that are not None to :generated_list:
             if generated is not None: generated_list.append(generated)
-        await ctx.channel.purge(limit=10, check=lambda m: m.content == "fetching messages ..." and m.author.id == self.bot.user.id)
-        return generated_list, chan
+        return generated_list, chan 
 
     @commands.command()
     async def markov(self, ctx, user=None, old: int=100, new: int=100, leng: int=5):
@@ -315,15 +187,15 @@ class FunStuff(commands.Cog):
                     file.write(r)
                 im=Image.open(f"{self.dirname}/data/pfp.webp")
                 if len(generated_list) > 0:
-                    quotestring=random.choice(generated_list)
+                    quotestring= random.choice(generated_list)
                     draw=ImageDraw.Draw(im)
                     if im.size <= (512, 512):
-                        a=2
+                        a=1
                     else:
                         a=3
                     x, y=im.size
-                    font=ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", int(x / (int(len(quotestring) / 3)  +  a)))
-                    quotestring += f"\n{chan.name}"
+                    font=ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", int(x / (int(len(quotestring) / 2)  +  a)))
+                    quotestring += f"\n-{chan.name}"
                     draw.text((3 - a, (y - int(y / 4.5)) - a), quotestring, (0, 0, 0), font=font)
                     draw.text((3 + a, (y - int(y / 4.5)) + a), quotestring, (0, 0, 0), font=font)
                     draw.text((3 - a, (y - int(y / 4.5)) + a), quotestring, (0, 0, 0), font=font)

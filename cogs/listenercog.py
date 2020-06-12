@@ -37,7 +37,7 @@ class Listeners(commands.Cog):
         if (channel.id == 693167481027690527
             and len(re.findall("yi[f]+|fu[ry]+", str(message.content).lower()))
             and message.author.id != self.bot.user.id
-            and self.bot.settings["yiffbomb"]):
+            and self.bot.settings[str(message.guild.id)]["bomb"]):
             if self.counter == 0:
                 await channel.send("🚨 🚨 🚨**__WARNING, do not say that again!__**🚨 🚨 🚨")
                 self.counter += 1
@@ -60,7 +60,9 @@ class Listeners(commands.Cog):
                     await channel.send(embed=embed)
                 self.counter=0
 
-        elif(len(re.findall("busbr", str(message.content).lower())) and message.author.id != self.bot.user.id and self.bot.settings["busbr"]):
+        elif(len(re.findall("busbr", str(message.content).lower()))
+         and message.author.id != self.bot.user.id 
+         and self.bot.settings[str(message.guild.id)]["busbr"]):
             choice=random.randint(0,100)
             if choice < 100:
                 emoji=discord.utils.get(guild.emojis, name="busbr_irl")

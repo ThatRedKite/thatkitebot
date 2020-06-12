@@ -14,15 +14,18 @@ class ThatKiteBot(commands.Bot):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         self.tom = Tomler(dirname)
         self.parsed = tom.parsed
-        self.settings = tom.settings
+        self.settings = tom.settings_all
         self.dirname = dirname
+        self.version = "b11"
 
 bot=ThatKiteBot(prefix, dirname)
-bot.add_cog(cogs.funstuffcog.FunStuff(bot, dirname))
-bot.add_cog(cogs.utilitiescog.Utilities(bot, dirname))
-bot.add_cog(cogs.listenercog.Listeners(bot, dirname))
-bot.add_cog(cogs.sudocog.Sudostuff(bot, dirname))
-bot.add_cog(cogs.musiccog.Music(bot,dirname))
 bot.remove_command("help")
+bot.add_cog(cogs.funstuffcog.fun_stuff(bot, dirname))
+bot.add_cog(cogs.utilitiescog.utility_commands(bot, dirname))
+bot.add_cog(cogs.listenercog.Listeners(bot, dirname))
+bot.add_cog(cogs.sudocog.sudo_commands(bot, dirname))
+bot.add_cog(cogs.musiccog.music(bot,dirname))
+bot.add_cog(cogs.imagecog.image_stuff(bot))
+bot.add_cog(cogs.nsfwcog.NSFW(bot))
 bot.run(token)
 

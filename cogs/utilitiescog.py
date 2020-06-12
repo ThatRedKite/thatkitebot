@@ -7,9 +7,9 @@ import logging
 from datetime import datetime
 import  subprocess
 from PIL import Image, ImageColor, ImageDraw
-class Utilities(commands.Cog):
-
-    def __init__(self, bot, dirname):
+class utility_commands(commands.Cog):
+    
+    def __init__(self, bot:commands.Bot, dirname):
         self.dirname=dirname
         self.version="b9" 
         self.bot=bot
@@ -66,7 +66,7 @@ class Utilities(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def help(self, ctx):
+    async def oldhelp(self, ctx):
         embed=discord.Embed(title="A list of my commands")
         commands=""
         sudocommands=[]
@@ -74,7 +74,6 @@ class Utilities(commands.Cog):
             if not str(command).startswith("yan") and not str(command).startswith("r34"):
                 commands += (str(command) + "\n")
         embed=discord.Embed(title="A list of my commands:")
-
         embed.add_field(name="__Cool Stuff:__", value=commands)
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         embed.color=0x00ff00
@@ -125,8 +124,7 @@ class Utilities(commands.Cog):
                 await ctx.send(embed=embed)
                 
     @commands.command()
-    async def color(self,ctx,*,args):
-        
+    async def color(self,ctx,*,args):   
         if len(args.split(" ")) == 1:
             color=int(args[0],16)
             img=Image.new("RGB", (128,128), )
@@ -159,3 +157,18 @@ class Utilities(commands.Cog):
         for setting in self.bot.settings:
             embed.add_field(name=f"**{setting}:**", value=f"```py\n{self.bot.settings[setting]}```", inline=True)
         await ctx.send(embed=embed) 
+
+    @commands.command()
+    async def help(self,ctx):
+        embed = discord.Embed(title="**a list of the bot's commands**")
+        for cog in self.bot.cogs:
+            commandstring = "" 
+            for command in self.bot.get_cog(cog).walk_commands():
+                if cog != "NSFW":
+                    commandstring += f"{command}\n"
+            if len(commandstring) > 1:
+                embed.add_field(name=f"__**[{cog}]**__", value=f"```fix\n{commandstring}```",inline=False) 
+        embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
+        await ctx.send(embed=embed)
+
+
