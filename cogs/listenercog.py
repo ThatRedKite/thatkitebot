@@ -5,6 +5,7 @@ import random
 import asyncio
 from bf import url
 import re
+from bf.util import  errormsg
 class Listeners(commands.Cog):
     def __init__(self, bot, dirname,):
         self.dirname=dirname
@@ -37,7 +38,7 @@ class Listeners(commands.Cog):
         if (channel.id == 693167481027690527
             and len(re.findall("yi[f]+|fu[ry]+", str(message.content).lower()))
             and message.author.id != self.bot.user.id
-            and self.bot.settings[str(message.guild.id)]["bomb"]):
+            and self.bot.settings[str(message.guild.id)]["bbomb"]):
             if self.counter == 0:
                 await channel.send("🚨 🚨 🚨**__WARNING, do not say that again!__**🚨 🚨 🚨")
                 self.counter += 1
@@ -62,16 +63,30 @@ class Listeners(commands.Cog):
 
         elif(len(re.findall("busbr", str(message.content).lower()))
          and message.author.id != self.bot.user.id 
-         and self.bot.settings[str(message.guild.id)]["busbr"]):
+         and self.bot.settings[str(message.guild.id)]["bbusbr"]):
             choice=random.randint(0,100)
             if choice < 100:
                 emoji=discord.utils.get(guild.emojis, name="busbr_irl")
                 await message.add_reaction(emoji)
             else:
                 emoji:discord.Emoji=discord.utils.get(guild.emojis, name="busbr_irl")
-                await channel.send(f"<:busbr_irl:{emoji.id}>")
+                await channel.send(f"<:{emoji.name}:{emoji.id}>")
 
     @commands.Cog.listener()
     async def on_ready(self):
         print("Bot is up and running!")
+
+    @commands.Cog.listener()
+    async def on_command_error(self,ctx,error):
+        if hasattr(ctx.command,"on_error"):
+            return
+        
+
+        elif isinstance(error, commands.DisabledCommand):
+            return await ctx.send(f'{ctx.command} has been disabled.')
+
+        error = getattr(error, 'original', error)
+        print(error)
+
+               
     

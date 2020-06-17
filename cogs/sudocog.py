@@ -5,7 +5,8 @@ import discord
 import logging
 import string
 import os, re
-
+from concurrent.futures import  ThreadPoolExecutor
+from bf import util
 class sudo_commands(commands.Cog):
     def __init__(self, bot, dirname):
         self.bot=bot
@@ -62,9 +63,11 @@ class sudo_commands(commands.Cog):
         logging.error(msg=error)
 
     @sudo.command()
-    async def setting(self,ctx, setting, parameter:bool):
-        self.bot.tom.update({setting:parameter},ctx.guild.id)
-        self.bot.settings.update({setting:parameter})
+    async def setting(self,ctx, setting, parameter):
+        with ThreadPoolExecutor(2) as executor:
+            executor.submit(self.bot.tom.update,{setting:util.typeguesser(setting,parameter)},ctx.guild.id)
+            self.bot.settings[str(ctx.guild.id)].update({setting:util.typeguesser(setting,parameter)})
+            
         embed=discord.Embed(title="Success!", description=f"set `{setting}` to `{parameter}`")
         embed.color=0xC1121C
         await ctx.send(embed=embed)

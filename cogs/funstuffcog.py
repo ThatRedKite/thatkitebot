@@ -9,6 +9,10 @@ from bf import url
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+import typing
+from io import BytesIO
+
 class fun_stuff(commands.Cog):
     def __init__(self, bot, dirname):
         self.bot=bot
@@ -28,7 +32,7 @@ class fun_stuff(commands.Cog):
         embed.set_image(url=r.text)
         await ctx.send(embed=embed)
 
-    async def mark(self, ctx,user, old: int=200, new: int=200, leng: int=5, leng2: int=20, mode: str="long"):
+    async def mark(self,ctx,user,old:int=200,new:int=200,leng:int=5,leng2:int=20,mode:str="long"):
         # some general variables
         guild=ctx.guild
         author: discord.User=ctx.message.author
@@ -55,7 +59,7 @@ class fun_stuff(commands.Cog):
                 # set :chan: to the user mentioned by id
                 chan=self.bot.get_user(int(rest[0]))
             else:
-                chan=ctx.channel # set :chan: to the current channel
+                chan=ctx.message.author # set :chan: to the user who issued the command
                 is_channel=True 
 
         # The variable :chan: tells the message fetcher which user's / channel's
@@ -93,7 +97,7 @@ class fun_stuff(commands.Cog):
         return generated_list, chan 
 
     @commands.command()
-    async def markov(self, ctx, user=None, old: int=100, new: int=100, leng: int=5):
+    async def markov(self,ctx,user=None,old:int=100,new:int=100,leng:int=5):
         author: discord.User=ctx.message.author
         try: 
             with ctx.channel.typing():
@@ -176,47 +180,12 @@ class fun_stuff(commands.Cog):
         self.markov_clear()
     
     @commands.command()
-    async def quote(self, ctx, user, old: int=100, new: int=100):
-        guild=ctx.guild
-        author: discord.User=ctx.message.author
-        try:
-            with ctx.channel.typing():
-                generated_list, chan=await self.mark(ctx, user, old, new, 5, 30, mode="short")
-                r=requests.get(chan.avatar_url).content
-                with open(f"{self.dirname}/data/pfp.webp", "wb") as file:
-                    file.write(r)
-                im=Image.open(f"{self.dirname}/data/pfp.webp")
-                if len(generated_list) > 0:
-                    quotestring= random.choice(generated_list)
-                    draw=ImageDraw.Draw(im)
-                    if im.size <= (512, 512):
-                        a=1
-                    else:
-                        a=3
-                    x, y=im.size
-                    font=ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", int(x / (int(len(quotestring) / 2)  +  a)))
-                    quotestring += f"\n-{chan.name}"
-                    draw.text((3 - a, (y - int(y / 4.5)) - a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3 + a, (y - int(y / 4.5)) + a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3 - a, (y - int(y / 4.5)) + a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3 + a, (y - int(y / 4.5)) - a), quotestring, (0, 0, 0), font=font)
-                    draw.text((3, (y - int(y / 4.5)) - a),  quotestring, (255, 255, 555), font=font)
-                    im.save(f"{self.dirname}/data/pfp_edit.webp")
-                    file=discord.File(f"{self.dirname}/data/pfp_edit.webp", filename="pfp_edit.webp")
-                    embed=discord.Embed()
-                    embed.set_image(url="attachment://pfp_edit.webp")
-                    await ctx.send(file=file, embed=embed)
-                    await asyncio.sleep(1)
-                    os.remove(f"{self.dirname}/data/pfp_edit.webp")
-                    os.remove(f"{self.dirname}/data/pfp.webp")
-                else:
-                    raise Exception
-        except Exception as exc:
-            print(exc)
-            await errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
-        finally:
-            await self.bot.change_presence(status=discord.Status.online, activity=None)
- 
-    @commands.command()
     async def fakeword(self, ctx):
-        await ctx.send(embed=await url.word())
+        with ctx.channel.typing():
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(url.word,embedmode=True)
+        await ctx.send(embed=future.result())
+
+    @commands.command()
+    async def vision(self,ctx):
+        await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")

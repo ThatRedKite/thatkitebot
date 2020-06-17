@@ -82,27 +82,36 @@ class utility_commands(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def userinfo(self, ctx, mention):
-        newmention=mention.replace("<", "")
-        newmention=newmention.replace("@", "")
-        newmention=newmention.replace("!", "")
-        newmention=newmention.replace(">", "")
-        user :discord.User= self.bot.get_user(int(newmention))
+    async def userinfo(self, ctx, mention="asdf"):
+        message=ctx.message
+        user_mentions = message.mentions
+        if len(user_mentions) > 0:
+            # set :user: to the first user mentioned
+            user = user_mentions[0] 
+            is_user = True 
+        else:
+            rest=re.findall("(\d+)", mention)
+            if len(rest) > 0 :
+                is_user=True
+                # set :user: to the user mentioned by id
+                user=self.bot.get_user(int(rest[0]))
+            else:
+                user=ctx.message.author # set :user: to the user who issued the command
+                is_usernel=True 
         username=user.name
         userid=user.id
         isbot=user.bot
-        creationtime=user.created_at.strftime("%d.%m.%Y@%H:%M UTC")
+        creationtime=user.created_at.strftime("%d.%m.%Y\n@%H:%M UTC")
         if isbot is not True:
             embed=discord.Embed(title=f"UserInfo for the user {username}")
-            embed.add_field(name="Is Bot?", value="❌")
+            embed.add_field(name="Is Bot?", value="\n\n❌")
         else:
             embed=discord.Embed(title=f"BotInfo for the bot {username}")
             embed.add_field(name="Is Bot?", value="✅")
         embed.set_thumbnail(url=str(user.avatar_url))
-        embed.add_field(name="creation date:", value=f"`{creationtime}`")
-        embed.add_field(name="id", value=f"`{userid}`")
+        embed.add_field(name="creation date:", value=f"```py\n{creationtime}```")
+        embed.add_field(name="id", value=f"```fix\n{userid}```")
         await ctx.send(embed=embed)
-        creationtime=user.created_at.strftime("%d.%m.%Y@%H:%M UTC")
 
     @commands.command()
     async def man(self,ctx,*,args):
@@ -154,7 +163,7 @@ class utility_commands(commands.Cog):
     @commands.command()
     async def settings(self, ctx):
         embed = discord.Embed(title="**settings**")
-        for setting in self.bot.settings:
+        for setting in self.bot.settings[str(ctx.guild.id)]:
             embed.add_field(name=f"**{setting}:**", value=f"```py\n{self.bot.settings[setting]}```", inline=True)
         await ctx.send(embed=embed) 
 
@@ -170,5 +179,4 @@ class utility_commands(commands.Cog):
                 embed.add_field(name=f"__**[{cog}]**__", value=f"```fix\n{commandstring}```",inline=False) 
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
         await ctx.send(embed=embed)
-
 

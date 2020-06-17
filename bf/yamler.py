@@ -13,7 +13,14 @@ class Tomler:
             with open(self.path, "rt") as stream:
                 self.parsed:dict=json.loads(stream.read())
         else:
-            raise FileNotFoundError
+            initdict={"tokens":{"discordtoken":"", "prefix":""}, "settings":{}}
+            with open(self.path, "wt") as stream:
+                stream.write(json.dumps(initdict,indent=2))
+                print(f"""
+                Your settings.json file was created in {self.path}
+                 , please enter your bot token and prefix there!
+                 The program is now terminating""")
+                exit(self,1)
 
         self.tokens=self.parsed["tokens"]
         # the bot's token
@@ -24,29 +31,40 @@ class Tomler:
         self.settings_all=self.parsed["settings"]
         # the setting for a specific guild
 
-    def update(self, data, guildid:int): 
+    def update(self, data, guildid:str): 
         """ update a setting (not the token or prefix) """
-        if type(data == dict):
-            settings_local = self.parsed["settings"]
+        guildid = str(guildid)
+
+        # re-read the contents of the settings file
+        if self.path.exists(): # check if the file exists
+            with open(self.path, "rt") as stream:
+                self.parsed:dict=json.loads(stream.read())
+                self.settings_all = self.parsed["settings"]
+
+        # check if the right data type is supplied
+        if type(data == dict) and len(data) > 0:
             try:
-                settings_local[str(guildid)].update(data)
-            except KeyError:
-                if len(settings_local) == 0:
-                    settings_local = {str(guildid):{
+                self.settings_all[guildid].update(data)
+                
+            except KeyError: 
+                if len(self.settings_all) == 0:
+                    self.settings_all = {guildid:{
                         "busbr":False,
                         "nsfw":False,
                         "bomb":False}}
-                    settings_local[guildid].update(data)
+                    self.settings_all[guildid].update(data)
                 else:
-                    settings_local.update({str(guildid):{
+                    self.settings_all.update({guildid:{
                         "busbr":False,
                         "nsfw":False,
                         "bomb":False}})
-                    settings_local[str(guildid)].update(data)
+                    self.settings_all[guildid].update(data)
+
             finally:
-                self.settings_all = settings_local
                 self.parsed = {"tokens": self.tokens, "settings":self.settings_all}
+                # put the data into the json 
                 datanew=json.dumps(self.parsed,indent=2)
+
                 with open(self.path,"wt") as stream:
                     stream.write(datanew)
 
