@@ -103,10 +103,7 @@ def image_downloader(url,path):
         img.save(outbuffer,"png")
         img.save(fp=path)
     return outbuffer
-
-
     
-
 class image_stuff(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot=bot
@@ -226,7 +223,6 @@ class image_stuff(commands.Cog):
             future = executor.submit(image_downloader,user.avatar_url,f"{self.path}/pfp.png")
         image_file = discord.File(f"{self.path}/pfp.png", filename="pfp.png")
         await ctx.send(file=image_file)
-
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
