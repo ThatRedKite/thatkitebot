@@ -76,17 +76,7 @@ class Listeners(commands.Cog):
     async def on_ready(self):
         print("Bot is up and running!")
 
-    @commands.Cog.listener()
-    async def on_command_error(self,ctx,error):
-        if hasattr(ctx.command,"on_error"):
-            return
-        
 
-        elif isinstance(error, commands.DisabledCommand):
-            return await ctx.send(f'{ctx.command} has been disabled.')
-
-        error = getattr(error, 'original', error)
-        print(error)
 
                
     
