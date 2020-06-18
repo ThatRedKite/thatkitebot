@@ -1,18 +1,16 @@
-import discord, asyncio
-import  random
-import os, re
-import requests
-import markovify
-from bf import util
-from bf.yamler import Tomler
-from bf import url
-from discord.ext import commands
-from PIL import Image, ImageDraw, ImageFont, ImageColor
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
-import typing
-from io import BytesIO
+import discord
 
+import os
+import re
+import bf
+import markovify
+from io import BytesIO
+from requests import get
+from random import choice
+from discord.ext import commands
+from datetime import datetime
+
+from concurrent.futures import ThreadPoolExecutor
 class fun_stuff(commands.Cog):
     def __init__(self, bot, dirname):
         self.bot=bot
@@ -26,7 +24,7 @@ class fun_stuff(commands.Cog):
     @commands.command()
     async def inspirobot(self, ctx):
         payload={"generate": "true"}
-        r=requests.get("http://inspirobot.me/api", params=payload)
+        r=get("http://inspirobot.me/api", params=payload)
         embed=discord.Embed(title="A motivating quote from InspiroBot")
         embed.color=0x33cc33
         embed.set_image(url=r.text)
@@ -45,7 +43,7 @@ class fun_stuff(commands.Cog):
         # The variable :chan: tells the message fetcher which user's / channel's
         # messages to fetch. The :is_user: / :is_channel: tell it the type.
         # Only the first user / channel is used
-        chan,is_user,is_channel = util.mentioner(self.bot,ctx,message,user,True)
+        chan,is_user,is_channel = bf.util.mentioner(self.bot,ctx,message,user,True)
         messages=[]
         if is_user and not is_channel:
             for channel in guild.text_channels:
@@ -94,7 +92,7 @@ class fun_stuff(commands.Cog):
                     await ctx.send(ctx, "an error has occured. I could not fetch enough messages!")
         except Exception as exc:
             print(exc)
-            await util.errormsg(ctx, str(exc))
+            await bf.util.errormsg(ctx, str(exc))
         finally:
             await self.bot.change_presence(status=discord.Status.online, activity=None)
 
@@ -113,7 +111,7 @@ class fun_stuff(commands.Cog):
         memberlist=[]
         async for member in guild.fetch_members():
             memberlist.append(member)
-        the_chosen_one=random.choice(memberlist)
+        the_chosen_one=choice(memberlist)
         print(the_chosen_one.id)
         self.mgame_id=the_chosen_one.id
         self.mgame_tries=tries
@@ -127,7 +125,7 @@ class fun_stuff(commands.Cog):
 
         except Exception as exc:
             print(exc)
-            await util.errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
+            await bf.util.errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
             self.markov_clear()
 
         finally:
@@ -148,12 +146,12 @@ class fun_stuff(commands.Cog):
             else:
                 self.mgame_tries -= 1
                 if self.mgame_tries == 0 or self.mgame_tries < 0:
-                    await util.errormsg(ctx, f"Sorry but that was the wrong answer. You have lost. The right answer would have been: {self.mgame_name}")
+                    await bf.util.errormsg(ctx, f"Sorry but that was the wrong answer. You have lost. The right answer would have been: {self.mgame_name}")
                     self.markov_clear()
                 else:
                     await ctx.send(f"Sorry, that was wrong, you now have only {self.mgame_tries} tries left ")
         else:
-            await util.errormsg(ctx, "You cannot guess, if you you havn't started a game")
+            await bf.util.errormsg(ctx, "You cannot guess, if you you havn't started a game")
 
     @mgame.command()
     async def stop(self, ctx):
@@ -163,7 +161,7 @@ class fun_stuff(commands.Cog):
     async def fakeword(self, ctx):
         with ctx.channel.typing():
             with ThreadPoolExecutor() as executor:
-                future = executor.submit(url.word,embedmode=True)
+                future = executor.submit(bf.url.word,embedmode=True)
         await ctx.send(embed=future.result())
 
     @commands.command()

@@ -1,18 +1,18 @@
 import discord
-import random
 import re
-import requests
 import os
 import typing
-from cogs.funstuffcog import fun_stuff
+from bf import  util
 from io import BytesIO
+from requests import get
+from random import choice
 from datetime import datetime
 from wand.display import display
 from discord.ext import commands
 from wand import image as wandimg
+from cogs.funstuffcog import fun_stuff
 from PIL import Image, ImageDraw, ImageFont
-from concurrent.futures import  ThreadPoolExecutor, ProcessPoolExecutor
-from bf import  util
+from concurrent.futures import  ThreadPoolExecutor
 
 def image_url_fetcher(messages:list=[],bypass=False,gif=False):
     if not bypass:
@@ -34,7 +34,7 @@ def image_url_fetcher(messages:list=[],bypass=False,gif=False):
                         break
     else:
         url = str(messages[0])                
-    r = requests.get(url).content
+    r = get(url).content
     inbuffer = BytesIO(r)
     if not gif:
         with Image.open(inbuffer) as img:
@@ -95,7 +95,7 @@ def make_wide(buffer,path):
     return embed, image_file
 
 def image_downloader(url,path):
-    r = requests.get(url).content
+    r = get(url).content
     inbuffer = BytesIO(r)
     with Image.open(inbuffer) as img:
         outbuffer = BytesIO()
@@ -103,7 +103,7 @@ def image_downloader(url,path):
         img.save(outbuffer,"png")
         img.save(fp=path)
     return outbuffer
-    
+
 class image_stuff(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot=bot
@@ -165,13 +165,13 @@ class image_stuff(commands.Cog):
         author: discord.User=ctx.message.author
         with ctx.channel.typing():
             generated_list, chan=await fun_stuff.mark(ctx,user,old,new,5,30,mode="short")
-            r=requests.get(chan.avatar_url).content
+            r=get(chan.avatar_url).content
             buffer = BytesIO(r)
             def imager(buffer):
                 buffer.seek(0)
                 with Image.open(buffer) as im:
                     if len(generated_list) > 0:
-                        quotestring= random.choice(generated_list)
+                        quotestring= choice(generated_list)
                         draw=ImageDraw.Draw(im)
                         if im.size <= (512,512):
                             a=1

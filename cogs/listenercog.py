@@ -1,11 +1,11 @@
-from discord.ext import commands, tasks
-import discord
-import  string
-import random
-import asyncio
-from bf import url
 import re
+import random
+import discord
+from bf import url
 from bf.util import  errormsg
+from discord.ext import commands
+from asyncio import sleep as asleep
+
 class Listeners(commands.Cog):
     def __init__(self, bot, dirname,):
         self.dirname=dirname
@@ -50,7 +50,7 @@ class Listeners(commands.Cog):
                 self.counter += 1                
             else:
                 await channel.send("Well, seems like you didn't listen \n deploying yiff in **3 seconds**")
-                await asyncio.sleep(1)
+                await asleep(1)
                 payload={"tags": ["canine", "cock", "canine_penis"], "limit": 320}
                 urllist=await url.monosodiumcarbonate(payload, "page")
                 for x in range(5):
@@ -75,8 +75,4 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Bot is up and running!")
-
-
-
-               
-    
+  

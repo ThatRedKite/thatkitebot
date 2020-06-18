@@ -1,5 +1,5 @@
 import  requests
-import random
+from random import choice
 from bs4 import BeautifulSoup
 import asyncio
 import discord
@@ -18,7 +18,7 @@ def xml_sequence_parse(payload:dict,sourceurl:str,attr:str,updatevalue:str, isli
                     continue # just do nothing
     if islist is False: 
         try:
-            result=random.choice(urls) #choose a random entry of :urls:
+            result=choice(urls) #choose a random entry of :urls:
             if result != None: 
                 return result #return the randomly chosen entry if it is not None
         except IndexError:
@@ -58,7 +58,3 @@ def word(embedmode:bool=True):
             return embed
     else:
         return word,definition
- 
-
-
- 

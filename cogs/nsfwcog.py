@@ -1,10 +1,11 @@
-import discord
-from discord.ext import commands
-from bf import url
-import random
 import typing
+import discord
+from bf import url
+from random import choice
 from bf.util import errormsg
-from concurrent.futures import  ThreadPoolExecutor
+from discord.ext import commands
+from concurrent.futures import ThreadPoolExecutor
+
 class NSFW(commands.Cog):
     def __init__(self,bot):
         self.bot = bot
@@ -57,7 +58,7 @@ class NSFW(commands.Cog):
             with ctx.channel.typing():
                 for x in range(0, 10):
                     try:
-                        myurl=random.choice(urllist)
+                        myurl=choice(urllist)
                         embed=discord.Embed(title="Link To picture", url=myurl)
                         embed.color=0xff00cc
                         #  change color to magenta
@@ -86,7 +87,7 @@ class NSFW(commands.Cog):
                 urllist=future.result()
                 with ctx.channel.typing():
                     for x in range(0, count):
-                        choice=random.choice(urllist)
+                        choice=choice(urllist)
                         embed=discord.Embed(title="Link To picture", url=choice)
                         embed.color=0xff00cc#  change color to magenta
                         embed.set_image(url=choice) 
@@ -108,7 +109,7 @@ class NSFW(commands.Cog):
                     urllist=await url.xml_sequence_parse(payload, self.r34url, "sample_url", "pid", True)
                     with ctx.channel.typing():
                         for x in range(0, count):
-                            myurl=random.choice(urllist) 
+                            myurl=choice(urllist) 
                             embed=discord.Embed(title="Link To picture", url=myurl)
                             embed.color=0xff00cc#  change color to magenta
                             embed.set_image(url=myurl) 

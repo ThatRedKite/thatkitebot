@@ -1,12 +1,14 @@
-from discord.ext import commands
-import discord
-import os, re
+
+import os
+import re
 import psutil
-from bf.util import errormsg
+import discord
 import logging
-from datetime import datetime
 import subprocess
 from PIL import Image
+from bf.util import errormsg
+from datetime import datetime
+from discord.ext import commands
 
 class utility_commands(commands.Cog):
     def __init__(self, bot:commands.Bot, dirname):
@@ -17,9 +19,6 @@ class utility_commands(commands.Cog):
 
     @commands.command()
     async def status(self, ctx):
-        """
-        Bot's Current Status
-        """
         process=psutil.Process(os.getpid())
         mem=int(round((process.memory_info()[0] / 1000000)))
         cpu=process.cpu_percent(interval=10)
