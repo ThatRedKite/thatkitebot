@@ -3,7 +3,7 @@ import  random
 import os, re
 import requests
 import markovify
-from bf.util import errormsg
+from bf import util
 from bf.yamler import Tomler
 from bf import url
 from discord.ext import commands
@@ -40,32 +40,12 @@ class fun_stuff(commands.Cog):
         # change the bot's status to "do not disturb" and set its game
         await self.bot.change_presence(status=discord.Status.dnd, activity=discord.Game("processing . . ."))
         # this code is used to
-        is_user=False
-        is_channel=False
-        user_mentions = message.mentions
-        channel_mentions = message.channel_mentions
-        if len(user_mentions) > 0:
-            # set :chan: to the first user mentioned
-            chan = user_mentions[0] 
-            is_user = True 
-        elif len(user_mentions) == 0 and len(channel_mentions) > 0:
-            # set :chan: to the first channel mentioned
-            chan = channel_mentions[0]
-            is_channel = True
-        else:
-            rest=re.findall("(\d+)", user)
-            if len(rest) > 0 and not is_channel: 
-                is_user=True
-                # set :chan: to the user mentioned by id
-                chan=self.bot.get_user(int(rest[0]))
-            else:
-                chan=ctx.message.author # set :chan: to the user who issued the command
-                is_channel=True 
+        
 
         # The variable :chan: tells the message fetcher which user's / channel's
         # messages to fetch. The :is_user: / :is_channel: tell it the type.
         # Only the first user / channel is used
-
+        chan,is_user,is_channel = util.mentioner(self.bot,ctx,message,user,True)
         messages=[]
         if is_user and not is_channel:
             for channel in guild.text_channels:
@@ -114,7 +94,7 @@ class fun_stuff(commands.Cog):
                     await ctx.send(ctx, "an error has occured. I could not fetch enough messages!")
         except Exception as exc:
             print(exc)
-            await errormsg(ctx, str(exc))
+            await util.errormsg(ctx, str(exc))
         finally:
             await self.bot.change_presence(status=discord.Status.online, activity=None)
 
@@ -147,7 +127,7 @@ class fun_stuff(commands.Cog):
 
         except Exception as exc:
             print(exc)
-            await errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
+            await util.errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
             self.markov_clear()
 
         finally:
@@ -168,12 +148,12 @@ class fun_stuff(commands.Cog):
             else:
                 self.mgame_tries -= 1
                 if self.mgame_tries == 0 or self.mgame_tries < 0:
-                    await errormsg(ctx, f"Sorry but that was the wrong answer. You have lost. The right answer would have been: {self.mgame_name}")
+                    await util.errormsg(ctx, f"Sorry but that was the wrong answer. You have lost. The right answer would have been: {self.mgame_name}")
                     self.markov_clear()
                 else:
                     await ctx.send(f"Sorry, that was wrong, you now have only {self.mgame_tries} tries left ")
         else:
-            await errormsg(ctx, "You cannot guess, if you you havn't started a game")
+            await util.errormsg(ctx, "You cannot guess, if you you havn't started a game")
 
     @mgame.command()
     async def stop(self, ctx):
