@@ -179,4 +179,3 @@ class utility_commands(commands.Cog):
                 embed.add_field(name=f"__**[{cog}]**__", value=f"```fix\n{commandstring}```",inline=False) 
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
         await ctx.send(embed=embed)
-

@@ -83,6 +83,3 @@ class sudo_commands(commands.Cog):
             chan=ctx.guild.get_user(int(rest[0]))
         else:
             chan=ctx.channel
-    
-
-

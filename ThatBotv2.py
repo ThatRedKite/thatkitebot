@@ -37,4 +37,3 @@ bot.add_cog(cogs.musiccog.music(bot,dirname))
 bot.add_cog(cogs.imagecog.image_stuff(bot))
 bot.add_cog(cogs.nsfwcog.NSFW(bot))
 bot.run(token)
-

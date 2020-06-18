@@ -54,3 +54,4 @@ def mentioner(bot,ctx,message,usermention:str="",channel_allowed:bool=False):
 
     if chan:
         return chan,is_user,is_channel
+        
