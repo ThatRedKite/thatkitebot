@@ -1,5 +1,5 @@
 import discord
-
+import  re
 
 async def errormsg(ctx, msg:str):
             embed = discord.Embed(title="ERROR!", description=msg)
@@ -28,3 +28,29 @@ def typeguesser(setting, value):
             return True
         elif value in ('no', 'n', 'false', 'f', '0', 'disable', 'off'):
             return False
+        
+def mentioner(bot,ctx,message,usermention:str="",channel_allowed:bool=False):
+    is_user=False
+    is_channel=False
+    user_mentions = message.mentions
+    channel_mentions = message.channel_mentions
+    if len(user_mentions) > 0:
+        # set :chan: to the first user mentioned
+        chan = user_mentions[0] 
+        is_user = True 
+    elif len(user_mentions) == 0 and len(channel_mentions) > 0 and channel_allowed:
+        # set :chan: to the first channel mentioned
+        chan = channel_mentions[0]
+        is_channel = True
+    else:
+        rest=re.findall("(\d+)", usermention)
+        if len(rest) > 0 and not is_channel: 
+            is_user=True
+            # set :chan: to the user mentioned by id
+            chan=bot.get_user(int(rest[0]))
+        else:
+            chan=ctx.message.author # set :chan: to the user who issued the command
+            is_user=True
+
+    if chan:
+        return chan,is_user,is_channel
