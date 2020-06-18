@@ -1,10 +1,8 @@
 import discord
 from bf.yamler import Tomler
-from discord.ext import commands, tasks
+from discord.ext import commands
 import cogs
 import os
-import pathlib
-import asyncio
 empty=dict(discordtoken="", prefix="")
 dirname=os.path.dirname(os.path.realpath(__file__))
 tom = Tomler(dirname)
@@ -17,16 +15,8 @@ class ThatKiteBot(commands.Bot):
         self.parsed = tom.parsed
         self.settings = tom.settings_all
         self.dirname = dirname
-        self.version = "b12"
-        #self.task = self.loop.create_task(self.settings_printer())
+        self.version = "b13"
     
-    async def settings_printer(self):
-        await self.wait_until_ready()
-        while not self.is_closed():
-            print(self.settings)
-            await asyncio.sleep(1)
-
-
 bot=ThatKiteBot(prefix, dirname)
 bot.remove_command("help")
 bot.add_cog(cogs.funstuffcog.fun_stuff(bot, dirname))
