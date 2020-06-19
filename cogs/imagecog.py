@@ -17,12 +17,12 @@ from concurrent.futures import  ThreadPoolExecutor
 def image_url_fetcher(messages:list=[],bypass=False,gif=False):
     if not bypass:
         # list of file types, supports regex syntax
-        filetypes = ["png","webp","gif","jpe?g"] 
+        filetypes=["png","webp","gif","jpe?g"] 
         # some regex tomfuckery
-        pattern_generated = f"^(https?://\S+({'|'.join(filetypes)}))"
+        pattern_generated=f"^(https?://\S+({'|'.join(filetypes)}))"
         if len(messages) > 0: 
             for message in messages:
-                attachments = message.attachments
+                attachments=message.attachments
                 if len(attachments) > 0:
                     donkey=re.findall(pattern_generated,attachments[0].url)
                     url, filetype=donkey[0]
@@ -33,13 +33,13 @@ def image_url_fetcher(messages:list=[],bypass=False,gif=False):
                         url, filetype=donkey[0]
                         break
     else:
-        url = str(messages[0])                
-    r = get(url).content
-    inbuffer = BytesIO(r)
+        url=str(messages[0])                
+    r=get(url).content
+    inbuffer=BytesIO(r)
     if not gif:
         with Image.open(inbuffer) as img:
-            outbuffer = BytesIO()
-            img = img.convert("RGBA")
+            outbuffer=BytesIO()
+            img=img.convert("RGBA")
             img.save(outbuffer,"png")
         return outbuffer
     else:
@@ -48,15 +48,15 @@ def image_url_fetcher(messages:list=[],bypass=False,gif=False):
 def deepfried(buffer,path):
     buffer.seek(0)
     with wandimg.Image(file=buffer) as im:
-        i:wandimg.Image = im.clone()
+        i:wandimg.Image=im.clone()
         i.transform(resize='300x300>')
         i.adaptive_sharpen(radius=50.0,sigma=10.32)
         i.modulate(saturation=800.00)
         i.noise("gaussian",attenuate=0.1)
         i.save(filename=f"{path}/deepfried.png")
 
-    image_file = discord.File(f"{path}/deepfried.png", filename="deepfried.png")
-    embed = discord.Embed()
+    image_file=discord.File(f"{path}/deepfried.png", filename="deepfried.png")
+    embed=discord.Embed()
     embed.set_image(url="attachment://deepfried.png")
     return embed, image_file
 
@@ -72,8 +72,8 @@ def do_magik(buffer:BytesIO,path):
         i.resize(i.width, i.height)
         i.save(filename=f"{path}/magik.png")
 
-    image_file = discord.File(f"{path}/magik.png", filename="magik.png")
-    embed = discord.Embed()
+    image_file=discord.File(f"{path}/magik.png", filename="magik.png")
+    embed=discord.Embed()
     embed.set_image(url="attachment://magik.png")
     return embed, image_file
 
@@ -81,25 +81,25 @@ def make_wide(buffer,path):
     buffer.seek(0)
     with wandimg.Image(file=buffer) as img:
         im:wandimg.Image=img.clone()
-        width = img.width
-        height = img.height
+        width=img.width
+        height=img.height
         im.sample(width=int(width * 5), height=height)
-        width = im.width
-        height = im.height
+        width=im.width
+        height=im.height
         im.crop(left=int(width/4),top=1,right=(width-(int(width/4.3))),bottom=height)
         im.save(filename=f"{path}/wide.png")
 
-    image_file = discord.File(f"{path}/wide.png", filename="wide.png")
-    embed = discord.Embed()
+    image_file=discord.File(f"{path}/wide.png", filename="wide.png")
+    embed=discord.Embed()
     embed.set_image(url="attachment://wide.png")
     return embed, image_file
 
 def image_downloader(url,path):
-    r = get(url).content
-    inbuffer = BytesIO(r)
+    r=get(url).content
+    inbuffer=BytesIO(r)
     with Image.open(inbuffer) as img:
-        outbuffer = BytesIO()
-        img = img.convert("RGBA")
+        outbuffer=BytesIO()
+        img=img.convert("RGBA")
         img.save(outbuffer,"png")
         img.save(fp=path)
     return outbuffer
@@ -113,13 +113,13 @@ class image_stuff(commands.Cog):
     @commands.command()
     async def magik(self,ctx:commands.Context):
         with ctx.channel.typing():
-            messages = []
+            messages=[]
             async for message in ctx.channel.history(limit=50,around=datetime.now()):
                 messages.append(message)
             pool=ThreadPoolExecutor()
             # get image urls from message history
             with ThreadPoolExecutor() as executor:
-                future = executor.submit(image_url_fetcher,messages)
+                future=executor.submit(image_url_fetcher,messages)
             buffer=future.result()
 
             future=pool.submit(do_magik,buffer,self.path)
@@ -132,7 +132,7 @@ class image_stuff(commands.Cog):
     async def pfpmagik(self,ctx,usermention="nonetti"):
         with ctx.channel.typing():
             message=ctx.message
-            user,is_user,is_channel = util.mentioner(self.bot,ctx,message,usermention,False)
+            user,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
             pool=ThreadPoolExecutor()
             # get image urls from message history
             future=pool.submit(image_url_fetcher,[user.avatar_url],bypass=True)
@@ -146,14 +146,14 @@ class image_stuff(commands.Cog):
     @commands.command()
     async def deepfry(self,ctx:commands.Context):
         with ctx.channel.typing():
-            messages = []
+            messages=[]
             async for message in ctx.channel.history(limit=50,around=datetime.now()):
                 messages.append(message)
             pool=ThreadPoolExecutor()
             # get image urls from message history
             future=pool.submit(image_url_fetcher,messages=messages)
             buffer=future.result()
-            
+
             future=pool.submit(deepfried,buffer,self.path)
             embed,image_file=future.result()
 
@@ -166,7 +166,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             generated_list, chan=await fun_stuff.mark(ctx,user,old,new,5,30,mode="short")
             r=get(chan.avatar_url).content
-            buffer = BytesIO(r)
+            buffer=BytesIO(r)
             def imager(buffer):
                 buffer.seek(0)
                 with Image.open(buffer) as im:
@@ -178,7 +178,7 @@ class image_stuff(commands.Cog):
                         else:
                             a=3
                         x,y=im.size
-                        fontsize = int(x/(int(len(quotestring)/2)+a))
+                        fontsize=int(x/(int(len(quotestring)/2)+a))
                         font=ImageFont.truetype(f"{self.dirname}/data/DejaVuSans.ttf", fontsize)
                         quotestring += f"\n-{chan.name}"
                         draw.text((4-a,(y-int(y / 5))-a),quotestring, (0,0,0), font=font)
@@ -201,7 +201,7 @@ class image_stuff(commands.Cog):
     @commands.command()
     async def wide(self,ctx:commands.Context):
         with ctx.channel.typing():
-            messages = []
+            messages=[]
             async for message in ctx.channel.history(limit=50,around=datetime.now()):
                 messages.append(message)
             pool=ThreadPoolExecutor()
@@ -210,7 +210,7 @@ class image_stuff(commands.Cog):
             buffer=future.result()
             
             with ThreadPoolExecutor() as executor:
-                future = executor.submit(make_wide,buffer,self.path)
+                future=executor.submit(make_wide,buffer,self.path)
             embed,image_file=future.result()
             
         await ctx.send(file=image_file)
@@ -218,10 +218,10 @@ class image_stuff(commands.Cog):
     @commands.command()
     async def pfp(self,ctx,usermention="ass"):
         message=ctx.message
-        user,is_user,is_channel = util.mentioner(self.bot,ctx,message,usermention,False)
+        user,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
         with ThreadPoolExecutor() as executor:
-            future = executor.submit(image_downloader,user.avatar_url,f"{self.path}/pfp.png")
-        image_file = discord.File(f"{self.path}/pfp.png", filename="pfp.png")
+            future=executor.submit(image_downloader,user.avatar_url,f"{self.path}/pfp.png")
+        image_file=discord.File(f"{self.path}/pfp.png", filename="pfp.png")
         await ctx.send(file=image_file)
 
     @commands.cooldown(1,5,commands.BucketType.user)
@@ -229,14 +229,14 @@ class image_stuff(commands.Cog):
     async def widepfp(self,ctx:commands.Context,usermention="asdasd"):
         with ctx.channel.typing():
             message=ctx.message
-            user,is_user,is_channel = util.mentioner(self.bot,ctx,message,usermention,False)
+            user,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
             pool=ThreadPoolExecutor()
             # get image urls from message history
             future=pool.submit(image_url_fetcher,[user.avatar_url],bypass=True)
             buffer=future.result()
             
             with ThreadPoolExecutor() as executor:
-                future = executor.submit(make_wide,buffer,self.path)
+                future=executor.submit(make_wide,buffer,self.path)
             embed,image_file=future.result()
             
         await ctx.send(file=image_file)
