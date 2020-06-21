@@ -5,7 +5,7 @@ from bf import url
 from bf.util import  errormsg
 from discord.ext import commands
 from asyncio import sleep as asleep
-
+import  logging
 class Listeners(commands.Cog):
     def __init__(self, bot, dirname,):
         self.dirname=dirname
@@ -52,7 +52,7 @@ class Listeners(commands.Cog):
                 await channel.send("Well, seems like you didn't listen \n deploying yiff in **3 seconds**")
                 await asleep(1)
                 payload={"tags": ["canine", "cock", "canine_penis"], "limit": 320}
-                urllist=await url.monosodiumcarbonate(payload, "page")
+                urllist=url.monosodiumglutamate(payload, "page")
                 for x in range(5):
                     choice=random.choice(urllist)
                     embed=discord.Embed(title="**You have been warned**", url=choice)
@@ -74,5 +74,7 @@ class Listeners(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("Bot is up and running!")
-  
+        print(f"Bot '{self.bot.user.name}' with id {self.bot.user.id} is ready")
+        print(f"running on shard {self.bot.shard_id}/{self.bot.shard_count}")
+        print("\n")
+        print("have fun...")
