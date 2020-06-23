@@ -15,6 +15,7 @@ class sudo_commands(commands.Cog):
         self.tom = Tomler(dirname)
         self.settings=self.bot.settings
         logging.basicConfig(filename="{0}/test.log".format(self.dirname), level=logging.WARNING, format="%(levelname)s|%(message)s| @ %(asctime)s")
+        self.process = self.bot.process
 
     @commands.group()
     @commands.is_owner()
@@ -83,3 +84,17 @@ class sudo_commands(commands.Cog):
             chan=ctx.guild.get_user(int(rest[0]))
         else:
             chan=ctx.channel
+"""
+    @sudo.command()
+    async def update(self,ctx):
+        with ThreadPoolExecutor() as executor:
+            p = executor.submit(psutil.Popen(["git", "pull"]))
+
+        for handler in self.bot.process.open_files():
+            os.close(handler.fd)
+
+        if not self.bot.is_closed():
+            self.bot.close()
+
+        os.execl(str(self.bot.exe),str(self.bot.file))
+"""

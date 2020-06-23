@@ -67,4 +67,3 @@ class Tomler:
 
                 with open(self.path,"wt") as stream:
                     stream.write(datanew)
-

@@ -3,6 +3,9 @@ from bf.yamler import Tomler
 from discord.ext import commands
 import cogs
 import os
+import sys
+import psutil
+
 empty=dict(discordtoken="", prefix="")
 dirname=os.path.dirname(os.path.realpath(__file__))
 tom = Tomler(dirname)
@@ -14,9 +17,14 @@ class ThatKiteBot(commands.Bot):
         self.tom = Tomler(dirname)
         self.parsed = tom.parsed
         self.settings = tom.settings_all
+        
+        self.version = "b14"
         self.dirname = dirname
-        self.version = "b13"
-    
+        self.pid = os.getpid()
+        self.file = os.path.realpath(__file__)
+        self.exe = os.path.realpath(sys.executable)
+        self.process = psutil.Process(self.pid)
+        
 bot=ThatKiteBot(prefix, dirname)
 bot.remove_command("help")
 bot.add_cog(cogs.funstuffcog.fun_stuff(bot, dirname))
