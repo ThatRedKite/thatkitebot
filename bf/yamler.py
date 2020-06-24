@@ -2,12 +2,13 @@ from pathlib import Path
 import asyncio
 import subprocess
 import json
-
+from os import path
+from copy import deepcopy
 class Tomler:
     def __init__(self, dirname:str): 
         """handles different bot settings using the TOML file format"""
         # set the absolute path to the settingsz file
-        self.path=Path(f"{dirname}/data/settings.json")
+        self.path=Path(path.join(dirname,"data/settings.json"))
         # load the settings file and parse it
         if self.path.exists(): # check if the file exists
             with open(self.path, "rt") as stream:
@@ -39,7 +40,7 @@ class Tomler:
         if self.path.exists(): # check if the file exists
             with open(self.path, "rt") as stream:
                 self.parsed:dict=json.loads(stream.read())
-                self.settings_all = self.parsed["settings"]
+                self.settings_all=self.parsed["settings"]
 
         # check if the right data type is supplied
         if type(data == dict) and len(data) > 0:
@@ -61,7 +62,7 @@ class Tomler:
                     self.settings_all[guildid].update(data)
 
             finally:
-                self.parsed = {"tokens": self.tokens, "settings":self.settings_all}
+                self.parsed = deepcopy({"tokens": self.tokens, "settings":self.settings_all})
                 # put the data into the json 
                 datanew=json.dumps(self.parsed,indent=2)
 

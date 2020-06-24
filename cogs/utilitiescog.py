@@ -17,11 +17,12 @@ class utility_commands(commands.Cog):
         self.version=self.bot.version
         self._last_member=None
 
+    @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def status(self, ctx):
         process=psutil.Process(os.getpid())
         mem=int(round((process.memory_info()[0] / 1000000)))
-        cpu=process.cpu_percent(interval=10)
+        cpu=process.cpu_percent(interval=1)
         cores_used=len(process.cpu_affinity())   
         cores_total=psutil.cpu_count()
         ping=round(self.bot.latency * 1000, 1)
@@ -53,6 +54,7 @@ class utility_commands(commands.Cog):
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
 
+    @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def license(self, ctx):
         embed=discord.Embed(title="This product is licensed under the MIT License",
@@ -113,6 +115,7 @@ class utility_commands(commands.Cog):
                 embed=discord.Embed(title=f"Manual entry for the command {args}", description=xtext)
                 await ctx.send(embed=embed)
                 
+    @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def color(self,ctx,*,args):
         # broken for some reason, need to fix it   
@@ -141,7 +144,8 @@ class utility_commands(commands.Cog):
             except Exception as exc:
                 print(exc)
                 await errormsg(ctx, "Please check your inputs!")
-
+    
+    @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def settings(self, ctx):
         embed = discord.Embed(title="**settings**")
@@ -149,6 +153,7 @@ class utility_commands(commands.Cog):
             embed.add_field(name=f"**{setting}:**", value=f"```py\n{self.bot.settings[setting]}```", inline=True)
         await ctx.send(embed=embed) 
 
+    @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def help(self,ctx):
         embed = discord.Embed(title="**a list of the bot's commands**")

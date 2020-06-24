@@ -9,8 +9,53 @@ from requests import get
 from random import choice
 from discord.ext import commands
 from datetime import datetime
-
 from concurrent.futures import ThreadPoolExecutor
+
+async def mark(bot,ctx:commands.Context,user,old:int=200,new:int=200,leng:int=5,leng2:int=20,mode:str="long"):
+    # some general variables
+    print(ctx)
+    guild=ctx.guild
+    author: discord.User=ctx.message.author
+    message:discord.Message = ctx.message
+    # change the bot's status to "do not disturb" and set its game
+    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game("processing . . ."))
+    # this code is used to
+    
+
+    # The variable :chan: tells the message fetcher which user's / channel's
+    # messages to fetch. The :is_user: / :is_channel: tell it the type.
+    # Only the first user / channel is used
+    chan,is_user,is_channel = bf.util.mentioner(bot,ctx,message,user,True)
+    messages=[]
+    if is_user and not is_channel:
+        for channel in guild.text_channels:
+            # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
+            async for message in channel.history(limit=old,oldest_first=True).filter(lambda m: m.author == chan):
+                messages.append(str(message.content))
+
+            # add :new: messages of the user :chan: to the list :messages:
+            async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
+                messages.append(str(message.content))  
+    else:
+        # add :old: messages :chan: to the list :messages:           
+        async for message in chan.history(limit=old, oldest_first=True):
+            messages.append(str(message.content))
+        # add :new: messages :chan: to the list :messages: 
+        async for message in chan.history(limit=new):
+            messages.append(str(message.content))
+    # generate a model based on the messages in :messages:
+    model=markovify.NewlineText("\n".join(messages))
+    generated_list=[]
+    # generate :leng: sentences
+    for i in range(leng):
+        if mode == "long":
+            generated=model.make_sentence()
+        else:
+            generated=model.make_short_sentence(leng2)
+        # only add sentences that are not None to :generated_list:
+        if generated is not None: generated_list.append(generated)
+    return generated_list, chan 
+
 class fun_stuff(commands.Cog):
     def __init__(self, bot, dirname):
         self.bot=bot
@@ -30,49 +75,7 @@ class fun_stuff(commands.Cog):
         embed.set_image(url=r.text)
         await ctx.send(embed=embed)
 
-    async def mark(self,ctx,user,old:int=200,new:int=200,leng:int=5,leng2:int=20,mode:str="long"):
-        # some general variables
-        guild=ctx.guild
-        author: discord.User=ctx.message.author
-        message:discord.Message = ctx.message
-        # change the bot's status to "do not disturb" and set its game
-        await self.bot.change_presence(status=discord.Status.dnd, activity=discord.Game("processing . . ."))
-        # this code is used to
-        
 
-        # The variable :chan: tells the message fetcher which user's / channel's
-        # messages to fetch. The :is_user: / :is_channel: tell it the type.
-        # Only the first user / channel is used
-        chan,is_user,is_channel = bf.util.mentioner(self.bot,ctx,message,user,True)
-        messages=[]
-        if is_user and not is_channel:
-            for channel in guild.text_channels:
-                # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
-                async for message in channel.history(limit=old,oldest_first=True).filter(lambda m: m.author == chan):
-                    messages.append(str(message.content))
-
-                # add :new: messages of the user :chan: to the list :messages:
-                async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
-                    messages.append(str(message.content))  
-        else:
-            # add :old: messages :chan: to the list :messages:           
-            async for message in chan.history(limit=old, oldest_first=True):
-                messages.append(str(message.content))
-            # add :new: messages :chan: to the list :messages: 
-            async for message in chan.history(limit=new):
-                messages.append(str(message.content))
-        # generate a model based on the messages in :messages:
-        model=markovify.NewlineText("\n".join(messages))
-        generated_list=[]
-        # generate :leng: sentences
-        for i in range(leng):
-            if mode == "long":
-                generated=model.make_sentence()
-            else:
-                generated=model.make_short_sentence(leng2)
-            # only add sentences that are not None to :generated_list:
-            if generated is not None: generated_list.append(generated)
-        return generated_list, chan 
 
     @commands.command()
     async def markov(self,ctx,user=None,old:int=100,new:int=100,leng:int=5):
@@ -80,9 +83,9 @@ class fun_stuff(commands.Cog):
         try: 
             with ctx.channel.typing():
                 if user is not None:
-                    generated_list, chan=await self.mark(ctx, user, old, new, leng)
+                    generated_list, chan=await mark(self.bot,ctx,user,old,new,leng)
                 else:
-                     generated_list, chan=await self.mark(ctx, "asdasdasd", old, new, leng)
+                     generated_list, chan=await mark(self.bot,ctx,"asdasdasd",old,new,leng)
                 if len(generated_list) > 0:
                     embed=discord.Embed(title="**Markov Chain Output: **", description=f"*{'. '.join(generated_list)}*")
                     embed.color=0x6E3513
@@ -118,7 +121,7 @@ class fun_stuff(commands.Cog):
         self.mgame_name=the_chosen_one.name
         messages=[]
         try:
-            generated_list, chan=await self.mark(ctx, str(the_chosen_one.id), 1000, 1000)
+            generated_list, chan=await mark(self.bot,ctx, str(the_chosen_one.id), 1000, 1000)
             if len(generated_list) > 0:
                 embed=discord.Embed(title="**Who could have said this?**", description=f"*{'. '.join(generated_list)}*")
                 await ctx.send(embed=embed)
