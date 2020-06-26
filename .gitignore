@@ -2,6 +2,7 @@
 *.webp
 *.jpg
 *.png
+*.mp3
 #other files
 *.pyc
 *.log
