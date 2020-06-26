@@ -55,3 +55,9 @@ def mentioner(bot,ctx,message,usermention:str="",channel_allowed:bool=False):
     if chan:
         return chan,is_user,is_channel
         
+def bool_parse(boolean):
+        if boolean in ('yes', 'y', 'true', 't', '1', 'enable', 'on'):
+            return True
+        elif boolean in ('no', 'n', 'false', 'f', '0', 'disable', 'off'):
+            return False
+
