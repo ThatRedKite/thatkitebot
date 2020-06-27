@@ -84,17 +84,11 @@ class sudo_commands(commands.Cog):
             chan=ctx.guild.get_user(int(rest[0]))
         else:
             chan=ctx.channel
-"""
+
     @sudo.command()
-    async def update(self,ctx):
-        with ThreadPoolExecutor() as executor:
-            p = executor.submit(psutil.Popen(["git", "pull"]))
-
-        for handler in self.bot.process.open_files():
-            os.close(handler.fd)
-
-        if not self.bot.is_closed():
-            self.bot.close()
-
-        os.execl(str(self.bot.exe),str(self.bot.file))
-"""
+    async def echo(self,ctx,*,text):
+        message=ctx.message
+        await ctx.send(text)
+        await message.delete()
+        
+        
