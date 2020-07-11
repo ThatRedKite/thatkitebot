@@ -61,7 +61,7 @@ class ThatKiteBot(commands.Bot):
         self.tom = Tomler(dirname)
         self.parsed = tom.parsed
         self.settings = tom.settings_all
-        self.version = "b15"
+        self.version = "b16"
         self.dirname = dirname
         self.tempdir=self.dirname.joinpath("data","temp")
         self.pid=os.getpid()

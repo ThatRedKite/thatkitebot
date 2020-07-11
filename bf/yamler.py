@@ -6,7 +6,7 @@ from os import path
 from copy import deepcopy
 class Tomler:
     def __init__(self, dirname:str): 
-        """handles different bot settings using the TOML file format"""
+        """handles different bot settings using the JSON file format"""
         # set the absolute path to the settingsz file
         self.path=Path(path.join(dirname,"data/settings.json"))
         # load the settings file and parse it
