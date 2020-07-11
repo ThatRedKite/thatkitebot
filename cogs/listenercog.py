@@ -6,7 +6,7 @@ from bf.util import  errormsg
 from discord.ext import commands
 from asyncio import sleep as asleep
 
-class Listeners(commands.Cog):
+class listeners(commands.Cog):
     def __init__(self, bot, dirname,):
         self.dirname=dirname
         self.active=0
@@ -72,9 +72,3 @@ class Listeners(commands.Cog):
                 emoji:discord.Emoji=discord.utils.get(guild.emojis, name="busbr_irl")
                 await channel.send(f"<:{emoji.name}:{emoji.id}>")
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        print(f"Bot '{self.bot.user.name}' with id {self.bot.user.id} is ready")
-        print(f"running on shard {self.bot.shard_id}/{self.bot.shard_count}")
-        print("\n")
-        print("have fun...")

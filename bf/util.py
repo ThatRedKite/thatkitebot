@@ -1,6 +1,7 @@
 import discord
 import  re
-
+import random
+import string
 async def errormsg(ctx, msg:str):
             embed = discord.Embed(title="ERROR!", description=msg)
             embed.color = 0xC1121C # set the color to "traffic red"
@@ -61,3 +62,34 @@ def bool_parse(boolean):
         elif boolean in ('no', 'n', 'false', 'f', '0', 'disable', 'off'):
             return False
 
+def randid(len):
+    strin = ""
+    for x in range(len):
+        strin += random.choice(string.ascii_letters)
+    return strin
+
+class colors():
+    def __init__(self):
+        self.clear = self._cc(0)
+        self.bold = self._cc(1)
+        self.red = self._cc(31)
+        self.green = self._cc(32)
+        self.yellow = self._cc(33)
+        self.blue = self._cc(34)
+        self.magenta = self._cc(35)
+        self.cyan = self._cc(36)
+        self.grey = self._cc(90)
+
+        self.gray = self.grey   # alias
+
+    def multi(self, *args):
+        output = ""
+        for arg in args:
+            output += getattr(self, arg)
+        return output
+
+    def _cc(self, code):
+        return f"\033[{code}m"
+    
+    def __getattr__(self, item):
+        return ""

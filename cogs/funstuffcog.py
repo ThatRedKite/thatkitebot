@@ -191,4 +191,3 @@ class fun_stuff(commands.Cog):
     @commands.command()
     async def vision(self,ctx):
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
-

@@ -26,6 +26,8 @@ class Tomler:
         self.tokens=self.parsed["tokens"]
         # the bot's token
         self.token=self.tokens["discordtoken"] 
+        # token for tenor
+        self.tenortoken=self.tokens["tenortoken"]
         # the bot's prefix
         self.prefix=self.tokens["prefix"] 
         # the bot's settings
