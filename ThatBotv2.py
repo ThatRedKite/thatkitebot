@@ -42,7 +42,7 @@ print(f"setting prefix to {colors.blue} '{prefix}'")
 discordtoken = tom.token
 tenortoken = tom.tenortoken
 if tenortoken is None or tenortoken == "":
-    print(colors.red+colors.bold+f"*** tenor token not found! Cannot use features that use tenor! ***{colors.clear}")
+    print(colors.red+colors.bold+colors.underlined+f"*** tenor token not found! Cannot use features that use tenor! ***{colors.clear}")
 
 
 
