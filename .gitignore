@@ -3,6 +3,7 @@
 *.jpg
 *.png
 *.mp3
+*.gif
 #other files
 *.pyc
 *.log
@@ -10,4 +11,6 @@
 #settings file
 *.json
 # test files
-test.py
+test.*
+test1.*
+test2.*
