@@ -14,7 +14,7 @@ class Tomler:
             with open(self.path, "rt") as stream:
                 self.parsed:dict=json.loads(stream.read())
         else:
-            initdict={"tokens":{"discordtoken":"", "prefix":""}, "settings":{}}
+            initdict={"tokens":{"discordtoken":"", "prefix":"","tenortoken":""}, "settings":{}}
             with open(self.path, "wt") as stream:
                 stream.write(json.dumps(initdict,indent=2))
                 print(f"""
