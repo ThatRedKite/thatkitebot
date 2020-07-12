@@ -72,7 +72,7 @@ class ThatKiteBot(commands.Bot):
 print(f"initilizing bot:{colors.clear}")        
 bot=ThatKiteBot(prefix,dirname,tempdir)
 bot.remove_command("help")
-
+"""
 bot.add_cog(cogs.funstuffcog.fun_stuff(bot, dirname))
 bot.add_cog(cogs.utilitiescog.utility_commands(bot, dirname))
 bot.add_cog(cogs.listenercog.listeners(bot, dirname))
@@ -80,7 +80,11 @@ bot.add_cog(cogs.sudocog.sudo_commands(bot, dirname))
 bot.add_cog(cogs.musiccog.music(bot,dirname))
 bot.add_cog(cogs.imagecog.image_stuff(bot))
 bot.add_cog(cogs.nsfwcog.NSFW(bot))
-
+"""
+@bot.command()
+async def help(ctx):
+    await ctx.send("this bot has no features")
+    
 for cog in bot.cogs:
     print(colors.red+f"    added cog {colors.blue}'{cog}'{colors.clear}")
 
