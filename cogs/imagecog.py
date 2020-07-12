@@ -309,6 +309,7 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def gmagik(self,ctx:commands.Context,mode:str=""):
+        
         if mode.lower() == "deepfry":
             deepfry=True
             wide=False

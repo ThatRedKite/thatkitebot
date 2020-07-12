@@ -32,7 +32,7 @@ class Tomler:
         self.prefix=self.tokens["prefix"] 
         # the bot's settings
         self.settings_all=self.parsed["settings"]
-        # the setting for a specific guild
+        # the settings for a specific guild
 
     def update(self, data, guildid:str): 
         """ update a setting (not the token or prefix) """
