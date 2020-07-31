@@ -17,7 +17,6 @@ from functools import partial
 from datetime import datetime
 from wand.display import display
 from discord.ext import commands
-from pygifsicle import optimize
 from wand.image import Image as WandImage
 from cogs.funstuffcog import mark
 from PIL import Image, ImageDraw, ImageFont, ImageFile
