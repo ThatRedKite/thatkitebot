@@ -11,6 +11,6 @@
 #settings file
 *.json
 # test files
-test.*
-test1.*
-test2.*
+test*.*
+
+
