@@ -2,6 +2,7 @@ import discord
 import  re
 import random
 import string
+
 async def errormsg(ctx, msg:str):
             embed=discord.Embed(title="ERROR!", description=msg)
             embed.color=0xC1121C # set the color to "traffic red"
@@ -88,9 +89,6 @@ class colors():
         self.background_blue=self._cc(44)
         self.background_magenta=self._cc(45)
         self.background_cyan=self._cc(46)
-
-
-        self.gray=self.grey   # alias
 
     def multi(self, *args):
         output=""
