@@ -67,7 +67,7 @@ class ThatKiteBot(commands.Bot):
         self.file = os.path.realpath(__file__)
         self.exe = os.path.realpath(sys.executable)
         self.process = psutil.Process(self.pid)
-        self.aiohttp_session=aiohttp.ClientSession()
+        
 
 print(f"initilizing bot . . .{colors.clear}")        
 bot=ThatKiteBot(prefix,dirname,tempdir)
@@ -86,4 +86,5 @@ async def on_ready():
     print(f"bot successfully started!")  
     print(f"running on shard {bot.shard_id}/{bot.shard_count}")
     print("\nhave fun!"+colors.clear)
+    bot.aiohttp_session=aiohttp.ClientSession()
 bot.run(discordtoken)
