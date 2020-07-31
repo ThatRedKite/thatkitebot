@@ -19,13 +19,12 @@ class NSFW(commands.Cog):
             #  only proceed if nsfw is enabled in the bot's settings
             payload={ "page": "dapi","tags": tags,"s": "post","q": "index"}
             with ctx.channel.typing():
-                with ThreadPoolExecutor() as executor:
-                    future=executor.submit(url.xml_sequence_parse,
-                                            payload=payload,
-                                            sourceurl=self.r34url,
-                                            attr="sample_url",
-                                            updatevalue="pid")
-                myurl=future.result()
+                myurl=url.xml_sequence_parse(session=self.bot.aiohttp_session,
+                                      payload=payload,
+                                      sourceurl=self.r34url,
+                                      attr="sample_url",
+                                      updatevalue="pid")
+
                 embed=discord.Embed(title="Link To picture", url=myurl)
                 embed.color=0xff00cc
                 embed.set_image(url=myurl) 
@@ -40,13 +39,11 @@ class NSFW(commands.Cog):
             #  only proceed if nsfw is enabled in the bot's settings
             payload={"limit": 100,"tags": tags}
             with ctx.channel.typing():
-                with ThreadPoolExecutor() as executor:
-                    future=executor.submit(url.xml_sequence_parse,
+                myurl=await url.xml_sequence_parse(session=self.bot.aiohttp_session,
                                             payload=payload,
                                             sourceurl=self.yanurl,
-                                            attr="sample_url",
+                                            attr="jpeg_url",
                                             updatevalue="pid")
-                myurl=future.result()
                 embed=discord.Embed(title="Link To picture", url=myurl)
                 embed.color=0xff00cc
                 embed.set_image(url=myurl) 
@@ -64,14 +61,13 @@ class NSFW(commands.Cog):
             if count in range(1,20):
                 payload={"limit": 100,"tags": tags}
                 with ctx.channel.typing():
-                    with ThreadPoolExecutor() as executor:
-                        future=executor.submit(url.xml_sequence_parse,
+                    urllist = await url.xml_sequence_parse(session=self.bot.aiohttp_session,
                                                 payload=payload,
                                                 sourceurl=self.yanurl,
                                                 attr="jpeg_url",
                                                 updatevalue="page",
                                                 islist=True)
-                    urllist=future.result()
+
                     with ctx.channel.typing():
                         for x in range(0, count):
                             myurl=choice(urllist)
