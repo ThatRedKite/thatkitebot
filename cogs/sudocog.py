@@ -65,9 +65,8 @@ class sudo_commands(commands.Cog):
 
     @sudo.command()
     async def setting(self,ctx, setting, parameter):
-        with ThreadPoolExecutor(2) as executor:
-            executor.submit(self.bot.tom.update,{setting:util.typeguesser(setting,parameter)},ctx.guild.id)
-            self.bot.settings[str(ctx.guild.id)].update({setting:util.typeguesser(setting,parameter)})
+        self.bot.tom.update({setting:util.typeguesser(setting,parameter)},ctx.guild.id)
+        self.bot.settings[str(ctx.guild.id)].update({setting:util.typeguesser(setting,parameter)})
             
         embed=discord.Embed(title="Success!", description=f"set `{setting}` to `{parameter}`")
         embed.color=0xC1121C
