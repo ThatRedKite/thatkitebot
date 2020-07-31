@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 class NoExitParser(argparse.ArgumentParser):
     def error(self, message):
+        
         raise ValueError(message)
 
 async def mark(bot,ctx:commands.Context,user,old:int=200,new:int=200,leng:int=5,leng2:int=20,mode:str="long"):
@@ -94,6 +95,7 @@ class fun_stuff(commands.Cog):
         author: discord.User=ctx.message.author
         try: 
             with ctx.channel.typing():
+                assert len(parsed_args) >= 1
                 generated_list, chan=await mark(self.bot,ctx,
                                             user,
                                             parsed_args.old,
@@ -113,7 +115,7 @@ class fun_stuff(commands.Cog):
                     else:
                         await ctx.send(embed=embed)
                 else:
-                    await ctx.send(ctx, "an error has occured. I could not fetch enough messages!")
+                    await ctx.send("an error has occured. I could not fetch enough messages!")
         except Exception as exc:
             await bf.util.errormsg(ctx, str(exc))
             raise exc
@@ -175,7 +177,7 @@ class fun_stuff(commands.Cog):
                 else:
                     await ctx.send(f"Sorry, that was wrong, you now have only {self.mgame_tries} tries left ")
         else:
-            await bf.util.errormsg(ctx, "You cannot guess, if you you havn't started a game")
+            await bf.util.errormsg(ctx, "You cannot guess, if you havn't started a game")
 
     @mgame.command()
     async def stop(self, ctx):
@@ -184,9 +186,8 @@ class fun_stuff(commands.Cog):
     @commands.command()
     async def fakeword(self, ctx):
         with ctx.channel.typing():
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(bf.url.word,embedmode=True)
-        await ctx.send(embed=future.result())
+            embed=await bf.url.word(self.bot.aiohttp_session,embedmode=True)
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def vision(self,ctx):
