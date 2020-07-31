@@ -8,6 +8,8 @@ import subprocess
 import argparse
 import aiofiles
 from queue import Queue
+
+from wand.compat import text
 from bf import  util
 from io import BytesIO
 from os.path import join
@@ -102,7 +104,7 @@ def quoter(buffer,chan,path,quotestring):
             embed.set_image(url="attachment://pfp_edit.png")
             return embed,file
 
-def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False):
+def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,caption:tuple=(False,"")):
     durations=Queue()
     positions=Queue()
     with Image.open(inbuffer) as img:
@@ -111,6 +113,22 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False):
                 for frame in range(img.n_frames):
                     img.seek(frame); im=img
                     im=im.convert("RGBA")
+                    caption_bool,caption_text=caption
+                    if caption_bool:
+                        assert caption_text != ""
+                        outline_width=3
+                        W,H=im.size
+                        font=ImageFont.truetype(join(path,"DejaVuSans.ttf"),size=52)
+                        w,h=font.getsize(caption_text)
+                        im=im.convert("RGBA")
+                        draw=ImageDraw.Draw(im)
+                        draw.text(((W-w)/2-outline_width,int((H-h)/1.15)-outline_width),caption_text,fill="black",font=font)
+                        draw.text(((W-w)/2-outline_width,int((H-h)/1.15)+outline_width),caption_text,fill="black",font=font)
+                        draw.text(((W-w)/2+outline_width,int((H-h)/1.15)-outline_width),caption_text,fill="black",font=font)
+                        draw.text(((W-w)/2+outline_width,int((H-h)/1.15)+outline_width),caption_text,fill="black",font=font)
+                        draw.text(((W-w)/2,int((H-h)/1.15)), caption_text, fill="white",font=font)
+                        dry=True
+
                     positions.put(buffer.tell())
                     im.save(buffer,format="GIF")
                     durations.put(img.info["duration"])
@@ -269,8 +287,6 @@ class image_stuff(commands.Cog):
                 embed.set_image(url="attachment://caption.jpeg")
                 return embed,file
 
-
-            
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def quote(self,ctx:commands.Context,user="dirnenspross123",old:int=100,new:int=100):
@@ -352,33 +368,44 @@ class image_stuff(commands.Cog):
                 embed,image_file=await self.localloop.run_in_executor(executor,make_wide,buffer,self.path)
                 await ctx.send(file=image_file)
     
-    #@commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,5,commands.BucketType.guild)
     @commands.command()
-    async def gmagik(self,ctx:commands.Context,mode:str=""):
+    async def gmagik(self,ctx:commands.Context,mode:str="",*,text:str=""):
         
         if mode.lower() == "deepfry":
             deepfry=True
             wide=False
             speedup=False
             dry=False
+            caption=(False,text)
 
         elif mode.lower() == "wide":
             deepfry=False
             speedup=False
             wide=True
             dry=False
+            caption=(False,text)
 
         elif mode.lower() == "speedup":
             deepfry=False
             wide=False
             speedup=True
             dry=True
+            caption=(False,text)
+
+        elif mode.lower() == "caption":
+            deepfry=False
+            wide=False  
+            speedup=False  
+            dry=True
+            caption=(True,text)
 
         else:
             deepfry=False
             wide=False  
             speedup=False  
             dry=False
+            caption=(False,text)
 
         with ctx.channel.typing():
             with ThreadPoolExecutor() as executor:
@@ -390,7 +417,8 @@ class image_stuff(commands.Cog):
                     deepfry=deepfry,
                     wide=wide,
                     speedup=speedup,
-                    dry=dry))
+                    dry=dry,
+                    caption=caption))
                 await ctx.send(file=image_file)
     
     @commands.command()
