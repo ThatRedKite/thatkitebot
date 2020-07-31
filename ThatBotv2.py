@@ -67,7 +67,6 @@ class ThatKiteBot(commands.Bot):
         self.file = os.path.realpath(__file__)
         self.exe = os.path.realpath(sys.executable)
         self.process = psutil.Process(self.pid)
-        
 
 print(f"initilizing bot . . .{colors.clear}")        
 bot=ThatKiteBot(prefix,dirname,tempdir)
