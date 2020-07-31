@@ -9,13 +9,12 @@ from asyncio import sleep as asleep
 class listeners(commands.Cog):
     def __init__(self, bot, dirname,):
         self.dirname=dirname
-        self.active=0
         self.bot:discord.Client=bot
-        self._last_member=None
-        self.counter=0
         
     @commands.Cog.listener()
     async def on_message(self, message:discord.Message):
+        pass
+        """
         channel :discord.TextChannel=self.bot.get_channel(message.channel.id)
         userid=message.author.id
         self.banlist=[]
@@ -71,4 +70,4 @@ class listeners(commands.Cog):
             else:
                 emoji:discord.Emoji=discord.utils.get(guild.emojis, name="busbr_irl")
                 await channel.send(f"<:{emoji.name}:{emoji.id}>")
-
+        """
