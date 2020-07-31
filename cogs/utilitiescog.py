@@ -53,7 +53,7 @@ class utility_commands(commands.Cog):
         embed.set_footer(text="why am I here?")
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
-
+    """
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def license(self, ctx):
@@ -62,7 +62,7 @@ class utility_commands(commands.Cog):
         embed.color=0x00ffff
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
-
+    """
     @commands.command()
     async def userinfo(self, ctx, mention="asdf"):
         message=ctx.message
@@ -94,7 +94,7 @@ class utility_commands(commands.Cog):
         embed.add_field(name="creation date:", value=f"```py\n{creationtime}```")
         embed.add_field(name="id", value=f"```fix\n{userid}```")
         await ctx.send(embed=embed)
-
+    """
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def man(self,ctx,*,args):
@@ -114,7 +114,8 @@ class utility_commands(commands.Cog):
                 xtext=str(x)
                 embed=discord.Embed(title=f"Manual entry for the command {args}", description=xtext)
                 await ctx.send(embed=embed)
-                
+    """
+    """            
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def color(self,ctx,*,args):
@@ -144,7 +145,8 @@ class utility_commands(commands.Cog):
             except Exception as exc:
                 print(exc)
                 await errormsg(ctx, "Please check your inputs!")
-    
+    """
+    """
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def settings(self, ctx):
@@ -152,7 +154,7 @@ class utility_commands(commands.Cog):
         for setting in self.bot.settings[str(ctx.guild.id)]:
             embed.add_field(name=f"**{setting}:**", value=f"```py\n{self.bot.settings[setting]}```", inline=True)
         await ctx.send(embed=embed) 
-
+    """
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def help(self,ctx):
