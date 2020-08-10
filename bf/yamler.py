@@ -102,3 +102,8 @@ class Tomler:
 
                 with open(self.path,"wt") as stream:
                     stream.write(datanew)
+
+
+class DataMan:
+    def __init__(self):
+        pass
