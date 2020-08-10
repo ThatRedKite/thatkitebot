@@ -1,6 +1,8 @@
+import asyncio
+from logging import setLogRecordFactory
 import discord
 from bf.yamler import Tomler
-from discord.ext import commands
+from discord.ext import commands, tasks
 from bf.util import colors
 import cogs
 import os
@@ -8,6 +10,7 @@ import sys
 import psutil
 import glob
 from pathlib import Path
+import numpy as np
 import aiohttp
 colors=colors()
 
@@ -54,6 +57,29 @@ cleanupfiles += glob.glob(os.path.join(dirname,"data","temp","*.mp3"))
 print(f"cleaning data directory, removing{colors.blue} {len(cleanupfiles)} files{colors.clear}")
 for file in cleanupfiles:
     os.remove(file)
+
+class PerformanceMap():
+    def __init__(self,timestep:float,maxlength:int):
+        self.timestep=timestep
+        self.cpuaxis=[]
+        self.ramaxis=[]
+        self.ramaxis=[]
+        
+    async def sampler(self):
+        RAM_USAGE=""
+        CPU_USAGE=""
+        CURRENT_TIME=""
+
+        assert self.timestep > 0.0
+        asyncio.sleep(self.timestep)
+        pass
+
+    def reset(self):
+        pass
+    
+    def draw_graph(self):
+        pass
+
 class ThatKiteBot(commands.Bot):
     def __init__(self, command_prefix, dirname,tempdir, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
@@ -72,13 +98,14 @@ print(f"initilizing bot . . .{colors.clear}")
 bot=ThatKiteBot(prefix,dirname,tempdir)
 bot.remove_command("help")
 
-bot.add_cog(cogs.funstuffcog.fun_stuff(bot, dirname))
-bot.add_cog(cogs.utilitiescog.utility_commands(bot, dirname))
-bot.add_cog(cogs.listenercog.listeners(bot, dirname))
-#bot.add_cog(cogs.sudocog.sudo_commands(bot, dirname))
+bot.add_cog(cogs.funstuffcog.fun_stuff(bot,dirname))
+bot.add_cog(cogs.utilitiescog.utility_commands(bot,dirname))
+#bot.add_cog(cogs.listenercog.listeners(bot,dirname))
+#bot.add_cog(cogs.sudocog.sudo_commands(bot,dirname))
 bot.add_cog(cogs.musiccog.music(bot,dirname))
 bot.add_cog(cogs.imagecog.image_stuff(bot))
 bot.add_cog(cogs.nsfwcog.NSFW(bot))
+bot.add_cog(cogs.testcog.test_commands(bot,dirname))
 
 @bot.event
 async def on_ready():
@@ -86,4 +113,6 @@ async def on_ready():
     print(f"running on shard {bot.shard_id}/{bot.shard_count}")
     print("\nhave fun!"+colors.clear)
     bot.aiohttp_session=aiohttp.ClientSession()
+    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game("nothing"))
+
 bot.run(discordtoken)
