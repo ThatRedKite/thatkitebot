@@ -1,5 +1,6 @@
 #media files
 *.webp
+*.jpeg
 *.jpg
 *.png
 *.mp3
