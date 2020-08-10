@@ -5,4 +5,3 @@ from . import listenercog
 from . import musiccog
 from . import imagecog
 from . import nsfwcog
-from . import testcog
