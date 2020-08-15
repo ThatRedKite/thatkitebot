@@ -1,21 +1,20 @@
-
 import os
-import re
 import psutil
 import discord
-import logging
-import subprocess
-from PIL import Image
-from bf.util import errormsg
-from datetime import datetime
-from discord.ext import commands
+from discord.ext import commands, tasks
+import gc
+
 
 class utility_commands(commands.Cog):
     def __init__(self, bot:commands.Bot, dirname):
         self.dirname=dirname
+        self.process=psutil.Process(os.getpid())
         self.bot=bot
-        self.version=self.bot.version
-        self._last_member=None
+        self.garbage.start()
+
+    @tasks.loop(minutes=2.0)
+    async def garbage(self):
+        gc.collect()
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
@@ -30,3 +29,4 @@ class utility_commands(commands.Cog):
                 embed.add_field(name=f"__**[{cog}]**__", value=f"```fix\n{commandstring}```",inline=False) 
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
         await ctx.send(embed=embed)
+
