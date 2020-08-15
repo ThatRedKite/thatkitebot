@@ -2,22 +2,15 @@ from ctypes import sizeof
 import re
 import json
 import discord
-import asyncio
-import typing
-import subprocess
 import argparse
-import aiofiles
 from queue import Queue
-
-from wand.compat import text
+import gc
 from bf import  util
 from io import BytesIO
 from os.path import join
-from requests import get
 from random import choice
 from functools import partial
 from datetime import datetime
-from wand.display import display
 from discord.ext import commands
 from wand.image import Image as WandImage
 from cogs.funstuffcog import mark
@@ -99,6 +92,7 @@ def quoter(buffer,chan,path,quotestring):
         
         with BytesIO() as outbuffer:
             im.save(outbuffer)
+            del im,draw,x,y,fontsize,font,quotestring
             file=discord.File(outbuffer,filename="pfp_edit.png")
             embed=discord.Embed()
             embed.set_image(url="attachment://pfp_edit.png")
@@ -128,7 +122,7 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                         draw.text(((W-w)/2+outline_width,int((H-h)/1.15)+outline_width),caption_text,fill="black",font=font)
                         draw.text(((W-w)/2,int((H-h)/1.15)), caption_text, fill="white",font=font)
                         dry=True
-
+                        
                     positions.put(buffer.tell())
                     im.save(buffer,format="GIF")
                     durations.put(img.info["duration"])
@@ -166,6 +160,7 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                             wand.sequence[frame].delay=int(durations.get() / 10)
                         else:
                             wand.sequence[frame].delay=int(round(durations.get() / 25))
+                        
                         print(frame)
 
                 with BytesIO() as outbuffer:
@@ -175,37 +170,9 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                     image_file=discord.File(outbuffer, filename="gmagik.gif")
                     embed=discord.Embed()
                     embed.set_image(url="attachment://gmagik.gif")
+                    gc.collect()
                     return embed, image_file
-
-def new_gmagik(inbuffer,path):
-    inbuffer.seek(0)
-    with WandImage(file=inbuffer) as wand:
-        durations = Queue()
-        frames=Queue()
-        def displayer(x):
-            durations.put(x.delay)
-            x:WandImage=x.clone()
-            x.liquid_rescale(int(x.width*0.5),int(x.height*0.5),delta_x=1,rigidity=0)
-            x.liquid_rescale(int(x.width *1.72),int(x.height*1.72),delta_x=2,rigidity=0)
-            frames.put(x)
-        with ThreadPoolExecutor() as executor:
-            executor.map(displayer,wand.sequence)
-        sequencecounter=0
-        wand.sequence.clear()
-        while not frames.empty():
-            wand.sequence.append(frames.get())
-            wand.sequence[sequencecounter].delay=(durations.get())
-            sequencecounter+=1
-        with BytesIO() as outbuffer:
-            wand.save(file=outbuffer)
-            with open(join(path,"gmagik.gif"),"wb") as file:
-                file.write(outbuffer.getvalue())
-            
-    image_file=discord.File(join(path,"gmagik.gif"), filename="gmagik.gif")
-    embed=discord.Embed()
-    embed.set_image(url="attachment://gmagik.gif")
-    return embed, image_file
-
+                    
 class image_stuff(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot=bot
@@ -290,54 +257,58 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def quote(self,ctx:commands.Context,user="dirnenspross123",old:int=100,new:int=100):
-        author=ctx.message.author
         with ctx.channel.typing():
             generated_list,chan=await mark(
                                         bot=self.bot,ctx=ctx,
                                         user=user,old=old,
                                         new=new,leng=5,
                                         leng2=30,mode="short")
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(ctx=chan.avatar_url,bypass=True)
+            buffer=await self.image_url_fetcher(ctx=chan.avatar_url,bypass=True)
+            with ProcessPoolExecutor() as executor:
                 if len(generated_list) > 0:
                         quotestring=choice(generated_list)
                         embed,file=await self.localloop.run_in_executor(
                             executor,quoter,
                             buffer,chan,
                             self.path,quotestring)
-                await ctx.send(file=file, embed=embed)
+            await ctx.send(file=file, embed=embed)
+            del buffer,embed,file
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def magik(self,ctx:commands.Context):
         with ctx.channel.typing():
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
-                future=await self.localloop.run_in_executor(None,do_magik,buffer,self.path)
-                embed,image_file=future
-                await ctx.send(file=image_file)
+            buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
+            with ProcessPoolExecutor() as executor:
+                embed,image_file=await self.localloop.run_in_executor(None,do_magik,buffer,self.path)
+            await ctx.send(file=image_file)
+            del buffer,embed,image_file
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def widepfp(self,ctx:commands.Context,usermention="transfergesetz"):
         with ctx.channel.typing():
             message=ctx.message
+            
             chan,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
+            buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
             with ThreadPoolExecutor() as executor:
-                buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
+                
                 embed,image_file=await self.localloop.run_in_executor(executor,make_wide,buffer,self.path)
-                await ctx.send(file=image_file)
+            await ctx.send(file=image_file)
+            del buffer,embed,image_file
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def pfp(self,ctx,usermention="passatwind"):
         message=ctx.message
         chan,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
+        buffer=await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
         with ThreadPoolExecutor() as executor:
-            buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
             buffer.seek(0)
             image_file=discord.File(buffer, filename="pfp.png")
-            await ctx.send(file=image_file)
+        await ctx.send(file=image_file)
+        del buffer,embed,image_file
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
@@ -345,30 +316,34 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             message=ctx.message
             chan,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
+            buffer=await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
+            with ProcessPoolExecutor() as executor:
+                
                 embed,image_file=await self.localloop.run_in_executor(executor,do_magik,buffer,self.path)
-                await ctx.send(file=image_file)
+            await ctx.send(file=image_file)
+            del buffer,embed,image_file
     
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def deepfry(self,ctx:commands.Context):
         with ctx.channel.typing():
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
+            buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
+            with ProcessPoolExecutor() as executor:
                 embed,image_file=await self.localloop.run_in_executor(executor,deepfried,buffer,self.path)
-                await ctx.send(file=image_file)
+            await ctx.send(file=image_file)
+            del buffer,embed,image_file
         
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
     async def wide(self,ctx:commands.Context):
         with ctx.channel.typing():
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
+            buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
+            with ProcessPoolExecutor() as executor:
                 embed,image_file=await self.localloop.run_in_executor(executor,make_wide,buffer,self.path)
-                await ctx.send(file=image_file)
+            await ctx.send(file=image_file)
+            del buffer,embed,image_file
     
-    @commands.cooldown(1,5,commands.BucketType.guild)
+    #@commands.cooldown(1,5,commands.BucketType.guild)
     @commands.command()
     async def gmagik(self,ctx:commands.Context,mode:str="",*,text:str=""):
         
@@ -408,9 +383,9 @@ class image_stuff(commands.Cog):
             caption=(False,text)
 
         with ctx.channel.typing():
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(gif=True,ctx=ctx,api_token=self.bot.tom.tenortoken)
-                embed,image_file=await self.localloop.run_in_executor(executor,partial(
+            buffer=await self.image_url_fetcher(gif=True,ctx=ctx,api_token=self.bot.tom.tenortoken)
+            with ProcessPoolExecutor() as executor:
+                embed,image_file=await self.localloop.run_in_executor(None,partial(
                     do_gmagik,
                     buffer,
                     self.path,
@@ -419,19 +394,13 @@ class image_stuff(commands.Cog):
                     speedup=speedup,
                     dry=dry,
                     caption=caption))
-                await ctx.send(file=image_file)
+        await ctx.send(file=image_file)
+        del buffer,embed,image_file
     
-    @commands.command()
-    async def gmagik2(self,ctx:commands.Context):
-        with ctx.channel.typing():
-            with ThreadPoolExecutor() as executor:
-                buffer=await self.image_url_fetcher(gif=True,ctx=ctx,api_token=self.bot.tom.tenortoken)
-                embed,image_file=await self.localloop.run_in_executor(executor, new_gmagik,buffer,self.path)
-                await ctx.send(file=image_file)
-
     @commands.command()
     async def caption(self,ctx,*,text:str=""):
         buffer=await self.image_url_fetcher(gif=False,ctx=ctx,api_token=self.bot.tom.tenortoken)
         embed,image_file=await self.captioner(buffer,text,size=64)
         await ctx.send(file=image_file)
+        del buffer,embed,image_file
         
