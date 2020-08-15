@@ -71,6 +71,9 @@ class ThatKiteBot(commands.Bot):
         self.settings=tom.settings_all
 
             #sessions
+        self.loop.run_until_complete(self.aiohttp_start())
+    
+    async def aiohttp_start(self):
         self.aiohttp_session=aiohttp.ClientSession()
         
 print("initilizing bot . . .")        
