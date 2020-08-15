@@ -1,118 +1,94 @@
+"""
+MIT License
+
+Copyright (c) 2020 ThatRedKite
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import asyncio
-from logging import setLogRecordFactory
-import discord
+from datetime import datetime
 from bf.yamler import Tomler
-from discord.ext import commands, tasks
-from bf.util import colors
+from discord.ext import commands
+from bf.util import colors,clear_temp_folder
 import cogs
 import os
-import sys
-import psutil
-import glob
 from pathlib import Path
-import numpy as np
 import aiohttp
-colors=colors()
+import gc
 
-print (colors.red+
-"""
-████████ ██   ██  █████  ████████ ██   ██ ██ ████████ ███████ ██████   ██████  ████████ 
-   ██    ██   ██ ██   ██    ██    ██  ██  ██    ██    ██      ██   ██ ██    ██    ██    
-   ██    ███████ ███████    ██    █████   ██    ██    █████   ██████  ██    ██    ██    
-   ██    ██   ██ ██   ██    ██    ██  ██  ██    ██    ██      ██   ██ ██    ██    ██    
-   ██    ██   ██ ██   ██    ██    ██   ██ ██    ██    ███████ ██████   ██████     ██                                                                                                                                                                      
-""" +colors.clear)
 dirname=Path(os.path.dirname(os.path.realpath(__file__)))
-print(f"setting working directory to {colors.blue} '{dirname} {colors.clear}")
-print(f"checking data folder: {colors.clear}")
 
-if dirname.joinpath("data","temp").exists():
-    print("    temp directory found")
-else:
-    print(colors.red+f"    temp directory not found, creating temp directory{colors.clear}")
+if not dirname.joinpath("data","temp").exists():
+    print(colors.red+f"    temp directory not found,creating temp directory")
     os.mkdir(dirname.joinpath("data","temp"))
 
-if dirname.joinpath("data","settings.json").exists():
-    print("    config file found")
-else:
-    print(colors.red+f"    ***CRITICAL*** CONFIG FILE NOT FOUND IN {colors.blue}{dirname.joinpath('data','settings.json')}{colors.red} ,EXITING")
-    quit()
-
 tempdir=dirname.joinpath("data","temp")
-tom = Tomler(dirname)
+tom=Tomler(dirname)
 prefix=tom.prefix
-discordtoken = tom.token
-tenortoken = tom.tenortoken
-if tenortoken is None or tenortoken == "":
+discordtoken=tom.token
+tenortoken=tom.tenortoken
+if tenortoken is None or tenortoken=="":
     print(colors.red+colors.bold+colors.underlined+f"*** tenor token not found! Cannot use features that use tenor! ***{colors.clear}")
-print(f"config successfully loaded")
-
 
 # clean up some shit
-cleanupfiles=glob.glob(os.path.join(dirname,"data","temp","*.png"))
-cleanupfiles += glob.glob(os.path.join(dirname,"data","temp","*.webp"))
-cleanupfiles += glob.glob(os.path.join(dirname,"data","temp","*.gif"))
-cleanupfiles += glob.glob(os.path.join(dirname,"data","temp","*.mp3"))
-
-print(f"cleaning data directory, removing{colors.blue} {len(cleanupfiles)} files{colors.clear}")
-for file in cleanupfiles:
-    os.remove(file)
-
-class PerformanceMap():
-    def __init__(self,timestep:float,maxlength:int):
-        self.timestep=timestep
-        self.cpuaxis=[]
-        self.ramaxis=[]
-        self.ramaxis=[]
-        
-    async def sampler(self):
-        RAM_USAGE=""
-        CPU_USAGE=""
-        CURRENT_TIME=""
-
-        assert self.timestep > 0.0
-        asyncio.sleep(self.timestep)
-        pass
-
-    def reset(self):
-        pass
-    
-    def draw_graph(self):
-        pass
+clear_temp_folder(dirname)
 
 class ThatKiteBot(commands.Bot):
-    def __init__(self, command_prefix, dirname,tempdir, help_command=None, description=None, **options):
+    def __init__(self,command_prefix,dirname,help_command=None,description=None,**options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
-        self.tom = Tomler(dirname)
-        self.parsed = tom.parsed
-        self.settings = tom.settings_all
-        self.version = "b19"
-        self.dirname = dirname
+        # ---static values---
+            
+            #paths
+        self.dirname=dirname
         self.tempdir=self.dirname.joinpath("data","temp")
-        self.pid=os.getpid()
-        self.file = os.path.realpath(__file__)
-        self.exe = os.path.realpath(sys.executable)
-        self.process = psutil.Process(self.pid)
 
-print(f"initilizing bot . . .{colors.clear}")        
-bot=ThatKiteBot(prefix,dirname,tempdir)
+            #info
+        self.version="b23"
+        self.tom=Tomler(dirname)
+        self.starttime=datetime.now()
+        self.pid=os.getpid()
+
+        # ---dynamic values---
+
+            #settings
+        self.settings=tom.settings_all
+
+            #sessions
+        self.aiohttp_session=aiohttp.ClientSession()
+        
+print("initilizing bot . . .")        
+bot=ThatKiteBot(prefix,dirname)
 bot.remove_command("help")
 
+#cogs
 bot.add_cog(cogs.funstuffcog.fun_stuff(bot,dirname))
-bot.add_cog(cogs.utilitiescog.utility_commands(bot,dirname))
-#bot.add_cog(cogs.listenercog.listeners(bot,dirname))
-#bot.add_cog(cogs.sudocog.sudo_commands(bot,dirname))
 bot.add_cog(cogs.musiccog.music(bot,dirname))
 bot.add_cog(cogs.imagecog.image_stuff(bot))
 bot.add_cog(cogs.nsfwcog.NSFW(bot))
-bot.add_cog(cogs.testcog.test_commands(bot,dirname))
+bot.add_cog(cogs.listenercog.listeners(bot,dirname))
+bot.add_cog(cogs.sudocog.sudo_commands(bot,dirname))
+bot.add_cog(cogs.utilitiescog.utility_commands(bot,dirname))
+gc.enable()
 
-@bot.event
-async def on_ready():
-    print(f"bot successfully started!")  
-    print(f"running on shard {bot.shard_id}/{bot.shard_count}")
-    print("\nhave fun!"+colors.clear)
-    bot.aiohttp_session=aiohttp.ClientSession()
-    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game("nothing"))
+loop=asyncio.get_event_loop()
+bot.case_insensitive=True
 
-bot.run(discordtoken)
+loop.run_until_complete(bot.start(discordtoken))
+
