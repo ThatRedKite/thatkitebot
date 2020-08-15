@@ -1,17 +1,13 @@
 import discord
-
 import os
 import re
 import bf
 import argparse
 import markovify
 from gtts import gTTS
-from io import BytesIO
 from requests import get
 from random import choice
 from discord.ext import commands
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 
 class NoExitParser(argparse.ArgumentParser):
     def error(self, message):
@@ -95,7 +91,6 @@ class fun_stuff(commands.Cog):
         author: discord.User=ctx.message.author
         try: 
             with ctx.channel.typing():
-                assert len(parsed_args) >= 1
                 generated_list, chan=await mark(self.bot,ctx,
                                             user,
                                             parsed_args.old,
