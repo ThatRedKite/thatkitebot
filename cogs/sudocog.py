@@ -9,8 +9,9 @@ class sudo_commands(commands.Cog):
         self.bot=bot
         self.dirname=dirname
 
+    @commands.is_owner()
     @commands.command()
-    async def do_kill(self, ctx):
+    async def kill(self, ctx):
         await self.bot.change_presence(status=discord.Status.offline)
         # clear the temp file folder
         util.clear_temp_folder(self.dirname)
