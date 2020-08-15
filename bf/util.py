@@ -1,13 +1,40 @@
+"""
+MIT License
+
+Copyright (c) 2020 ThatRedKite
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import discord
 import  re
 import random
 import string
+import glob
+import os
 
-async def errormsg(ctx, msg:str):
+async def errormsg(ctx, msg:str,exc=""):
+        with ctx.channel.typing():
             embed=discord.Embed(title="**ERROR!**", description=msg)
             embed.color=0xC1121C # set the color to "traffic red"
-            with ctx.channel.typing():
-                await ctx.send(embed=embed)
+            embed.set_footer(text=exc)
+        await ctx.send(embed=embed)
 
 def typeguesser(setting, value):
     setting=str(setting).lower()
@@ -101,3 +128,15 @@ class colors():
     
     def __getattr__(self, item):
         return ""
+
+
+def clear_temp_folder(dirname):
+    """
+        a simple function to clear the temp data folder of the bot
+    """
+    cleanupfiles=glob.glob(os.path.join(dirname,"data","temp","*.png"))
+    cleanupfiles+=glob.glob(os.path.join(dirname,"data","temp","*.webp"))
+    cleanupfiles+=glob.glob(os.path.join(dirname,"data","temp","*.gif"))
+    cleanupfiles+=glob.glob(os.path.join(dirname,"data","temp","*.mp3"))
+    for file in cleanupfiles:
+        os.remove(file)
