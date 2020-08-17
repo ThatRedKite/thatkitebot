@@ -25,7 +25,7 @@ SOFTWARE.
 import asyncio
 from datetime import datetime
 from bf.yamler import Tomler
-from discord.ext import commands
+from discord.ext import commands, tasks
 from bf.util import colors,clear_temp_folder
 import cogs
 import os
@@ -75,6 +75,11 @@ class ThatKiteBot(commands.Bot):
     
     async def aiohttp_start(self):
         self.aiohttp_session=aiohttp.ClientSession()
+
+    @tasks.loop(seconds=5.0)
+    async def garbage(self):
+        gc.collect()
+        print("gc run")
         
 print("initilizing bot . . .")        
 bot=ThatKiteBot(prefix,dirname)

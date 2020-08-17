@@ -10,11 +10,6 @@ class utility_commands(commands.Cog):
         self.dirname=dirname
         self.process=psutil.Process(os.getpid())
         self.bot=bot
-        self.garbage.start()
-
-    @tasks.loop(seconds=5.0)
-    async def garbage(self):
-        gc.collect()
 
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command()
