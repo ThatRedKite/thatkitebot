@@ -1,6 +1,5 @@
 from ctypes import sizeof
 import re
-import json
 import discord
 import argparse
 from queue import Queue
@@ -24,18 +23,18 @@ class NoExitParser(argparse.ArgumentParser):
 def deepfried(buffer,path):
     buffer.seek(0)
     with WandImage(file=buffer) as img:
-        #img.transform(resize='300x300>')
-        #img.adaptive_sharpen(radius=50.0,sigma=10.32)
         img.modulate(saturation=800.00)
         img.noise("gaussian",attenuate=0.1)
         with BytesIO() as outbuffer:
             img.save(file=outbuffer)
             outbuffer.seek(0)
             image_file=discord.File(outbuffer, filename="deepfried.png")
-            embed=discord.Embed()
-            embed.set_image(url="attachment://deepfried.png")
-            buffer.close()
-            return embed, image_file
+        
+        buffer.close()
+        del img,outbuffer
+        embed=discord.Embed()
+        embed.set_image(url="attachment://deepfried.png")
+        return embed, image_file
     
 def do_magik(buffer:BytesIO,path):
     buffer.seek(0)
@@ -51,25 +50,27 @@ def do_magik(buffer:BytesIO,path):
             i.save(file=outbuffer)
             outbuffer.seek(0)
             image_file=discord.File(outbuffer, filename="magik.png")
-            embed=discord.Embed()
-            embed.set_image(url="attachment://magik.png")
-            buffer.close()
-            return embed, image_file
+        del i,outbuffer
+        buffer.close()
+        embed=discord.Embed()
+        embed.set_image(url="attachment://magik.png")
+        return embed, image_file
 
 def make_wide(buffer,path):
     buffer.seek(0)
     with WandImage(file=buffer) as img:
-        height,width=img.height,img.width
         img.resize(width=int(img.width * 3), height=int(img.height / 1.7))
-        img.liquid_rescale(width=width,height=height)
-        #img.crop(left=int(img.width/4),top=1,right=(img.width-(int(img.width/4.3))),bottom=img.height)
+        img.crop(left=int(img.width/4),top=1,right=(img.width-(int(img.width/4.3))),bottom=img.height)
         with BytesIO() as outbuffer:
             img.save(file=outbuffer)
             outbuffer.seek(0)
             image_file=discord.File(outbuffer, filename="wide.png")
-            embed=discord.Embed()
-            embed.set_image(url="attachment://wide.png")
-            return embed, image_file
+
+        embed=discord.Embed()
+        embed.set_image(url="attachment://wide.png")
+        buffer.close()
+        del img,outbuffer
+        return embed, image_file
 
 def quoter(buffer,chan,path,quotestring):
     buffer.seek(0)
@@ -96,7 +97,9 @@ def quoter(buffer,chan,path,quotestring):
             file=discord.File(outbuffer,filename="pfp_edit.png")
             embed=discord.Embed()
             embed.set_image(url="attachment://pfp_edit.png")
-            return embed,file
+        buffer.close()
+        del buffer
+        return embed,file
 
 def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,caption:tuple=(False,"")):
     durations=Queue()
@@ -160,9 +163,9 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                             wand.sequence[frame].delay=int(durations.get() / 10)
                         else:
                             wand.sequence[frame].delay=int(round(durations.get() / 25))
-                        
+                        gc.collect()
                         print(frame)
-
+                        
                 with BytesIO() as outbuffer:
                     wand.type="optimize"
                     wand.save(file=outbuffer)
@@ -200,6 +203,7 @@ class image_stuff(commands.Cog):
                     tenor=tenorpattern.findall(message.clean_content)
                     if donkey is not None and len(donkey) > 0 and len(tenor) == 0:
                         url, filetype=donkey[0]
+                        del tenor,donkey,filetype
                         break
                     elif tenor is not None and len(tenor) > 0:
                         payload = {"key":api_token,"ids":int(tenor[0]),"media_filter":"minimal"}
@@ -207,11 +211,12 @@ class image_stuff(commands.Cog):
                             gifs= await r.json()
                         url=str(gifs["results"][0]["media"][0]["gif"]["url"])
                         assert url != ""
+                        del tenor,donkey
                         break
         else:
             url=str(ctx)
         assert url != ""
-
+        del tenorpattern,pattern_generated
         async with self.bot.aiohttp_session.get(url) as r:
             inbuffer=BytesIO(await r.read())
             if not gif:
@@ -225,6 +230,7 @@ class image_stuff(commands.Cog):
                 return outbuffer
             else:
                 inbuffer.seek(0)
+                gc.collect()
                 return inbuffer
 
     async def captioner(self,buffer,text,size):

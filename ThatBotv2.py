@@ -76,10 +76,6 @@ class ThatKiteBot(commands.Bot):
     async def aiohttp_start(self):
         self.aiohttp_session=aiohttp.ClientSession()
 
-    @tasks.loop(seconds=5.0)
-    async def garbage(self):
-        gc.collect()
-        print("gc run")
         
 print("initilizing bot . . .")        
 bot=ThatKiteBot(prefix,dirname)

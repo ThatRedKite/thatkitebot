@@ -2,8 +2,6 @@ import os
 import psutil
 import discord
 from discord.ext import commands, tasks
-import gc
-
 
 class utility_commands(commands.Cog):
     def __init__(self, bot:commands.Bot, dirname):
