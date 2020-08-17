@@ -26,7 +26,7 @@ class utility_commands(commands.Cog):
                 if cog != "NSFW":
                     commandstring += f"{command}\n"
             if len(commandstring) > 1:
-                embed.add_field(name=f"__**[{cog}]**__", value=f"```fix\n{commandstring}```",inline=False) 
+                embed.add_field(name=f"**{cog}**", value=f"\n{commandstring}",inline=True) 
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
         await ctx.send(embed=embed)
 
