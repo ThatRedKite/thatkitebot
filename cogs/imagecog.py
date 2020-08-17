@@ -177,7 +177,6 @@ class image_stuff(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot=bot
         self.path=bot.tempdir
-        self.localloop=bot.loop
 
     async def image_url_fetcher(self,ctx,api_token:str=None,bypass=False,gif=False):
         if not bypass:
@@ -211,7 +210,7 @@ class image_stuff(commands.Cog):
                         break
         else:
             url=str(ctx)
-            assert url != ""
+        assert url != ""
 
         async with self.bot.aiohttp_session.get(url) as r:
             inbuffer=BytesIO(await r.read())
@@ -254,7 +253,7 @@ class image_stuff(commands.Cog):
                 embed.set_image(url="attachment://caption.jpeg")
                 return embed,file
 
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def quote(self,ctx:commands.Context,user="dirnenspross123",old:int=100,new:int=100):
         with ctx.channel.typing():
@@ -267,24 +266,24 @@ class image_stuff(commands.Cog):
             with ProcessPoolExecutor() as executor:
                 if len(generated_list) > 0:
                         quotestring=choice(generated_list)
-                        embed,file=await self.localloop.run_in_executor(
+                        embed,file=await self.bot.loop.run_in_executor(
                             executor,quoter,
                             buffer,chan,
                             self.path,quotestring)
             await ctx.send(file=file, embed=embed)
             del buffer,embed,file
 
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def magik(self,ctx:commands.Context):
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
             with ProcessPoolExecutor() as executor:
-                embed,image_file=await self.localloop.run_in_executor(None,do_magik,buffer,self.path)
+                embed,image_file=await self.bot.loop.run_in_executor(None,do_magik,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
 
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def widepfp(self,ctx:commands.Context,usermention="transfergesetz"):
         with ctx.channel.typing():
@@ -294,11 +293,11 @@ class image_stuff(commands.Cog):
             buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
             with ThreadPoolExecutor() as executor:
                 
-                embed,image_file=await self.localloop.run_in_executor(executor,make_wide,buffer,self.path)
+                embed,image_file=await self.bot.loop.run_in_executor(executor,make_wide,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
 
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def pfp(self,ctx,usermention="passatwind"):
         message=ctx.message
@@ -310,7 +309,7 @@ class image_stuff(commands.Cog):
         await ctx.send(file=image_file)
         del buffer,embed,image_file
 
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def pfpmagik(self,ctx,usermention="nonetti"):
         with ctx.channel.typing():
@@ -319,31 +318,31 @@ class image_stuff(commands.Cog):
             buffer=await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
             with ProcessPoolExecutor() as executor:
                 
-                embed,image_file=await self.localloop.run_in_executor(executor,do_magik,buffer,self.path)
+                embed,image_file=await self.bot.loop.run_in_executor(executor,do_magik,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
     
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def deepfry(self,ctx:commands.Context):
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
             with ProcessPoolExecutor() as executor:
-                embed,image_file=await self.localloop.run_in_executor(executor,deepfried,buffer,self.path)
+                embed,image_file=await self.bot.loop.run_in_executor(executor,deepfried,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
         
-    @commands.cooldown(1,5,commands.BucketType.user)
+    @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def wide(self,ctx:commands.Context):
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
             with ProcessPoolExecutor() as executor:
-                embed,image_file=await self.localloop.run_in_executor(executor,make_wide,buffer,self.path)
+                embed,image_file=await self.bot.loop.run_in_executor(executor,make_wide,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
     
-    #@commands.cooldown(1,5,commands.BucketType.guild)
+    @commands.cooldown(1,10,commands.BucketType.guild)
     @commands.command()
     async def gmagik(self,ctx:commands.Context,mode:str="",*,text:str=""):
         
@@ -385,7 +384,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(gif=True,ctx=ctx,api_token=self.bot.tom.tenortoken)
             with ProcessPoolExecutor() as executor:
-                embed,image_file=await self.localloop.run_in_executor(None,partial(
+                embed,image_file=await self.bot.loop.run_in_executor(None,partial(
                     do_gmagik,
                     buffer,
                     self.path,
