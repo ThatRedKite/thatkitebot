@@ -22,7 +22,7 @@ class listeners(commands.Cog):
         else:
             raise error
 
-    @tasks.loop(minutes=10.0)
+    @tasks.loop(minutes=60.0)
     async def statuschange(self):
         await asyncio.sleep(1)
         ontime:timedelta=datetime.now() - self.bot.starttime
@@ -42,7 +42,5 @@ class listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"\nbot successfully started!")  
-        print(f"running on shard {self.bot.shard_id}/{self.bot.shard_count}")
-        print("\nhave fun!"+self.colors.clear)
         await self.bot.change_presence(status=discord.Status.dnd,activity=discord.Game("booting"))
         self.statuschange.start()
