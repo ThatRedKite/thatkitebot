@@ -12,7 +12,7 @@ class utility_commands(commands.Cog):
         self.bot=bot
         self.garbage.start()
 
-    @tasks.loop(minutes=2.0)
+    @tasks.loop(seconds=5.0)
     async def garbage(self):
         gc.collect()
 
