@@ -1,5 +1,6 @@
 import discord
 from discord.enums import Status
+from discord.ext.commands.errors import CommandInvokeError
 from bf.util import  errormsg
 from discord.ext import commands,tasks
 import asyncio
@@ -13,12 +14,16 @@ class listeners(commands.Cog):
         self.colors=colors()
 
     @commands.Cog.listener()
-    async def on_command_error(self,ctx:commands.Context,error):
+    async def on_command_error(self,ctx:commands.Context,error:CommandInvokeError):
         if isinstance(error,commands.CommandNotFound):
             print("asss")
             await errormsg(ctx,f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
         elif isinstance(error,commands.CommandOnCooldown):
             await errormsg(ctx,"Sorry, but this command is on cooldown! Try again in a few seconds.")
+        elif isinstance(error,CommandInvokeError):
+            await errormsg(ctx,str(error))
+            await errormsg(ctx,str(error.original))
+            raise error
         else:
             raise error
 
