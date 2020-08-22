@@ -1,4 +1,3 @@
-from ctypes import sizeof
 import re
 import discord
 import argparse
@@ -390,7 +389,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(gif=True,ctx=ctx,api_token=self.bot.tom.tenortoken)
             with ProcessPoolExecutor() as executor:
-                embed,image_file=await self.bot.loop.run_in_executor(None,partial(
+                future=await self.bot.loop.run_in_executor(executor,partial(
                     do_gmagik,
                     buffer,
                     self.path,
@@ -399,9 +398,11 @@ class image_stuff(commands.Cog):
                     speedup=speedup,
                     dry=dry,
                     caption=caption))
+                embed,image_file=await future
+                
         await ctx.send(file=image_file)
         del buffer,embed,image_file
-    
+        
     @commands.command()
     async def caption(self,ctx,*,text:str=""):
         buffer=await self.image_url_fetcher(gif=False,ctx=ctx,api_token=self.bot.tom.tenortoken)
