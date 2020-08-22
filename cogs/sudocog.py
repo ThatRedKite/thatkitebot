@@ -1,13 +1,15 @@
 from bf import util
 import discord
-import logging
-from bf.yamler import Tomler
 from discord.ext import commands
-from concurrent.futures import  ThreadPoolExecutor
+
 class sudo_commands(commands.Cog):
     def __init__(self, bot, dirname):
-        self.bot=bot
+        self.bot:commands.Bot=bot
         self.dirname=dirname
+
+    @commands.before_invoke
+    async def pre_fart(self,ctx):
+        print("farts")
 
     @commands.is_owner()
     @commands.command()
@@ -20,4 +22,27 @@ class sudo_commands(commands.Cog):
         # close the discord session
         await self.bot.close()
         # close the tom session
+
+    @commands.is_owner()
+    @commands.command()
+    async def botpurge(self,ctx,count:int=100):
+        me=self.bot.user
+        channel:discord.TextChannel=ctx.channel
+        msgcounter=0
+        async for message in channel.history(limit=5000).filter(lambda x: x.author == me):
+            msgcounter += 1
+            if msgcounter < count:
+                await message.delete()
+                print(msgcounter)
+            else:
+                break
+
+    @pre_fart
+    @commands.command(pass_context=True)
+    async def tester(self,ctx):
+        await ctx.send("tester")
+
+            
+
+
 
