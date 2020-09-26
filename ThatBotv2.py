@@ -60,7 +60,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir=self.dirname.joinpath("data","temp")
 
             #info
-        self.version="b23"
+        self.version="c2"
         self.tom=Tomler(dirname)
         self.starttime=datetime.now()
         self.pid=os.getpid()
@@ -69,6 +69,7 @@ class ThatKiteBot(commands.Bot):
 
             #settings
         self.settings=tom.settings_all
+        self.debugmode=False
 
             #sessions
         self.loop.run_until_complete(self.aiohttp_start())
@@ -79,7 +80,7 @@ class ThatKiteBot(commands.Bot):
         
 print("initilizing bot . . .")        
 bot=ThatKiteBot(prefix,dirname)
-bot.remove_command("help")
+#bot.remove_command("help")
 
 #cogs
 bot.add_cog(cogs.funstuffcog.fun_stuff(bot,dirname))
@@ -89,10 +90,9 @@ bot.add_cog(cogs.nsfwcog.NSFW(bot))
 bot.add_cog(cogs.listenercog.listeners(bot,dirname))
 bot.add_cog(cogs.sudocog.sudo_commands(bot,dirname))
 bot.add_cog(cogs.utilitiescog.utility_commands(bot,dirname))
+#bot.add_cog(cogs.issuecog.issues(bot,dirname))
 gc.enable()
 
-loop=asyncio.get_event_loop()
 bot.case_insensitive=True
-
-loop.run_until_complete(bot.start(discordtoken))
+bot.run(discordtoken)
 
