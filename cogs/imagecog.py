@@ -13,7 +13,7 @@ from discord.ext import commands
 from wand.image import Image as WandImage
 from cogs.funstuffcog import mark
 from PIL import Image, ImageDraw, ImageFont, ImageFile
-from concurrent.futures import  ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import  ThreadPoolExecutor, ThreadPoolExecutor
 
 class NoExitParser(argparse.ArgumentParser):
     def error(self, message):
@@ -22,7 +22,7 @@ class NoExitParser(argparse.ArgumentParser):
 def deepfried(buffer,path):
     buffer.seek(0)
     with WandImage(file=buffer) as img:
-        img.modulate(saturation=800.00)
+        img.modulate(saturation=500.00)
         img.noise("gaussian",attenuate=0.1)
         with BytesIO() as outbuffer:
             img.save(file=outbuffer)
@@ -33,6 +33,7 @@ def deepfried(buffer,path):
         del img,outbuffer
         embed=discord.Embed()
         embed.set_image(url="attachment://deepfried.png")
+        gc.collect()
         return embed, image_file
     
 def do_magik(buffer:BytesIO,path):
@@ -53,6 +54,7 @@ def do_magik(buffer:BytesIO,path):
         buffer.close()
         embed=discord.Embed()
         embed.set_image(url="attachment://magik.png")
+        gc.collect()
         return embed, image_file
 
 def make_wide(buffer,path):
@@ -69,6 +71,7 @@ def make_wide(buffer,path):
         embed.set_image(url="attachment://wide.png")
         buffer.close()
         del img,outbuffer
+        gc.collect()
         return embed, image_file
 
 def quoter(buffer,chan,path,quotestring):
@@ -98,6 +101,7 @@ def quoter(buffer,chan,path,quotestring):
             embed.set_image(url="attachment://pfp_edit.png")
         buffer.close()
         del buffer
+        gc.collect()
         return embed,file
 
 def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,caption:tuple=(False,"")):
@@ -155,7 +159,7 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                             elif deepfry and not wide:
                                 #im.adaptive_sharpen(radius=50.0,sigma=10.32)
                                 im.modulate(saturation=500.00)
-                                im.noise("random",attenuate=0.9)
+                                im.noise("poisson",attenuate=0.1)
 
                         wand.sequence.append(im)
                         if not speedup:
@@ -179,47 +183,47 @@ class image_stuff(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot=bot
         self.path=bot.tempdir
+        self.gifpattern=re.compile("(^https?://\S+(.gif))")
+        self.otherpattern=re.compile("(^https?://\S+(.png|.webp|.gif|.jpe?g))")
+        self.tenorpattern=re.compile("^https://tenor.com\S+-(\d+)$")
 
     async def image_url_fetcher(self,ctx,api_token:str=None,bypass=False,gif=False):
         if not bypass:
-            if not gif:
-                filetypes=["png","webp","gif","jpe?g"]
+            if gif:
+                pattern=self.gifpattern
             else:
-                filetypes=["gif"]
-            tenorpattern=re.compile("^https://tenor.com\S+-(\d+)$")
-            pattern_generated=re.compile(f"^(https?://\S+({'|.'.join(filetypes)}))")
+                pattern=self.otherpattern
+            
             async for message in ctx.channel.history(limit=50,around=datetime.now()):
                 attachments=message.attachments
                 if len(attachments) > 0:
-                    donkey=pattern_generated.findall(attachments[0].url)
+                    donkey=pattern.findall(attachments[0].url)
                     if len(donkey) > 0:
-                        url,filetype=donkey[0]
+                        url,fp=donkey[0]
                         break
                     else:
                         continue
                 else:
-                    donkey=pattern_generated.findall(message.clean_content)
-                    tenor=tenorpattern.findall(message.clean_content)
+                    donkey=pattern.findall(message.clean_content)
+                    tenor=self.tenorpattern.findall(message.clean_content)
                     if donkey is not None and len(donkey) > 0 and len(tenor) == 0:
-                        url, filetype=donkey[0]
-                        del tenor,donkey,filetype
+                        url,fp=donkey[0]
+                        del tenor,donkey
                         break
                     elif tenor is not None and len(tenor) > 0:
                         payload = {"key":api_token,"ids":int(tenor[0]),"media_filter":"minimal"}
                         async with self.bot.aiohttp_session.get(url="https://api.tenor.com/v1/gifs",params=payload) as r:
                             gifs= await r.json()
                         url=str(gifs["results"][0]["media"][0]["gif"]["url"])
-                        assert url != ""
+                        assert url 
                         del tenor,donkey
                         break
         else:
             url=str(ctx)
         assert url != ""
-        del tenorpattern,pattern_generated
         async with self.bot.aiohttp_session.get(url) as r:
             inbuffer=BytesIO(await r.read())
             if not gif:
-                ImageFile.LOAD_TRUNCATED_IMAGES=True
                 inbuffer.seek(0)
                 with Image.open(inbuffer) as img:
                     outbuffer=BytesIO()
@@ -233,6 +237,7 @@ class image_stuff(commands.Cog):
                 return inbuffer
 
     async def captioner(self,buffer,text,size):
+        
         buffer.seek(0)
         with Image.open(buffer) as img:
             outline_width=3
@@ -256,11 +261,13 @@ class image_stuff(commands.Cog):
                 file=discord.File(outbuffer,filename="caption.jpeg")
                 embed=discord.Embed()
                 embed.set_image(url="attachment://caption.jpeg")
+                gc.collect()
                 return embed,file
 
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def quote(self,ctx:commands.Context,user="dirnenspross123",old:int=100,new:int=100):
+        """Generates a fake quote of a user using a markov chain"""
         with ctx.channel.typing():
             generated_list,chan=await mark(
                                         bot=self.bot,ctx=ctx,
@@ -268,7 +275,7 @@ class image_stuff(commands.Cog):
                                         new=new,leng=5,
                                         leng2=30,mode="short")
             buffer=await self.image_url_fetcher(ctx=chan.avatar_url,bypass=True)
-            with ProcessPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 if len(generated_list) > 0:
                         quotestring=choice(generated_list)
                         embed,file=await self.bot.loop.run_in_executor(
@@ -281,9 +288,10 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def magik(self,ctx:commands.Context):
+        """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
-            with ProcessPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 embed,image_file=await self.bot.loop.run_in_executor(None,do_magik,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
@@ -291,13 +299,12 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def widepfp(self,ctx:commands.Context,usermention="transfergesetz"):
+        """sends a horizontally stretched version of someonme's profile picture"""
         with ctx.channel.typing():
             message=ctx.message
-            
             chan,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
             buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
             with ThreadPoolExecutor() as executor:
-                
                 embed,image_file=await self.bot.loop.run_in_executor(executor,make_wide,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
@@ -305,6 +312,7 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def pfp(self,ctx,usermention="passatwind"):
+        """sends the pfp of someone"""
         message=ctx.message
         chan,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
         buffer=await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
@@ -312,16 +320,17 @@ class image_stuff(commands.Cog):
             buffer.seek(0)
             image_file=discord.File(buffer, filename="pfp.png")
         await ctx.send(file=image_file)
-        del buffer,embed,image_file
+        del buffer,image_file
 
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def pfpmagik(self,ctx,usermention="nonetti"):
+        """applies content aware scaling to someone's pfp"""
         with ctx.channel.typing():
             message=ctx.message
             chan,is_user,is_channel=util.mentioner(self.bot,ctx,message,usermention,False)
             buffer=await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
-            with ProcessPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 
                 embed,image_file=await self.bot.loop.run_in_executor(executor,do_magik,buffer,self.path)
             await ctx.send(file=image_file)
@@ -330,9 +339,10 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def deepfry(self,ctx:commands.Context):
+        """deepfry an image"""
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
-            with ProcessPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 embed,image_file=await self.bot.loop.run_in_executor(executor,deepfried,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
@@ -340,17 +350,23 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1,10,commands.BucketType.user)
     @commands.command()
     async def wide(self,ctx:commands.Context):
+        """Horizonally stretch an image"""
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
-            with ProcessPoolExecutor() as executor:
+            with ThreadPoolExecutor() as executor:
                 embed,image_file=await self.bot.loop.run_in_executor(executor,make_wide,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
     
-    @commands.cooldown(1,10,commands.BucketType.guild)
+    @commands.cooldown(1,60,commands.BucketType.user)
     @commands.command()
     async def gmagik(self,ctx:commands.Context,mode:str="",*,text:str=""):
-        
+        """This command can do multiple things to a GIF image (also works with Tenor):
+            - content aware scaling
+            - deepfrying
+            - speedup
+            - stretch horizontally
+            - add a caption"""
         if mode.lower() == "deepfry":
             deepfry=True
             wide=False
@@ -388,8 +404,8 @@ class image_stuff(commands.Cog):
 
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(gif=True,ctx=ctx,api_token=self.bot.tom.tenortoken)
-            with ProcessPoolExecutor() as executor:
-                future=await self.bot.loop.run_in_executor(executor,partial(
+            with ThreadPoolExecutor() as executor:
+                embed,image_file=await self.bot.loop.run_in_executor(executor,partial(
                     do_gmagik,
                     buffer,
                     self.path,
@@ -398,15 +414,16 @@ class image_stuff(commands.Cog):
                     speedup=speedup,
                     dry=dry,
                     caption=caption))
-                embed,image_file=await future
                 
         await ctx.send(file=image_file)
         del buffer,embed,image_file
         
     @commands.command()
     async def caption(self,ctx,*,text:str=""):
-        buffer=await self.image_url_fetcher(gif=False,ctx=ctx,api_token=self.bot.tom.tenortoken)
-        embed,image_file=await self.captioner(buffer,text,size=64)
+        """Adds a caption to an image."""
+        with ctx.channel.typing():
+            buffer=await self.image_url_fetcher(gif=False,ctx=ctx,api_token=self.bot.tom.tenortoken)
+            embed,image_file=await self.captioner(buffer,text,size=64)
         await ctx.send(file=image_file)
         del buffer,embed,image_file
         
