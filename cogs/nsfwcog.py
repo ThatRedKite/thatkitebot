@@ -10,10 +10,9 @@ from concurrent.futures import ThreadPoolExecutor
 class NSFW(commands.Cog):
     def __init__(self,bot):
         self.bot=bot
-        self.r34url="https://rule34.xxx/index.php"
 
     @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
+    @commands.command(hidden=True,aliases=["rule34"])
     async def r34(self, ctx, *, tags):
         if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
             #  only proceed if nsfw is enabled in the bot's settings
@@ -27,7 +26,7 @@ class NSFW(commands.Cog):
             await errormsg(ctx,"nsfw content is disabled")
 
     @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
+    @commands.command(hidden=True,aliases=["yande.re","yandere"])
     async def yan(self, ctx, *, tags):
         if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
             #  only proceed if nsfw is enabled in the bot's settings
@@ -44,7 +43,7 @@ class NSFW(commands.Cog):
             await errormsg(ctx,"nsfw content is disabled")
 
     @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
+    @commands.command(hidden=True)
     async def yanspam(self,ctx,count:typing.Optional[int]=5,*,tags):
         #  only proceed if nsfw is enabled in the bot's settings
         if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
@@ -67,7 +66,7 @@ class NSFW(commands.Cog):
             await errormsg(ctx,"nsfw content is disabled")
     
     @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
+    @commands.command(hidden=True)
     async def r34spam(self, ctx, count:typing.Optional[int]=10, *, tags):
             if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
                 #  only proceed if nsfw is enabled in the bot's settings
@@ -87,7 +86,7 @@ class NSFW(commands.Cog):
                 await errormsg(ctx,"nsfw content is disabled")
 
     @commands.is_nsfw() # only proceed when in an nsfw channel
-    @commands.command()
+    @commands.command(hidden=True)
     async def e621(self, ctx, *,tags):
         if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
             #  only proceed if nsfw is enabled in the bot's settings
