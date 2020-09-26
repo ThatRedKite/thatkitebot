@@ -16,29 +16,29 @@ class listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self,ctx:commands.Context,error:CommandInvokeError):
         if isinstance(error,commands.CommandNotFound):
-            print("asss")
             await errormsg(ctx,f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
         elif isinstance(error,commands.CommandOnCooldown):
             await errormsg(ctx,"Sorry, but this command is on cooldown! Try again in a few seconds.")
-        elif isinstance(error,CommandInvokeError):
+        elif isinstance(error,CommandInvokeError) and self.bot.debugmode:
             await errormsg(ctx,str(error))
             await errormsg(ctx,str(error.original))
             raise error
         else:
             raise error
 
-    @tasks.loop(minutes=60.0)
+    @tasks.loop(minutes=20.0)
     async def statuschange(self):
-        await asyncio.sleep(1)
         ontime:timedelta=datetime.now() - self.bot.starttime
         times=str(ontime).split(".")
 
         possible_status=[
-            (Status.dnd,"nothing"),
-            (Status.idle,"with code"),
+            (Status.idle,"nothing"),
+            (Status.online,"with code"),
             (Status.online,f"{self.bot.command_prefix}help"),
-            (Status.dnd,f"uptime:    {times[0]}"),
-            (Status.online,"ready")
+            (Status.online,f"uptime:    {times[0]}"),
+            (Status.dnd,"with trains"),
+            (Status.online,"with myself"),
+            (Status.online,"games")
             ]
         
         chosen_status,chosen_message=random.choice(possible_status)
