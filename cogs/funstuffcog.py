@@ -5,7 +5,6 @@ import bf
 import argparse
 import markovify
 from gtts import gTTS
-from requests import get
 from random import choice
 from discord.ext import commands
 
@@ -74,7 +73,7 @@ class fun_stuff(commands.Cog):
         embed.set_image(url=r.text)
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(aliases=["mark","m"])
     async def markov(self,ctx,user="keiner",*,args="-tts False"):
         parser = NoExitParser()
         try:
