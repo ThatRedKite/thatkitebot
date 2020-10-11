@@ -119,7 +119,6 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                 for frame in range(img.n_frames):
                     img.seek(frame)
                     im=img
-                    del img
                     #unpack the caption tuple
                     caption_bool,caption_text=caption
                     if caption_bool:
@@ -150,6 +149,7 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                     #put the frame's duration into the queue
                     durations.put(img.info["duration"])
                     buffer.seek(0)
+                    del img, im
                     with WandImage(file=buffer) as im:
                         if not dry:
                             if not deepfry and not wide:
