@@ -149,7 +149,6 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                     #put the frame's duration into the queue
                     durations.put(img.info["duration"])
                     buffer.seek(0)
-                    del im,img
                     with WandImage(file=buffer) as im:
                         if not dry:
                             if not deepfry and not wide:
