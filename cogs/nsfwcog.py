@@ -90,11 +90,9 @@ class NSFW(commands.Cog):
     async def e621(self, ctx, *,tags):
         if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
             #  only proceed if nsfw is enabled in the bot's settings
-            payload={"tags": tags, "limit": 320}
             await ctx.trigger_typing()
             with ThreadPoolExecutor() as executor:
-                future=executor.submit(url.monosodiumglutamate,payload,"page")
-            urllist=future.result()
+                urllist=await url.monosodiumglutamate(self.bot.aiohttp_session,tags)
             with ctx.channel.typing():
                 for x in range(0, 10):
                     try:
