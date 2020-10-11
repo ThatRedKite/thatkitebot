@@ -41,8 +41,3 @@ class sudo_commands(commands.Cog):
         msg=await ctx.send(f"set debug to {self.bot.debugmode}")
         await asyncio.sleep(2)
         await msg.delete()
-
-            
-
-
-
