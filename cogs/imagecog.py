@@ -22,12 +22,14 @@ class NoExitParser(argparse.ArgumentParser):
 def deepfried(buffer,path):
     buffer.seek(0)
     with WandImage(file=buffer) as img:
+        # increase the saturation and att some noise
         img.modulate(saturation=500.00)
         img.noise("gaussian",attenuate=0.1)
         with BytesIO() as outbuffer:
             img.save(file=outbuffer)
             outbuffer.seek(0)
             image_file=discord.File(outbuffer, filename="deepfried.png")
+            img.destroy()
         
         buffer.close()
         del img,outbuffer
@@ -50,6 +52,8 @@ def do_magik(buffer:BytesIO,path):
             i.save(file=outbuffer)
             outbuffer.seek(0)
             image_file=discord.File(outbuffer, filename="magik.png")
+            i.destroy()
+
         del i,outbuffer
         buffer.close()
         embed=discord.Embed()
@@ -66,6 +70,7 @@ def make_wide(buffer,path):
             img.save(file=outbuffer)
             outbuffer.seek(0)
             image_file=discord.File(outbuffer, filename="wide.png")
+            img.destroy()
 
         embed=discord.Embed()
         embed.set_image(url="attachment://wide.png")
@@ -95,7 +100,8 @@ def quoter(buffer,chan,path,quotestring):
         
         with BytesIO() as outbuffer:
             im.save(outbuffer)
-            del im,draw,x,y,fontsize,font,quotestring
+            im.destroy()
+            del draw,x,y,fontsize,font,quotestring
             file=discord.File(outbuffer,filename="pfp_edit.png")
             embed=discord.Embed()
             embed.set_image(url="attachment://pfp_edit.png")
@@ -105,133 +111,176 @@ def quoter(buffer,chan,path,quotestring):
         return embed,file
 
 def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,caption:tuple=(False,"")):
+    # a queue where the durations of each frame are stored
     durations=Queue()
-    positions=Queue()
     with Image.open(inbuffer) as img:
         with BytesIO() as buffer:
             with WandImage() as wand:
                 for frame in range(img.n_frames):
-                    img.seek(frame); im=img
-                    im=im.convert("RGBA")
+                    img.seek(frame)
+                    im=img
+                    del img
+                    #unpack the caption tuple
                     caption_bool,caption_text=caption
                     if caption_bool:
-                        assert caption_text != ""
+                        #check if there actually is any text
+                        assert caption_text
                         outline_width=3
                         W,H=im.size
                         font=ImageFont.truetype(join(path,"DejaVuSans.ttf"),size=52)
                         w,h=font.getsize(caption_text)
+                        #convert the image to RGBA to avoid some problems
                         im=im.convert("RGBA")
                         draw=ImageDraw.Draw(im)
+                        #draw the outline
                         draw.text(((W-w)/2-outline_width,int((H-h)/1.15)-outline_width),caption_text,fill="black",font=font)
                         draw.text(((W-w)/2-outline_width,int((H-h)/1.15)+outline_width),caption_text,fill="black",font=font)
                         draw.text(((W-w)/2+outline_width,int((H-h)/1.15)-outline_width),caption_text,fill="black",font=font)
                         draw.text(((W-w)/2+outline_width,int((H-h)/1.15)+outline_width),caption_text,fill="black",font=font)
+                        #draw the text itself
                         draw.text(((W-w)/2,int((H-h)/1.15)), caption_text, fill="white",font=font)
+                        #avoid the liquid_rescale code (and friends)
                         dry=True
                         
-                    positions.put(buffer.tell())
+                    buffer.seek(0)
+                    #save the frame to the buffer.
+                    #This is needed, because there's no other way
+                    #wand can use PIL images
                     im.save(buffer,format="GIF")
+                    #put the frame's duration into the queue
                     durations.put(img.info["duration"])
-                    buffer.seek(positions.get())
+                    buffer.seek(0)
                     with WandImage(file=buffer) as im:
                         if not dry:
                             if not deepfry and not wide:
                                 
+                                #scale the image down to 70% of its original size
+                                #lowers image quality, increases performance
                                 im.resize(
                                     width=int(im.width*0.7),
-                                    height=int(im.height*0.7))
+                                    height=int(im.height*0.7)
+                                    )
                                 
+                                #liquid rescale the image to 50% of its size
                                 im.liquid_rescale(
                                     width=int(im.width*0.5),
                                     height=int(im.height*0.5),
                                     delta_x=1,
-                                    rigidity=0)
+                                    rigidity=0
+                                    )
 
+                                #liquid rescale the image to 200% of its size
+                                #the image will now be 70% of its size again
                                 im.liquid_rescale(
-                                    width=int(im.width*3.112),
-                                    height=int(im.height*3.112),
-                                    delta_x=2, rigidity=0)
+                                    width=int(im.width*4),
+                                    height=int(im.height*4),
+                                    delta_x=2, rigidity=0
+                                    )
 
+                            #make the image wide
                             elif wide and not deepfry:
                                 im.resize(width=int(img.width * 3), height=int(img.height / 1.5))
                                 im.crop(left=int(im.width/4),top=1,right=(im.width-(int(im.width/4.3))),bottom=im.height)
-
+                            
+                            #deepfry the image
                             elif deepfry and not wide:
-                                #im.adaptive_sharpen(radius=50.0,sigma=10.32)
-                                im.modulate(saturation=500.00)
-                                im.noise("poisson",attenuate=0.1)
+                                im.modulate(saturation=500.00) #increase saturation
+                                im.noise("poisson",attenuate=0.1)   #add some noise
 
-                        wand.sequence.append(im)
-                        if not speedup:
-                            wand.sequence[frame].delay=int(durations.get() / 10)
-                        else:
-                            wand.sequence[frame].delay=int(round(durations.get() / 25))
-                        gc.collect()
-                        print(frame)
+                        wand.sequence.append(im) #add the frame (image) to the sequence
+                        im.destroy() #delete the image after adding it to the sequence
+
+                    if not speedup:
+                        # divide the duration by 10, because PIL uses a different timescale
+                        wand.sequence[frame].delay=int(durations.get() / 10)
+                    else:
+                        # increase the speed
+                        wand.sequence[frame].delay=int(round(durations.get() / 25))
                         
                 with BytesIO() as outbuffer:
                     wand.type="optimize"
                     wand.save(file=outbuffer)
+                    wand.destroy() #delete the gif after saving it 
                     outbuffer.seek(0)
+                    # a discord File object, which is needed to actually send the image
                     image_file=discord.File(outbuffer, filename="gmagik.gif")
                     embed=discord.Embed()
                     embed.set_image(url="attachment://gmagik.gif")
-                    gc.collect()
+                    gc.collect() # run the GC
                     return embed, image_file
                     
 class image_stuff(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot=bot
         self.path=bot.tempdir
-        self.gifpattern=re.compile("(^https?://\S+(.gif))")
-        self.otherpattern=re.compile("(^https?://\S+(.png|.webp|.gif|.jpe?g))")
+        #compile the patterns for some regexes
+        self.gifpattern=re.compile("(^https?://\S+.(gif))") #only gif images
+        #detects PNG, JPEG, WEBP and GIF images
+        self.otherpattern=re.compile("(^https?://\S+.(png|webp|gif|jpe?g))")
+        #gets the ID of a tenor GIF from its URL
         self.tenorpattern=re.compile("^https://tenor.com\S+-(\d+)$")
 
     async def image_url_fetcher(self,ctx,api_token:str=None,bypass=False,gif=False):
+        # when bypass is True, the ctx variable is actually treated as a plain string
+        # instead of a commands.Context object. This is needed, if you already have the URL
+        # and you just want to download it, it bypasses the url detection routines
         if not bypass:
+            # select the appropiate pattern
             if gif:
                 pattern=self.gifpattern
             else:
                 pattern=self.otherpattern
             
+            # iterate over the last 50 messages in current channel and look for image links
             async for message in ctx.channel.history(limit=50,around=datetime.now()):
+                # a list of the message's attachments
                 attachments=message.attachments
-                if len(attachments) > 0:
-                    donkey=pattern.findall(attachments[0].url)
-                    if len(donkey) > 0:
-                        url,fp=donkey[0]
-                        break
-                    else:
-                        continue
+                if attachments:
+                    found_url=pattern.findall(attachments[0].url)
+                    if found_url:
+                        url,fe=found_url[0]
+                        print(fe)
+                        break # break the loop, a valid url has been found
                 else:
-                    donkey=pattern.findall(message.clean_content)
+                    #found_url is a list of all urls the regex found,
+                    #this should only be one value, or no value at all
+                    found_url=pattern.findall(message.clean_content)
+                    #the tenor ID of the GIF.It only contains anything, if there actually is a tenor GIF
                     tenor=self.tenorpattern.findall(message.clean_content)
-                    if donkey is not None and len(donkey) > 0 and len(tenor) == 0:
-                        url,fp=donkey[0]
-                        del tenor,donkey
-                        break
-                    elif tenor is not None and len(tenor) > 0:
+                    if found_url and not tenor:
+                        #unpack the url and the file extension
+                        url,fe=found_url[0]
+                        break # break the loop, a valid url has been found
+                    elif tenor:
+                        # define the header and the payload
+                        headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"application/json"}
                         payload = {"key":api_token,"ids":int(tenor[0]),"media_filter":"minimal"}
-                        async with self.bot.aiohttp_session.get(url="https://api.tenor.com/v1/gifs",params=payload) as r:
-                            gifs= await r.json()
+
+                        async with self.bot.aiohttp_session.get(url="https://api.tenor.com/v1/gifs",params=payload,headers=headers) as r:
+                            gifs=await r.json()
+                        # some dictionary magic to get the source url of the gif
                         url=str(gifs["results"][0]["media"][0]["gif"]["url"])
                         assert url 
-                        del tenor,donkey
-                        break
+                        break # break the loop, a valid url has been found
         else:
             url=str(ctx)
-        assert url != ""
+        assert url
         async with self.bot.aiohttp_session.get(url) as r:
             inbuffer=BytesIO(await r.read())
+            # gifs should not be converted to PNG
+            # 
             if not gif:
                 inbuffer.seek(0)
                 with Image.open(inbuffer) as img:
                     outbuffer=BytesIO()
+                    # convert the image to RGBA and PNG
                     with img.convert("RGBA") as outimg:
                         outbuffer.seek(0)
                         outimg.save(outbuffer,"png")
                 return outbuffer
             else:
+                # this just seeks the buffer to 0
+                # and then returns the buffer without altering it
                 inbuffer.seek(0)
                 gc.collect()
                 return inbuffer
@@ -269,14 +318,17 @@ class image_stuff(commands.Cog):
     async def quote(self,ctx:commands.Context,user="dirnenspross123",old:int=100,new:int=100):
         """Generates a fake quote of a user using a markov chain"""
         with ctx.channel.typing():
+            # call the mark coroutine from another cog
             generated_list,chan=await mark(
                                         bot=self.bot,ctx=ctx,
                                         user=user,old=old,
                                         new=new,leng=5,
                                         leng2=30,mode="short")
+
+            # download the profile picture of the user
             buffer=await self.image_url_fetcher(ctx=chan.avatar_url,bypass=True)
             with ThreadPoolExecutor() as executor:
-                if len(generated_list) > 0:
+                if generated_list:
                         quotestring=choice(generated_list)
                         embed,file=await self.bot.loop.run_in_executor(
                             executor,quoter,
@@ -292,7 +344,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             buffer=await self.image_url_fetcher(ctx=ctx,api_token=self.bot.tom.tenortoken)
             with ThreadPoolExecutor() as executor:
-                embed,image_file=await self.bot.loop.run_in_executor(None,do_magik,buffer,self.path)
+                embed,image_file=await self.bot.loop.run_in_executor(executor,do_magik,buffer,self.path)
             await ctx.send(file=image_file)
             del buffer,embed,image_file
 
