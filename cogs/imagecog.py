@@ -149,7 +149,7 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
                     #put the frame's duration into the queue
                     durations.put(img.info["duration"])
                     buffer.seek(0)
-                    del img, im
+                    del im,img
                     with WandImage(file=buffer) as im:
                         if not dry:
                             if not deepfry and not wide:
@@ -179,7 +179,7 @@ def do_gmagik(inbuffer,path,dry=False,deepfry=False,wide=False,speedup=False,cap
 
                             #make the image wide
                             elif wide and not deepfry:
-                                im.resize(width=int(img.width * 3), height=int(img.height / 1.5))
+                                im.resize(width=int(im.width*3), height=int(im.height / 1.5))
                                 im.crop(left=int(im.width/4),top=1,right=(im.width-(int(im.width/4.3))),bottom=im.height)
                             
                             #deepfry the image
