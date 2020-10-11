@@ -32,10 +32,11 @@ import aiohttp
 async def r34url(session:aiohttp.ClientSession,tags,islist:bool=False,count:int=1):
     urls={}
     outlist=list()
+    headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"application/xml"}
     payload={ "page": "dapi","tags": tags,"s": "post","q": "index","limit":100}
     for x in range(0,10): # update the :updatevalue: from 0 to 10
         payload.update(dict(pid=x))
-        async with session.get(url="https://rule34.xxx/index.php", params=payload) as r:
+        async with session.get(url="https://rule34.xxx/index.php", params=payload, headers=headers) as r:
             soup=BeautifulSoup(await r.text(), "lxml") # parse XML
             
             for post in soup.find_all("post"): # find every :post:
@@ -51,12 +52,14 @@ async def r34url(session:aiohttp.ClientSession,tags,islist:bool=False,count:int=
     else:
         return []
 
-async def monosodiumglutamate(session,payload:dict, updatevalue:str):
+async def monosodiumglutamate(session,tags):
     urls=[] # initialize the list of URLs 
     api_url="https://www.e621.net/posts.json" 
-    headers={"User-Agent": "ThatKiteBot/1.9 (from luio950)"} #set user agent because this API is weird
+    payload={"tags": tags, "limit": 320,"page":0}
+    #set user agent because this API is weird
+    headers={"User-Agent": "ThatKiteBot/2.3.3 (from luio950)","content-type":"application/json"}
     for x in range(2): # do that stuff twice
-        payload.update({updatevalue:x}) # change the "page"
+        payload.update({"page":x}) # change the "page"
         async with session.get(api_url, headers=headers, params=payload) as r:
             contentdict=await r.json()
             for x in contentdict["posts"]:
@@ -64,14 +67,17 @@ async def monosodiumglutamate(session,payload:dict, updatevalue:str):
                     urls.append(x["file"]["url"]) # get the file URL and append it to the list
                 else:
                     break
-        asyncio.sleep(0.51) # avoid exceeding the rate limit of the API (pretty crude fix, i know)
+
+        # avoid exceeding the rate limit of the API (pretty crude fix, i know)
+        await asyncio.sleep(0.51)
     return urls
 
 async def yanurlget(session,islist:bool=False,tags=[]):
     urls=set()
     for x in range(10):
         payload={"limit": 100,"tags": tags,"page":x}
-        async with session.get(url="https://yande.re/post.json",params=payload) as r:
+        headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"application/json"}
+        async with session.get(url="https://yande.re/post.json",params=payload,headers=headers) as r:
             jsoned=await r.json()
             for entry in jsoned:
                 url=entry.get("jpeg_url", None)
@@ -86,7 +92,8 @@ async def yanurlget(session,islist:bool=False,tags=[]):
         
 
 async def word(session,embedmode:bool=True):
-    async with session.get("https://www.thisworddoesnotexist.com/") as r: #get the website contents
+    headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"text/html"}
+    async with session.get("https://www.thisworddoesnotexist.com/",headers=headers) as r: #get the website contents
         bs=BeautifulSoup(await r.text(), "html.parser") 
         word=bs.find(id="definition-word").string # get the word
         syllables=bs.find(id="definition-syllables").string # get the syllables
