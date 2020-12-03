@@ -26,12 +26,30 @@ class utility_commands(commands.Cog):
     
     @commands.cooldown(1,5,commands.BucketType.user)
     @commands.command(pass_context=True,aliases=["uptime", "load"])
-    async def status(self,ctx):
+    async def status(self, ctx):
         """
-        show the bot's load
+        Bot's Current Status
         """
-        uptime=str(datetime.now() - self.bot.starttime).split(".")[0]
-        message = await ctx.send(f"uptime: {uptime}")
-    
+        process = psutil.Process(self.bot.pid)
+        mem = int(round((process.memory_info()[0] / 1000000)))
+        cpu = process.cpu_percent(interval=1)
+        cores_used = len(process.cpu_affinity())
+        cores_total = psutil.cpu_count()
+        ping = round(self.bot.latency * 1000, 1)
+        uptime = str(datetime.now() - self.bot.starttime).split(".")[0]
+
+        embed = discord.Embed(title="__Status of {0}__".format(self.bot.user.name, description=" "))
+        embed.add_field(name="**RAM usage 🖪**", value=f"`{mem} MB`", inline=True)
+        embed.add_field(name="**CPU usage 💻**",value=f"`{cpu}%`")
+        embed.add_field(name="**Cores**", value=f"`{cores_used} / {cores_total}`")
+        embed.add_field(name="**Ping 🏓**", value=f"`{ping} ms`")
+        embed.add_field(name="**Debug Mode 🐛**", value=f"`{self.bot.debugmode}`")
+        embed.color = 0x00ff00
+        embed.add_field(name="**Uptime ⏲**", value=f"`{uptime}`")
+        embed.set_footer(text="version: {}".format(self.bot.version))
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+        await ctx.trigger_typing()
+        await ctx.send(embed=embed)
+
         
 
