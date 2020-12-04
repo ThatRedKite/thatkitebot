@@ -22,49 +22,51 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
-from random import choice, choices
-from bs4 import BeautifulSoup
 import asyncio
-import discord
-import aiohttp
+from random import choice, choices
 
-async def r34url(session:aiohttp.ClientSession,tags,islist:bool=False,count:int=1):
-    urls={}
-    outlist=list()
-    headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"application/xml"}
-    payload={ "page": "dapi","tags": tags,"s": "post","q": "index","limit":100}
-    for x in range(0,10): # update the :updatevalue: from 0 to 10
+import aiohttp
+import discord
+from bs4 import BeautifulSoup
+
+
+async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):
+    urls = {}
+    outlist = list()
+    headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/xml"}
+    payload = {"page": "dapi", "tags": tags, "s": "post", "q": "index", "limit": 100}
+    for x in range(0, 10):  # update the :updatevalue: from 0 to 10
         payload.update(dict(pid=x))
         async with session.get(url="https://rule34.xxx/index.php", params=payload, headers=headers) as r:
-            soup=BeautifulSoup(await r.text(), "lxml") # parse XML
-            
-            for post in soup.find_all("post"): # find every :post:
-                urls.update({post.attrs.get("file_url"):int(post.attrs.get("score"))})
+            soup = BeautifulSoup(await r.text(), "lxml")  # parse XML
 
-    so=sorted(urls.items(),key=lambda x:x[1],reverse=True)
-    for url,score in so:
+            for post in soup.find_all("post"):  # find every :post:
+                urls.update({post.attrs.get("file_url"): int(post.attrs.get("score"))})
+
+    so = sorted(urls.items(), key=lambda x: x[1], reverse=True)
+    for url, score in so:
         outlist.append(url)
     if islist and outlist:
-        return choices(outlist,k=count)
+        return choices(outlist, k=count)
     elif not islist and outlist:
         return choice(outlist)
     else:
         return []
 
-async def monosodiumglutamate(session,tags):
-    urls=[] # initialize the list of URLs 
-    api_url="https://www.e621.net/posts.json" 
-    payload={"tags": tags, "limit": 320,"page":0}
-    #set user agent because this API is weird
-    headers={"User-Agent": "ThatKiteBot/2.3.3 (from luio950)","content-type":"application/json"}
-    for x in range(2): # do that stuff twice
-        payload.update({"page":x}) # change the "page"
+
+async def monosodiumglutamate(session, tags):
+    urls = []  # initialize the list of URLs
+    api_url = "https://www.e621.net/posts.json"
+    payload = {"tags": tags, "limit": 320, "page": 0}
+    # set user agent because this API is weird
+    headers = {"User-Agent": "ThatKiteBot/2.3.3 (from luio950)", "content-type": "application/json"}
+    for x in range(2):  # do that stuff twice
+        payload.update({"page": x})  # change the "page"
         async with session.get(api_url, headers=headers, params=payload) as r:
-            contentdict=await r.json()
+            contentdict = await r.json()
             for x in contentdict["posts"]:
                 if x != None:
-                    urls.append(x["file"]["url"]) # get the file URL and append it to the list
+                    urls.append(x["file"]["url"])  # get the file URL and append it to the list
                 else:
                     break
 
@@ -72,39 +74,40 @@ async def monosodiumglutamate(session,tags):
         await asyncio.sleep(0.51)
     return urls
 
-async def yanurlget(session,islist:bool=False,tags=[]):
-    urls=set()
+
+async def yanurlget(session, islist: bool = False, tags=[]):
+    urls = set()
     for x in range(10):
-        payload={"limit": 100,"tags": tags,"page":x}
-        headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"application/json"}
-        async with session.get(url="https://yande.re/post.json",params=payload,headers=headers) as r:
-            jsoned=await r.json()
+        payload = {"limit": 100, "tags": tags, "page": x}
+        headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/json"}
+        async with session.get(url="https://yande.re/post.json", params=payload, headers=headers) as r:
+            jsoned = await r.json()
             for entry in jsoned:
-                url=entry.get("jpeg_url", None)
+                url = entry.get("jpeg_url", None)
                 if url is not None:
                     urls.add(url)
-    assert len(urls)>0 and not None in urls
+    assert len(urls) > 0 and not None in urls
     if not islist:
-        outurl=choice(list(urls))
+        outurl = choice(list(urls))
         return outurl
     else:
         return list(urls)
-        
 
-async def word(session,embedmode:bool=True):
-    headers={"User-Agent": "ThatKiteBot/2.3.3","content-type":"text/html"}
-    async with session.get("https://www.thisworddoesnotexist.com/",headers=headers) as r: #get the website contents
-        bs=BeautifulSoup(await r.text(), "html.parser") 
-        word=bs.find(id="definition-word").string # get the word
-        syllables=bs.find(id="definition-syllables").string # get the syllables
-        definition=bs.find(id="definition-definition").string # get the definition of the word
+
+async def word(session, embedmode: bool = True):
+    headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "text/html"}
+    async with session.get("https://www.thisworddoesnotexist.com/", headers=headers) as r:  # get the website contents
+        bs = BeautifulSoup(await r.text(), "html.parser")
+        word = bs.find(id="definition-word").string  # get the word
+        syllables = bs.find(id="definition-syllables").string  # get the syllables
+        definition = bs.find(id="definition-definition").string  # get the definition of the word
         if embedmode:
             if syllables:
-                embed=discord.Embed(title=word)
+                embed = discord.Embed(title=word)
                 embed.add_field(name=syllables.lstrip(), value=definition.lstrip())
             else:
-                embed=discord.Embed(title=word, description=definition.lstrip())
+                embed = discord.Embed(title=word, description=definition.lstrip())
             if embed:
                 return embed
         else:
-            return word,definition
+            return word, definition
