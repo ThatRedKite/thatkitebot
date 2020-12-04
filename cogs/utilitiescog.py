@@ -1,15 +1,12 @@
-import os
-from discord.ext.commands.core import Command
-import psutil
 import discord
-from discord.ext import commands, tasks
-from datetime import datetime
+from discord.ext import commands
+
+from backend import utilcog_backend as back
 
 
 class utility_commands(commands.Cog):
     def __init__(self, bot: commands.Bot, dirname):
         self.dirname = dirname
-        self.process = psutil.Process(os.getpid())
         self.bot = bot
 
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -32,14 +29,7 @@ class utility_commands(commands.Cog):
         """
         Bot's Current Status
         """
-        process = psutil.Process(self.bot.pid)
-        mem = int(round((process.memory_info()[0] / 1000000)))
-        cpu = process.cpu_percent(interval=None)
-        cores_used = len(process.cpu_affinity())
-        cores_total = psutil.cpu_count()
-        ping = round(self.bot.latency * 1000, 1)
-        uptime = str(datetime.now() - self.bot.starttime).split(".")[0]
-
+        mem, cpu, cores_used, cores_total, ping, uptime = await back.get_status(self.bot.pid, self.bot)
         embed = discord.Embed(title="bot status")
         embed.add_field(name="RAM usage <:rammy:784103886150434866>",
                         value=f"{mem} MB\n**CPU usage** <:cpu:784103413804826665>\n{cpu}%", inline=True)
@@ -55,3 +45,4 @@ class utility_commands(commands.Cog):
             embed.color = 0x5105ad
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
+
