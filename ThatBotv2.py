@@ -88,7 +88,6 @@ class ThatKiteBot(commands.Bot):
 
 print("initilizing bot . . .")
 bot = ThatKiteBot(prefix, dirname)
-# bot.remove_command("help")
 
 # cogs
 gc.enable()
