@@ -32,7 +32,7 @@ class listeners(commands.Cog):
 
     @tasks.loop(minutes=5.0)
     async def statuschange(self):
-        ontime: timedelta = datetime.now() - self.bot.starttime
+        ontime = datetime.now() - self.bot.starttime
         times = str(ontime).split(".")
 
         possible_status = [
@@ -45,12 +45,12 @@ class listeners(commands.Cog):
             (Status.online, "games"),
             (Status.online, "dead"),
             (Status.online, "catch with myself"),
-            (Status.online, "Python 3.8"),
+            (Status.online, f"Python 3.{random.randint(5, 9)}"),
             (Status.online, "a cool game"),
             (Status.online, "chess"),
-            (Status.online, "Fallout 4"),
+            (Status.online, f"Fallout {random.randint(1, 4)}"),
             (Status.online, "gecko eating contest"),
-            (Status.online, "K.I.T.E - a preapocalyptic roleplaying game")
+            (Status.online, "K.I.T.E The Game")
         ]
 
         chosen_status, chosen_message = random.choice(possible_status)
