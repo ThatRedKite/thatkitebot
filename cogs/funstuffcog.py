@@ -8,7 +8,7 @@ import markovify
 from discord.ext import commands
 from gtts import gTTS
 
-import bf
+import backend
 
 
 class NoExitParser(argparse.ArgumentParser):
@@ -24,7 +24,7 @@ async def mark(bot, ctx: commands.Context, user, old: int = 200, new: int = 200,
     message: discord.Message = ctx.message
     # change the bot's status to "do not disturb" and set its game
     await bot.change_presence(status=discord.Status.dnd, activity=discord.Game("fetching . . ."))
-    chan, is_user, is_channel = bf.util.mentioner(bot, ctx, message, user, True)
+    chan, is_user, is_channel = backend.util.mentioner(bot, ctx, message, user, True)
     messages = []
     if is_user and not is_channel:
         for channel in guild.text_channels:
@@ -88,7 +88,7 @@ class fun_stuff(commands.Cog):
             parser.add_argument("-tts", type=str, nargs="?", default="False")
             parser.add_argument("-lang", type=str, nargs="?", default="en")
             parsed_args = parser.parse_args(args.split(" "))
-            use_tts = bf.util.bool_parse(parsed_args.tts)
+            use_tts = backend.util.bool_parse(parsed_args.tts)
         except Exception as exc:
             print(exc)
 
@@ -117,7 +117,7 @@ class fun_stuff(commands.Cog):
                 else:
                     await ctx.send("an error has occured. I could not fetch enough messages!")
         except Exception as exc:
-            await bf.util.errormsg(ctx, str(exc))
+            await backend.util.errormsg(ctx, str(exc))
             raise exc
         finally:
             await self.bot.change_presence(status=discord.Status.online, activity=None)
@@ -152,7 +152,8 @@ class fun_stuff(commands.Cog):
 
         except Exception as exc:
             print(exc)
-            await bf.util.errormsg(ctx, "Could not fetch enough messages! Please change the parameters and try again!")
+            await backend.util.errormsg(ctx,
+                                        "Could not fetch enough messages! Please change the parameters and try again!")
             self.markov_clear()
 
         finally:
@@ -174,13 +175,13 @@ class fun_stuff(commands.Cog):
             else:
                 self.mgame_tries -= 1
                 if self.mgame_tries == 0 or self.mgame_tries < 0:
-                    await bf.util.errormsg(ctx,
-                                           f"Sorry but that was the wrong answer. You have lost. The right answer would have been: {self.mgame_name}")
+                    await backend.util.errormsg(ctx,
+                                                f"Sorry but that was the wrong answer. You have lost. The right answer would have been: {self.mgame_name}")
                     self.markov_clear()
                 else:
                     await ctx.send(f"Sorry, that was wrong, you now have only {self.mgame_tries} tries left ")
         else:
-            await bf.util.errormsg(ctx, "You cannot guess, if you havn't started a game")
+            await backend.util.errormsg(ctx, "You cannot guess, if you havn't started a game")
 
     @mgame.command()
     async def stop(self, ctx):
@@ -189,7 +190,7 @@ class fun_stuff(commands.Cog):
     @commands.command()
     async def fakeword(self, ctx):
         with ctx.channel.typing():
-            embed = await bf.url.word(self.bot.aiohttp_session, embedmode=True)
+            embed = await backend.url.word(self.bot.aiohttp_session, embedmode=True)
             await ctx.send(embed=embed)
 
     @commands.command()

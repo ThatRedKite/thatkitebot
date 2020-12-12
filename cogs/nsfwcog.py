@@ -6,8 +6,8 @@ from random import choice, choices
 import discord
 from discord.ext import commands
 
-from bf import url
-from bf.util import errormsg
+from backend import url
+from backend.util import errormsg
 
 
 class NSFW(commands.Cog):

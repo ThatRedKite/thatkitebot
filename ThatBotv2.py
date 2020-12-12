@@ -31,8 +31,8 @@ import aiohttp
 import psutil
 from discord.ext import commands
 import cogs
-from bf.util import colors, clear_temp_folder
-from bf.yamler import Tomler
+from backend.util import colors, clear_temp_folder
+from backend.yamler import BotSettings
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 colors = colors()
@@ -41,7 +41,7 @@ if not dirname.joinpath("data", "temp").exists():
     os.mkdir(dirname.joinpath("data", "temp"))
 
 tempdir = dirname.joinpath("data", "temp")
-tom = Tomler(dirname)
+tom = BotSettings(dirname)
 prefix = tom.prefix
 discordtoken = tom.token
 tenortoken = tom.tenortoken
@@ -65,7 +65,7 @@ class ThatKiteBot(commands.Bot):
 
         # info
         self.version = "c3"
-        self.tom = Tomler(dirname)
+        self.tom = BotSettings(dirname)
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
