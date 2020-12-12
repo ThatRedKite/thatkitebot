@@ -7,8 +7,8 @@ from discord.enums import Status
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 
-from bf.util import colors
-from bf.util import errormsg
+from backend.util import colors
+from backend.util import errormsg
 
 
 class listeners(commands.Cog):
@@ -30,7 +30,7 @@ class listeners(commands.Cog):
         else:
             raise error
 
-    @tasks.loop(minutes=20.0)
+    @tasks.loop(minutes=5.0)
     async def statuschange(self):
         ontime: timedelta = datetime.now() - self.bot.starttime
         times = str(ontime).split(".")
@@ -41,8 +41,16 @@ class listeners(commands.Cog):
             (Status.online, f"{self.bot.command_prefix}help"),
             (Status.online, f"uptime:    {times[0]}"),
             (Status.dnd, "with trains"),
-            (Status.online, "with myself"),
-            (Status.online, "games")
+            (Status.dnd, "with myself"),
+            (Status.online, "games"),
+            (Status.online, "dead"),
+            (Status.online, "catch with myself"),
+            (Status.online, "Python 3.8"),
+            (Status.online, "a cool game"),
+            (Status.online, "chess"),
+            (Status.online, "Fallout 4"),
+            (Status.online, "gecko eating contest"),
+            (Status.online, "K.I.T.E - a preapocalyptic roleplaying game")
         ]
 
         chosen_status, chosen_message = random.choice(possible_status)
