@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-import misc as back
+import backend.misc as back
 
 
 class utility_commands(commands.Cog):
