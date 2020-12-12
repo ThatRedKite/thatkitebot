@@ -39,5 +39,7 @@ async def do_gmagik(image: imageio.plugins.pillowmulti.GIFFormat.Reader):
 
     # write the result to a BytesIO buffer and then turn it into a `discord.File` object and return it
     with BytesIO() as buffer:
-        imageio.mimwrite(buffer, io, fps=fps)
-        return File(buffer, filename="deepfried.png")
+        buffer.seek(0)
+        imageio.mimwrite(buffer, io, fps=fps, format="gif")
+        buffer.seek(0)
+        return File(buffer, filename="deepfried.gif")

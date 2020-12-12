@@ -1,22 +1,23 @@
-import re
-import discord
 import argparse
-from queue import Queue
 import gc
-
-import imageio
-
-from backend import util
+import re
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from functools import partial
 from io import BytesIO
 from os.path import join
+from queue import Queue
 from random import choice
-from functools import partial
-from datetime import datetime
+
+import discord
+import imageio
+from PIL import Image, ImageDraw, ImageFont
 from discord.ext import commands
 from wand.image import Image as WandImage
+
+from backend import util, magik
+from backend import url as url_util
 from cogs.funstuffcog import mark
-from PIL import Image, ImageDraw, ImageFont
-from concurrent.futures import ThreadPoolExecutor
 
 
 # an argparse parser that does not terminate the program when an error occurs
@@ -479,4 +480,15 @@ class image_stuff(commands.Cog):
 
     @commands.command()
     async def gmagik2(self, ctx):
-        pass
+        with ctx.channel.typing():
+            image_url = await url_util.imageurlgetter(
+                session=self.bot.aiohttp_session,
+                history=ctx.channel.history(limit=50, around=datetime.now()),
+                token=self.bot.tom.tenortoken,
+                gif=True)
+
+            io = await url_util.imagedownloader(
+                session=self.bot.aiohttp_session,
+                url=image_url)
+
+            await ctx.send(file=await magik.do_gmagik(io))

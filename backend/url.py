@@ -45,12 +45,14 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token, gif):
         pattern = otherpattern
 
     async for message in history:
-        if message.attachments:
-            found_url = pattern.findall(message.attachments[0].url)
+        attachments = message.attachments
+        if attachments:
+            found_url = pattern.findall(attachments[0].url)
             if found_url:
                 url, fe = found_url[0]
                 break  # break the loop, a valid url has been found
         else:
+            print("ass")
             # found_url is a list of all urls the regex found,
             # this should only be one value, or no value at all
             found_url = pattern.findall(message.clean_content)
@@ -69,7 +71,6 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token, gif):
                     url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
                 break  # break the loop, a valid url has been found
 
-    assert url
     return str(url)
 
 
