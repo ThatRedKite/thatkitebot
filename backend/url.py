@@ -23,11 +23,61 @@ SOFTWARE.
 """
 
 import asyncio
+import re
+from io import BytesIO
 from random import choice, choices
-
 import aiohttp
 import discord
+import imageio
 from bs4 import BeautifulSoup
+
+gifpattern = re.compile("(^https?://\S+.(gif))")  # only gif images
+# detects PNG, JPEG, WEBP and GIF images
+otherpattern = re.compile("(^https?://\S+.(png|webp|gif|jpe?g))")
+# gets the ID of a tenor GIF from its URL
+tenorpattern = re.compile("^https://tenor.com\S+-(\d+)$")
+
+
+async def imageurlgetter(session: aiohttp.ClientSession, history, token, gif):
+    if gif:
+        pattern = gifpattern
+    else:
+        pattern = otherpattern
+
+    async for message in history:
+        attachments = message.attachments
+        if attachments:
+            found_url = pattern.findall(attachments[0].url)
+            if found_url:
+                url, fe = found_url[0]
+                break  # break the loop, a valid url has been found
+        else:
+            # found_url is a list of all urls the regex found,
+            # this should only be one value, or no value at all
+            found_url = pattern.findall(message.clean_content)
+            # the tenor ID of the GIF.It only contains anything, if there actually is a tenor GIF
+            tenor = tenorpattern.findall(message.clean_content)
+            if found_url and not tenor:  # unpack the url and the file extension
+                url, fe = found_url[0]
+                break  # break the loop, a valid url has been found
+            elif tenor:
+                # define the header and the payload:
+                headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/json"}
+                payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
+
+                async with session.get(url="https://api.tenor.com/v1/gifs", params=payload, headers=headers) as r:
+                    gifs = await r.json()
+                    url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
+                break  # break the loop, a valid url has been found
+
+    return str(url)
+
+
+async def imagedownloader(session: aiohttp.ClientSession, url: str):
+    async with session.get(url) as r:
+        ob = BytesIO(await r.read())
+        ob.seek(0)
+        return imageio.get_reader(ob)
 
 
 async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):

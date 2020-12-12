@@ -37,7 +37,7 @@ class TokenErrorCritical(Exception):
     pass
 
 
-class Tomler:
+class BotSettings:
     def __init__(self, dirname: str):
         logging.basicConfig(
             filename="{0}/test.log".format(dirname),
@@ -89,9 +89,9 @@ class Tomler:
             print(TokenError)
             logging.warning(exc.message)
 
-    def update(self, data, guildid: str):
+    def update(self, data, guild_id: str):
         """ update a setting (not the token or prefix) """
-        guildid = str(guildid)
+        guild_id = str(guild_id)
 
         # re-read the contents of the settings file
         if self.path.exists():  # check if the file exists
@@ -102,25 +102,25 @@ class Tomler:
         # check if the right data type is supplied
         if type(data) == dict and len(data) > 0:
             try:
-                self.settings_all[guildid].update(data)
+                self.settings_all[guild_id].update(data)
 
             except KeyError:
                 if len(self.settings_all) == 0:
                     self.settings_all = {
-                        guildid: {
+                        guild_id: {
                             "busbr": False,
                             "nsfw": False,
                             "bomb": False}
                     }
-                    self.settings_all[guildid].update(data)
+                    self.settings_all[guild_id].update(data)
                 else:
                     self.settings_all.update({
-                        guildid: {
+                        guild_id: {
                             "busbr": False,
                             "nsfw": False,
                             "bomb": False}
                     })
-                    self.settings_all[guildid].update(data)
+                    self.settings_all[guild_id].update(data)
 
             finally:
                 self.parsed = deepcopy({"tokens": self.tokens, "settings": self.settings_all})

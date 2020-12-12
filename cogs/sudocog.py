@@ -1,4 +1,4 @@
-from bf import util
+from backend import util
 import discord
 import asyncio
 from discord.ext import commands
@@ -10,7 +10,7 @@ class sudo_commands(commands.Cog):
 
     @commands.is_owner()
     @commands.command()
-    async def kill(self):
+    async def kill(self, ctx):
         await self.bot.change_presence(status=discord.Status.offline)
         # clear the temp file folder
         util.clear_temp_folder(self.dirname)

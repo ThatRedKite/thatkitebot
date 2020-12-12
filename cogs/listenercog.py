@@ -7,8 +7,8 @@ from discord.enums import Status
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 
-from bf.util import colors
-from bf.util import errormsg
+from backend.util import colors
+from backend.util import errormsg
 
 
 class listeners(commands.Cog):
@@ -30,9 +30,9 @@ class listeners(commands.Cog):
         else:
             raise error
 
-    @tasks.loop(minutes=20.0)
+    @tasks.loop(minutes=5.0)
     async def statuschange(self):
-        ontime: timedelta = datetime.now() - self.bot.starttime
+        ontime = datetime.now() - self.bot.starttime
         times = str(ontime).split(".")
 
         possible_status = [
@@ -41,8 +41,16 @@ class listeners(commands.Cog):
             (Status.online, f"{self.bot.command_prefix}help"),
             (Status.online, f"uptime:    {times[0]}"),
             (Status.dnd, "with trains"),
-            (Status.online, "with myself"),
-            (Status.online, "games")
+            (Status.dnd, "with myself"),
+            (Status.online, "games"),
+            (Status.online, "dead"),
+            (Status.online, "catch with myself"),
+            (Status.online, f"Python 3.{random.randint(5, 9)}"),
+            (Status.online, "a cool game"),
+            (Status.online, "chess"),
+            (Status.online, f"Fallout {random.randint(1, 4)}"),
+            (Status.online, "gecko eating contest"),
+            (Status.online, "K.I.T.E The Game")
         ]
 
         chosen_status, chosen_message = random.choice(possible_status)
@@ -53,8 +61,3 @@ class listeners(commands.Cog):
         print(f"\nbot successfully started!")
         await self.bot.change_presence(status=discord.Status.dnd, activity=discord.Game("booting"))
         self.statuschange.start()
-        self.cpu_usage.start()
-
-    @tasks.loop(seconds=1.0)
-    async def cpu_usage(self):
-        print(psutil.cpu_percent(interval=None))

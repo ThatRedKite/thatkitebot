@@ -423,7 +423,7 @@ class music(commands.Cog):
             queue += "`{0}.` [**{1.source.title}**]({1.source.url})\n".format(i + 1, song)
 
         embed = (discord.Embed(description="**{} tracks:**\n\n{}".format(len(ctx.voice_state.songs), queue))
-                 .set_footer(text="Viewing page {}/{}".format(page, pages)))
+                 .set_footer(text=f"Viewing page {page}/{pages}"))
         await ctx.send(embed=embed)
 
     @commands.command(name="shuffle")
@@ -475,7 +475,7 @@ class music(commands.Cog):
             try:
                 source = await YTDLSource.create_source(ctx, search, loop=self.bot.loop)
             except YTDLError as e:
-                await ctx.send("An error occurred while processing this request: {}".format(str(e)))
+                await ctx.send(f"An error occurred while processing this request: {e}")
             else:
                 song = Song(source)
 
