@@ -61,8 +61,3 @@ class listeners(commands.Cog):
         print(f"\nbot successfully started!")
         await self.bot.change_presence(status=discord.Status.dnd, activity=discord.Game("booting"))
         self.statuschange.start()
-        self.cpu_usage.start()
-
-    @tasks.loop(seconds=1.0)
-    async def cpu_usage(self):
-        print(psutil.cpu_percent(interval=None))
