@@ -52,7 +52,6 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token, gif):
                 url, fe = found_url[0]
                 break  # break the loop, a valid url has been found
         else:
-            print("ass")
             # found_url is a list of all urls the regex found,
             # this should only be one value, or no value at all
             found_url = pattern.findall(message.clean_content)
