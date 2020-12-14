@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
-
-import misc as back
-
+from backend import misc as back
 
 class utility_commands(commands.Cog):
     def __init__(self, bot: commands.Bot, dirname):
