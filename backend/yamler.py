@@ -34,7 +34,7 @@ class TokenErrorCritical(Exception):
 class BotSettings:
     def __init__(self, dirname: str):
         logging.basicConfig(
-            filename="{0}/test.log".format(dirname),
+            filename=f"{dirname}/data/bot.log",
             level=logging.WARN,
             format="%(levelname)s|%(message)s| @ %(asctime)s")
 
