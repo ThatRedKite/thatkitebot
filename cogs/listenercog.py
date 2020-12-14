@@ -1,12 +1,9 @@
 import random
-from datetime import datetime, timedelta
-
+from datetime import datetime
 import discord
-import psutil
 from discord.enums import Status
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
-
 from backend.util import colors
 from backend.util import errormsg
 

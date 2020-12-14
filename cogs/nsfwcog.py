@@ -2,10 +2,8 @@ import asyncio
 import typing
 from concurrent.futures import ThreadPoolExecutor
 from random import choice, choices
-
 import discord
 from discord.ext import commands
-
 from backend import url
 from backend.util import errormsg
 

@@ -1,15 +1,11 @@
 from io import BytesIO
-from multiprocessing import Pool
-
 import imageio
 from wand.image import Image as WandImage
 import numpy as np
-from discord import Embed, File
+from discord import File
 
 
 # define filters which all take one argument (i) which is a numpy array:
-
-
 def magik(i):
     with WandImage.from_array(i) as a:
         a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
@@ -31,15 +27,17 @@ def deepfry(i):
         return np.array(a)
 
 
-async def do_gmagik(image: imageio.plugins.pillowmulti.GIFFormat.Reader):
-    fps = image.get_meta_data().get("duration")
+def do_gmagik(image: imageio.plugins.pillowmulti.GIFFormat.Reader):
+    fps = image.get_meta_data()["duration"]
     # apply the magik filter to all frames
-    with Pool(processes=4) as p:
-        io = p.map(magik, image)
+    io = list()
+    for frame in image: io.append(magik(frame))
 
-    # write the result to a BytesIO buffer and then turn it into a `discord.File` object and return it
+    # write the result to a BytesIO buffer and then tur
+    # n it into a `discord.File` object and return it
     with BytesIO() as buffer:
         buffer.seek(0)
         imageio.mimwrite(buffer, io, fps=fps, format="gif")
+        io.clear()
         buffer.seek(0)
         return File(buffer, filename="deepfried.gif")
