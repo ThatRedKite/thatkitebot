@@ -8,13 +8,11 @@ from io import BytesIO
 from os.path import join
 from queue import Queue
 from random import choice
-
 import discord
 import imageio
 from PIL import Image, ImageDraw, ImageFont
 from discord.ext import commands
 from wand.image import Image as WandImage
-
 from backend import util, magik
 from backend import url as url_util
 from cogs.funstuffcog import mark
@@ -26,7 +24,7 @@ class NoExitParser(argparse.ArgumentParser):
         raise ValueError(message)
 
 
-def deepfried(buffer, path):
+def deepfried(buffer):
     buffer.seek(0)
     with WandImage(file=buffer) as img:
         # increase the saturation and att some noise
@@ -46,7 +44,7 @@ def deepfried(buffer, path):
         return embed, image_file
 
 
-def do_magik(buffer: BytesIO, path):
+def do_magik(buffer: BytesIO):
     buffer.seek(0)
     with WandImage(file=buffer) as i:
         i.alpha_channel = True
@@ -70,7 +68,7 @@ def do_magik(buffer: BytesIO, path):
         return embed, image_file
 
 
-def make_wide(buffer, path):
+def make_wide(buffer):
     buffer.seek(0)
     with WandImage(file=buffer) as img:
         img.resize(width=int(img.width * 3), height=int(img.height / 1.7))
@@ -280,10 +278,26 @@ class image_stuff(commands.Cog):
                         break  # break the loop, a valid url has been found
         else:
             url = str(ctx)
+
         async with self.bot.aiohttp_session.get(url) as r:
             inbuffer = BytesIO(await r.read())
-            inbuffer.seek(0)
-            return imageio.get_reader(inbuffer)
+            # gifs should not be converted to PNG
+            #
+            if not gif:
+                inbuffer.seek(0)
+                with Image.open(inbuffer) as img:
+                    outbuffer = BytesIO()
+                    # convert the image to RGBA and PNG
+                    with img.convert("RGBA") as outimg:
+                        outbuffer.seek(0)
+                        outimg.save(outbuffer, "png")
+                return outbuffer
+            else:
+                # this just seeks the buffer to 0
+                # and then returns the buffer without altering it
+                inbuffer.seek(0)
+                gc.collect()
+                return inbuffer
 
     async def captioner(self, buffer, text, size):
 
@@ -487,8 +501,13 @@ class image_stuff(commands.Cog):
                 token=self.bot.tom.tenortoken,
                 gif=True)
 
-            io = await url_util.imagedownloader(
-                session=self.bot.aiohttp_session,
-                url=image_url)
-
-            await ctx.send(file=await magik.do_gmagik(io))
+            io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
+            fps = io.get_meta_data()["duration"]
+            with ThreadPoolExecutor(4) as pool:
+                io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
+                with BytesIO() as image_buffer:
+                    image_buffer.seek(0)
+                    imageio.mimwrite(image_buffer, io, fps=fps, format="gif")
+                    image_buffer.seek(0)
+                    image_file = discord.File(image_buffer, filename="gmagik.gif")
+            await ctx.send(file=image_file)
