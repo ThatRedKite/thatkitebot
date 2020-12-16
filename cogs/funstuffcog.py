@@ -87,12 +87,7 @@ class fun_stuff(commands.Cog):
 
     @commands.command()
     async def inspirobot(self, ctx):
-        payload = {"generate": "true"}
-        r = get("http://inspirobot.me/api", params=payload)
-        embed = discord.Embed(title="A motivating quote from InspiroBot")
-        embed.color = 0x33cc33
-        embed.set_image(url=r.text)
-        await ctx.send(embed=embed)
+        await ctx.send(embed=await backend.url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(aliases=["mark", "m"])
     async def markov(self, ctx, user="keiner", *, args="-tts False"):

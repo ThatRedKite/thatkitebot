@@ -56,7 +56,7 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token, gif):
                 break  # break the loop, a valid url has been found
             elif tenor:
                 # define the header and the payload:
-                headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/json"}
+                headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "application/json"}
                 payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
 
                 async with session.get(url="https://api.tenor.com/v1/gifs", params=payload, headers=headers) as r:
@@ -77,7 +77,7 @@ async def imagedownloader(session: aiohttp.ClientSession, url: str):
 async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):
     urls = {}
     outlist = list()
-    headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/xml"}
+    headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "application/xml"}
     payload = {"page": "dapi", "tags": tags, "s": "post", "q": "index", "limit": 100}
     for x in range(0, 10):  # update the :updatevalue: from 0 to 10
         payload.update(dict(pid=x))
@@ -103,7 +103,7 @@ async def monosodiumglutamate(session, tags):
     api_url = "https://www.e621.net/posts.json"
     payload = {"tags": tags, "limit": 320, "page": 0}
     # set user agent because this API is weird
-    headers = {"User-Agent": "ThatKiteBot/2.3.3 (from luio950)", "content-type": "application/json"}
+    headers = {"User-Agent": "ThatKiteBot/2.3.4 (from luio950)", "content-type": "application/json"}
     for x in range(2):  # do that stuff twice
         payload.update({"page": x})  # change the "page"
         async with session.get(api_url, headers=headers, params=payload) as r:
@@ -123,7 +123,7 @@ async def yanurlget(session, islist: bool = False, tags=[]):
     urls = set()
     for x in range(10):
         payload = {"limit": 100, "tags": tags, "page": x}
-        headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/json"}
+        headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "application/json"}
         async with session.get(url="https://yande.re/post.json", params=payload, headers=headers) as r:
             jsoned = await r.json()
             for entry in jsoned:
@@ -139,7 +139,7 @@ async def yanurlget(session, islist: bool = False, tags=[]):
 
 
 async def word(session, embedmode: bool = True):
-    headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "text/html"}
+    headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "text/html"}
     async with session.get("https://www.thisworddoesnotexist.com/", headers=headers) as r:  # get the website contents
         bs = BeautifulSoup(await r.text(), "html.parser")
         word = bs.find(id="definition-word").string  # get the word
@@ -155,3 +155,14 @@ async def word(session, embedmode: bool = True):
                 return embed
         else:
             return word, definition
+
+
+async def inspirourl(session:aiohttp.ClientSession):
+    payload = {"generate": "true"}
+    headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "text/html"}
+    async with session.get("http://inspirobot.me/api", params=payload,headers=headers) as r:
+        url=await r.text()
+    embed = discord.Embed(title="A motivating quote from InspiroBot")
+    embed.color = 0x33cc33
+    embed.set_image(url=url)
+    return embed
