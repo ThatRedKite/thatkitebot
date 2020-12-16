@@ -1,3 +1,22 @@
+#  MIT License
+#
+#  Copyright (c) 2020 ThatRedKite
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+# the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 import argparse
 import gc
 import re
@@ -266,7 +285,7 @@ class image_stuff(commands.Cog):
                         break  # break the loop, a valid url has been found
                     elif tenor:
                         # define the header and the payload
-                        headers = {"User-Agent": "ThatKiteBot/2.3.3", "content-type": "application/json"}
+                        headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "application/json"}
                         payload = {"key": api_token, "ids": int(tenor[0]), "media_filter": "minimal"}
 
                         async with self.bot.aiohttp_session.get(url="https://api.tenor.com/v1/gifs", params=payload,
@@ -357,8 +376,8 @@ class image_stuff(commands.Cog):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         with ctx.channel.typing():
             buffer = await self.image_url_fetcher(ctx=ctx, api_token=self.bot.tom.tenortoken)
-            with ThreadPoolExecutor() as executor:
-                embed, image_file = await self.bot.loop.run_in_executor(executor, do_magik, buffer, self.path)
+            with ThreadPoolExecutor(4) as executor:
+                embed, image_file = await self.bot.loop.run_in_executor(executor, do_magik, buffer)
             await ctx.send(file=image_file)
             del buffer, embed, image_file
 
@@ -370,8 +389,8 @@ class image_stuff(commands.Cog):
             message = ctx.message
             chan, is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
             buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
-            with ThreadPoolExecutor() as executor:
-                embed, image_file = await self.bot.loop.run_in_executor(executor, make_wide, buffer, self.path)
+            with ThreadPoolExecutor(4) as executor:
+                embed, image_file = await self.bot.loop.run_in_executor(executor, make_wide, buffer)
             await ctx.send(file=image_file)
             del buffer, embed, image_file
 
@@ -382,9 +401,8 @@ class image_stuff(commands.Cog):
         message = ctx.message
         chan, is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
         buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
-        with ThreadPoolExecutor() as executor:
-            buffer.seek(0)
-            image_file = discord.File(buffer, filename="pfp.png")
+        buffer.seek(0)
+        image_file = discord.File(buffer, filename="pfp.png")
         await ctx.send(file=image_file)
         del buffer, image_file
 
@@ -397,7 +415,7 @@ class image_stuff(commands.Cog):
             chan, is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
             buffer = await self.image_url_fetcher(ctx=chan.avatar_url, bypass=True)
             with ThreadPoolExecutor() as executor:
-                embed, image_file = await self.bot.loop.run_in_executor(executor, do_magik, buffer, self.path)
+                embed, image_file = await self.bot.loop.run_in_executor(executor, do_magik, buffer)
             await ctx.send(file=image_file)
             del buffer, embed, image_file
 
@@ -408,7 +426,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             buffer = await self.image_url_fetcher(ctx=ctx, api_token=self.bot.tom.tenortoken)
             with ThreadPoolExecutor() as executor:
-                embed, image_file = await self.bot.loop.run_in_executor(executor, deepfried, buffer, self.path)
+                embed, image_file = await self.bot.loop.run_in_executor(executor, deepfried, buffer)
             await ctx.send(file=image_file)
             del buffer, embed, image_file
 
