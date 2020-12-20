@@ -39,8 +39,7 @@ class listeners(commands.Cog):
         elif isinstance(error, commands.CommandOnCooldown):
             await errormsg(ctx, "Sorry, but this command is on cooldown! Try again in a few seconds.")
         elif isinstance(error, CommandInvokeError) and self.bot.debugmode:
-            await errormsg(ctx, str(error))
-            await errormsg(ctx, str(error.original))
+            await errormsg(ctx, repr(error))
             raise error
         else:
             raise error

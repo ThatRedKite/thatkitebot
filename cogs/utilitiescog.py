@@ -47,13 +47,13 @@ class utility_commands(commands.Cog):
         Bot's Current Status
         """
         mem, cpu, cores_used, cores_total, ping, uptime = await back.get_status(self.bot.pid, self.bot)
-        embed = discord.Embed(title="bot status")
+        embed = discord.Embed()
         embed.add_field(name="RAM usage <:rammy:784103886150434866>",
                         value=f"{mem} MB\n**CPU usage** <:cpu:784103413804826665>\n{cpu}%", inline=True)
         embed.add_field(name="cores <:cpu:784103413804826665>",
                         value=f"{cores_used}/{cores_total}\n**ping** <:ping:784103830102736908>\n{ping} ms")
         embed.add_field(name="uptime <:uptime:784103801896042547>",
-                        value=f"{uptime}\n**debugmode** <:buggy:784103932204548151>\n{self.bot.debugmode}")
+                        value=f"{uptime}\n**debug mode** <:buggy:784103932204548151>\n{self.bot.debugmode}")
         embed.set_footer(text="version: {}".format(self.bot.version))
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         if not self.bot.debugmode:

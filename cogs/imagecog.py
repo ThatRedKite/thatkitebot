@@ -68,9 +68,8 @@ def do_magik(buffer: BytesIO):
     with WandImage(file=buffer) as i:
         i.alpha_channel = True
         height, width = i.height, i.width
-        i.resize(width=int(i.width * 3), height=int(i.height / 1.2))
         i.liquid_rescale(width=int(i.width * 0.5), height=int(i.height * 0.5), delta_x=1, rigidity=0)
-        i.liquid_rescale(width=int(i.width * 2.512), height=int(i.height * 2.512), delta_x=2, rigidity=0)
+        i.liquid_rescale(width=int(i.width * 2), height=int(i.height * 2), delta_x=2, rigidity=0)
 
         i.resize(width, height)
         with BytesIO() as outbuffer:
@@ -437,7 +436,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             buffer = await self.image_url_fetcher(ctx=ctx, api_token=self.bot.tom.tenortoken)
             with ThreadPoolExecutor() as executor:
-                embed, image_file = await self.bot.loop.run_in_executor(executor, make_wide, buffer, self.path)
+                embed, image_file = await self.bot.loop.run_in_executor(executor, make_wide, buffer)
             await ctx.send(file=image_file)
             del buffer, embed, image_file
 
