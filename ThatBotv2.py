@@ -25,7 +25,7 @@ import psutil
 from discord.ext import commands
 import cogs
 from backend.util import colors, clear_temp_folder
-from backend.yamler import BotSettings
+from backend.settings import BotSettings
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 colors = colors()

@@ -1,4 +1,4 @@
-from . import yamler
+from . import settings
 from . import url
 from . import util
 from . import misc
