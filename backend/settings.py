@@ -83,6 +83,7 @@ class BotSettings:
             print(TokenError)
             logging.warning(exc.message)
 
+
     def update(self, data, guild_id: str):
         """ update a setting (not the token or prefix) """
         guild_id = str(guild_id)
@@ -124,7 +125,3 @@ class BotSettings:
                 with open(self.path, "wt") as stream:
                     stream.write(datanew)
 
-
-class DataMan:
-    def __init__(self):
-        pass

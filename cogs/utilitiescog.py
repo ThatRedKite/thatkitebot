@@ -19,6 +19,7 @@
 import discord
 from discord.ext import commands
 from backend import misc as back
+from backend.util import EmbedColors as ec
 
 
 class utility_commands(commands.Cog):
@@ -33,8 +34,7 @@ class utility_commands(commands.Cog):
         for cog in self.bot.cogs:
             commandstring = ""
             for command in self.bot.get_cog(cog).walk_commands():
-                if cog != "NSFW":
-                    commandstring += f"{command}\n"
+                if cog != "NSFW":commandstring += f"{command}\n"
             if len(commandstring) > 1:
                 embed.add_field(name=f"**{cog}**", value=f"\n{commandstring}", inline=True)
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
@@ -57,9 +57,9 @@ class utility_commands(commands.Cog):
         embed.set_footer(text="version: {}".format(self.bot.version))
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         if not self.bot.debugmode:
-            embed.color = 0x00ff00
-        else:
-            embed.color = 0x5105ad
+            if cpu >= 90.0: embed.color = ec.traffic_red
+            else: embed.color = ec.lime_green
+        else:embed.color = ec.purple_violet
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
 

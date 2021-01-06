@@ -24,6 +24,7 @@ import discord
 from discord.ext import commands
 from backend import url
 from backend.util import errormsg
+from backend.util import EmbedColors as ec
 
 
 class NSFW(commands.Cog):
@@ -55,7 +56,7 @@ class NSFW(commands.Cog):
                     tags=tags
                 )
                 embed = discord.Embed(title="Link To picture", url=myurl)
-                embed.color = 0xff00cc
+                embed.color = ec.telemagenta
                 embed.set_image(url=myurl)
                 await ctx.send(embed=embed)
         else:
@@ -117,7 +118,7 @@ class NSFW(commands.Cog):
                     try:
                         myurl = choice(urllist)
                         embed = discord.Embed(title="Link To picture", url=myurl)
-                        embed.color = 0xff00cc
+                        embed.color = ec.telemagenta
                         #  change color to magenta
                         embed.set_image(url=myurl)
                         await ctx.send(embed=embed)

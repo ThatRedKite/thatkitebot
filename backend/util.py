@@ -22,11 +22,20 @@ import random
 import re
 import discord
 
+class EmbedColors:
+    blood_orange = 0xe25303
+    lime_green = 0x00b51a
+    traffic_red = 0xbb1e10
+    purple_violet = 0x47243c
+    light_grey = 0xc5c7c4
+    sulfur_yellow = 0xf1dd38
+    ultramarine_blue = 0x00387b
+    telemagenta = 0xbc4077
 
 async def errormsg(ctx, msg: str, exc=""):
     with ctx.channel.typing():
         embed = discord.Embed(title="**ERROR!**", description=msg)
-        embed.color = 0xC1121C  # set the color to "traffic red"
+        embed.color = EmbedColors.traffic_red
         embed.set_footer(text=exc)
     await ctx.send(embed=embed)
 
@@ -139,3 +148,6 @@ def clear_temp_folder(dirname):
     cleanupfiles += glob.glob(os.path.join(dirname, "data", "temp", "*.mp3"))
     for file in cleanupfiles:
         os.remove(file)
+
+
+

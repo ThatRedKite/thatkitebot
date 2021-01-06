@@ -57,7 +57,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir = self.dirname.joinpath("data", "temp")
 
         # info
-        self.version = "c4.1"
+        self.version = "2.3.4.2"
         self.tom = BotSettings(dirname)
         self.starttime = datetime.now()
         self.pid = os.getpid()
