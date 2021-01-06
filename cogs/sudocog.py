@@ -15,6 +15,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import gc
 
 from backend import util
 import discord
@@ -60,3 +61,9 @@ class sudo_commands(commands.Cog):
         msg=await ctx.send(f"set debug to {self.bot.debugmode}")
         await asyncio.sleep(2)
         await msg.delete()
+
+
+    @commands.is_owner()
+    @commands.command()
+    async def gcrun(self,ctx):
+        gc.collect()
