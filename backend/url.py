@@ -24,10 +24,12 @@ import aiohttp
 import discord
 import imageio
 from bs4 import BeautifulSoup
+from util import EmbedColors as ec
 
-gifpattern = re.compile("(^https?://\S+.(gif))")  # only gif images
+
+gifpattern = re.compile("(^https?://\S+.(?i)(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-otherpattern = re.compile("(^https?://\S+.(png|webp|gif|jpe?g))")
+otherpattern = re.compile("(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
 tenorpattern = re.compile("^https://tenor.com\S+-(\d+)$")
 
@@ -161,8 +163,8 @@ async def inspirourl(session:aiohttp.ClientSession):
     payload = {"generate": "true"}
     headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "text/html"}
     async with session.get("http://inspirobot.me/api", params=payload,headers=headers) as r:
-        url=await r.text()
+        url = await r.text()
     embed = discord.Embed(title="A motivating quote from InspiroBot")
-    embed.color = 0x33cc33
+    embed.color = ec.lime_green
     embed.set_image(url=url)
     return embed
