@@ -37,11 +37,10 @@ class EliteDangerous(commands.Cog):
         else:
             try:
                 last_system=self.last_system_by_user.get(uid)
-                print(last_system)
                 embed = await elitedangerous.get_deaths(session=self.session,sysname=last_system,return_sysname=False)
 
             except TypeError:
-                print("whoops")
+                pass
 
         await ctx.send(embed=embed)
 
