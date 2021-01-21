@@ -1,20 +1,23 @@
+# ------------------------------------------------------------------------------
 #  MIT License
 #
-#  Copyright (c) 2020 ThatRedKite
+#  Copyright (c) 2019-2021 ThatRedKite
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
+#  The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+#  the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+#  THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+#  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+# ------------------------------------------------------------------------------
+
 
 import asyncio
 import re
@@ -24,10 +27,12 @@ import aiohttp
 import discord
 import imageio
 from bs4 import BeautifulSoup
+from .util import EmbedColors as ec
 
-gifpattern = re.compile("(^https?://\S+.(gif))")  # only gif images
+
+gifpattern = re.compile("(^https?://\S+.(?i)(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-otherpattern = re.compile("(^https?://\S+.(png|webp|gif|jpe?g))")
+otherpattern = re.compile("(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
 tenorpattern = re.compile("^https://tenor.com\S+-(\d+)$")
 
@@ -161,8 +166,8 @@ async def inspirourl(session:aiohttp.ClientSession):
     payload = {"generate": "true"}
     headers = {"User-Agent": "ThatKiteBot/2.3.4", "content-type": "text/html"}
     async with session.get("http://inspirobot.me/api", params=payload,headers=headers) as r:
-        url=await r.text()
+        url = await r.text()
     embed = discord.Embed(title="A motivating quote from InspiroBot")
-    embed.color = 0x33cc33
+    embed.color = ec.lime_green
     embed.set_image(url=url)
     return embed

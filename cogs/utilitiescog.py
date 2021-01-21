@@ -1,24 +1,28 @@
+# ------------------------------------------------------------------------------
 #  MIT License
 #
-#  Copyright (c) 2020 ThatRedKite
+#  Copyright (c) 2019-2021 ThatRedKite
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
+#  The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+#  the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+#  THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+#  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+# ------------------------------------------------------------------------------
+
 
 import discord
 from discord.ext import commands
 from backend import misc as back
+from backend.util import EmbedColors as ec
 
 
 class utility_commands(commands.Cog):
@@ -33,8 +37,7 @@ class utility_commands(commands.Cog):
         for cog in self.bot.cogs:
             commandstring = ""
             for command in self.bot.get_cog(cog).walk_commands():
-                if cog != "NSFW":
-                    commandstring += f"{command}\n"
+                if cog != "NSFW":commandstring += f"{command}\n"
             if len(commandstring) > 1:
                 embed.add_field(name=f"**{cog}**", value=f"\n{commandstring}", inline=True)
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
@@ -57,9 +60,9 @@ class utility_commands(commands.Cog):
         embed.set_footer(text="version: {}".format(self.bot.version))
         embed.set_thumbnail(url=str(self.bot.user.avatar_url))
         if not self.bot.debugmode:
-            embed.color = 0x00ff00
-        else:
-            embed.color = 0x5105ad
+            if cpu >= 90.0: embed.color = ec.traffic_red
+            else: embed.color = ec.lime_green
+        else:embed.color = ec.purple_violet
         await ctx.trigger_typing()
         await ctx.send(embed=embed)
 

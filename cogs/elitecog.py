@@ -18,17 +18,31 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 
+import discord
+from discord.ext import commands
+from backend import elitedangerous
 
-import psutil
-from datetime import datetime
+class EliteDangerous(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.session = self.bot.aiohttp_session
+        self.last_system_by_user = {}
+
+    @commands.command(name="deaths",aliases=["d"], pass_context=True)
+    async def _get_deaths(self,ctx, *, sysname: str=""):
+        uid = ctx.author.id
+        if sysname:
+            embed, system_name= await elitedangerous.get_deaths(self.session, sysname)
+            self.last_system_by_user.update({uid:system_name})
+        else:
+            try:
+                last_system=self.last_system_by_user.get(uid)
+                embed = await elitedangerous.get_deaths(session=self.session,sysname=last_system,return_sysname=False)
+
+            except TypeError:
+                pass
+
+        await ctx.send(embed=embed)
 
 
-async def get_status(pid, bot):
-    process = psutil.Process(pid)
-    mem = int(round((process.memory_info()[0] / 1000000)))
-    cpu = psutil.cpu_percent(interval=None)
-    cores_used = len(process.cpu_affinity())
-    cores_total = psutil.cpu_count()
-    ping = round(bot.latency * 1000, 1)
-    uptime = str(datetime.now() - bot.starttime).split(".")[0]
-    return mem, cpu, cores_used, cores_total, ping, uptime
+

@@ -18,17 +18,32 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 
+import aiohttp
+import discord
+from .util import errormsg, EmbedColors
 
-import psutil
-from datetime import datetime
 
+async def get_deaths(session:aiohttp.ClientSession,sysname:str,return_sysname=True):
+    payload = dict(systemName=sysname)
+    async with session.get(url="https://www.edsm.net/api-system-v1/deaths", params=payload) as r:
+        if r.status == 200:
+            response_dict = await r.json()
+            try:
+                sysname = response_dict.get("name")
+                today = response_dict.get("deaths")["day"]
+                total = response_dict.get("deaths")["total"]
+                week = response_dict.get("deaths")["week"]
+            except TypeError:
+                return await errormsg(msg="Cannot process the data. Your system name might be wrong", embed_only=True), None
 
-async def get_status(pid, bot):
-    process = psutil.Process(pid)
-    mem = int(round((process.memory_info()[0] / 1000000)))
-    cpu = psutil.cpu_percent(interval=None)
-    cores_used = len(process.cpu_affinity())
-    cores_total = psutil.cpu_count()
-    ping = round(bot.latency * 1000, 1)
-    uptime = str(datetime.now() - bot.starttime).split(".")[0]
-    return mem, cpu, cores_used, cores_total, ping, uptime
+            embed = discord.Embed(
+                title=f"Death statistics for *{sysname}*",
+                description=f"Today:`{today}`\nThis week:`{week}`\nTotal:`{total}`"
+            )
+            embed.color = EmbedColors.lime_green
+            if return_sysname: return embed,sysname
+            else: return embed
+
+        else:
+            return await errormsg(msg="Cannot connect to the EDSM API. Is it down?",embed_only=True), None
+
