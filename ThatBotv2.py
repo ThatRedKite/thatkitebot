@@ -95,7 +95,7 @@ bot.add_cog(cogs.listenercog.listeners(bot, dirname))
 bot.add_cog(cogs.sudocog.sudo_commands(bot, dirname))
 bot.add_cog(cogs.utilitiescog.utility_commands(bot, dirname))
 # bot.add_cog(cogs.issuecog.issues(bot,dirname))
-
+bot.add_cog(cogs.elitecog.EliteDangerous(bot))
 
 bot.case_insensitive = True
 bot.run(discordtoken)

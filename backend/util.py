@@ -25,6 +25,7 @@ import random
 import re
 import discord
 
+
 class EmbedColors:
     blood_orange = 0xe25303
     lime_green = 0x00b51a
@@ -35,12 +36,19 @@ class EmbedColors:
     ultramarine_blue = 0x00387b
     telemagenta = 0xbc4077
 
-async def errormsg(ctx, msg: str, exc=""):
-    with ctx.channel.typing():
+
+async def errormsg(ctx=None, msg: str="", exc="", embed_only=False):
+    if not embed_only:
+        with ctx.channel.typing():
+            embed = discord.Embed(title="**ERROR!**", description=msg)
+            embed.color = EmbedColors.traffic_red
+            embed.set_footer(text=exc)
+        await ctx.send(embed=embed)
+    else:
         embed = discord.Embed(title="**ERROR!**", description=msg)
         embed.color = EmbedColors.traffic_red
         embed.set_footer(text=exc)
-    await ctx.send(embed=embed)
+        return embed
 
 
 def typeguesser(setting, value):

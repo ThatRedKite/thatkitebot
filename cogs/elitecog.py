@@ -18,12 +18,33 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from . import funstuffcog
-from . import sudocog
-from . import utilitiescog
-from . import listenercog
-from . import musiccog
-from . import imagecog
-from . import nsfwcog
-#from . import issuecog
-from . import elitecog
+import discord
+from discord.ext import commands
+from backend import elitedangerous
+from util import EmbedColors, errormsg
+
+class EliteDangerous(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.session = self.bot.aiohttp_session
+        self.last_system_by_user = {}
+
+    @commands.command(name="deaths",aliases=["d"], pass_context=True)
+    async def _get_deaths(self,ctx, *, sysname: str=""):
+        uid = ctx.author.id
+        if sysname:
+            embed, system_name= await elitedangerous.get_deaths(self.session, sysname)
+            self.last_system_by_user.update({uid:system_name})
+        else:
+            try:
+                last_system=self.last_system_by_user.get(uid)
+                print(last_system)
+                embed = await elitedangerous.get_deaths(session=self.session,sysname=last_system,return_sysname=False)
+
+            except TypeError:
+                print("whoops")
+
+        await ctx.send(embed=embed)
+
+
+

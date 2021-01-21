@@ -18,12 +18,33 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 
-from . import funstuffcog
-from . import sudocog
-from . import utilitiescog
-from . import listenercog
-from . import musiccog
-from . import imagecog
-from . import nsfwcog
-#from . import issuecog
-from . import elitecog
+import aiohttp
+import asyncio
+import discord
+from util import errormsg,EmbedColors
+
+
+async def get_deaths(session:aiohttp.ClientSession,sysname:str,return_sysname=True):
+    payload = dict(systemName=sysname)
+    async with session.get(url="https://www.edsm.net/api-system-v1/deaths", params=payload) as r:
+        if r.status == 200:
+            response_dict = await r.json()
+            try:
+                sysname = response_dict.get("name")
+                today = response_dict.get("deaths")["day"]
+                total = response_dict.get("deaths")["total"]
+                week = response_dict.get("deaths")["week"]
+            except TypeError:
+                return await errormsg(msg="Cannot process the data. Your system name might be wrong", embed_only=True), None
+
+            embed = discord.Embed(
+                title=f"Death statistics for *{sysname}*",
+                description=f"Today:`{today}`\nThis week:`{week}`\nTotal:`{total}`"
+            )
+            embed.color = EmbedColors.lime_green
+            if return_sysname: return embed,sysname
+            else: return embed
+
+        else:
+            return await errormsg(msg="Cannot connect to the EDSM API. Is it down?",embed_only=True), None
+
