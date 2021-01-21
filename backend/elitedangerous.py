@@ -19,9 +19,8 @@
 # ------------------------------------------------------------------------------
 
 import aiohttp
-import asyncio
 import discord
-from util import errormsg,EmbedColors
+from .util import errormsg, EmbedColors
 
 
 async def get_deaths(session:aiohttp.ClientSession,sysname:str,return_sysname=True):

@@ -27,7 +27,7 @@ import aiohttp
 import discord
 import imageio
 from bs4 import BeautifulSoup
-from util import EmbedColors as ec
+from .util import EmbedColors as ec
 
 
 gifpattern = re.compile("(^https?://\S+.(?i)(gif))")  # only gif images

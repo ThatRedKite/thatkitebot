@@ -21,7 +21,6 @@
 import discord
 from discord.ext import commands
 from backend import elitedangerous
-from util import EmbedColors, errormsg
 
 class EliteDangerous(commands.Cog):
     def __init__(self, bot):
