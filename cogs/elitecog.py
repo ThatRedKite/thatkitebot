@@ -44,5 +44,20 @@ class EliteDangerous(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command(name="traffic",aliases=["tr"], pass_context=True)
+    async def _traffic_report(self,ctx, *, sysname: str=""):
+        uid = ctx.author.id
+        if sysname:
+            embed, system_name= await elitedangerous.traffic_report(self.session, sysname)
+            self.last_system_by_user.update({uid:system_name})
+        else:
+            try:
+                last_system=self.last_system_by_user.get(uid)
+                embed = await elitedangerous.traffic_report(session=self.session,sysname=last_system,return_sysname=False)
+
+            except TypeError:
+                pass
+
+        await ctx.send(embed=embed)
 
 

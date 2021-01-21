@@ -38,8 +38,9 @@ async def get_deaths(session:aiohttp.ClientSession,sysname:str,return_sysname=Tr
 
             embed = discord.Embed(
                 title=f"Death statistics for *{sysname}*",
-                description=f"Today:`{today}`\nThis week:`{week}`\nTotal:`{total}`"
+                description=f"Today:**{today}**\nThis week:**{week}**\nTotal:**{total}**"
             )
+
             embed.color = EmbedColors.lime_green
             if return_sysname: return embed,sysname
             else: return embed
@@ -47,3 +48,35 @@ async def get_deaths(session:aiohttp.ClientSession,sysname:str,return_sysname=Tr
         else:
             return await errormsg(msg="Cannot connect to the EDSM API. Is it down?",embed_only=True), None
 
+
+async def traffic_report(session:aiohttp.ClientSession,sysname:str,return_sysname=True):
+    payload = dict(systemName=sysname)
+    async with session.get(url="https://www.edsm.net/api-system-v1/traffic", params=payload) as r:
+        if r.status == 200:
+            report = await r.json()
+            try:
+                sysname = report.get("name")
+                today = report.get("traffic")["day"]
+                total = report.get("traffic")["total"]
+                week = report.get("traffic")["week"]
+
+                breakdown_string = ""
+                for entry in report.get("breakdown"):
+                    breakdown_string += f"""{entry}: **{report["breakdown"][entry]}**\n"""
+
+                embed = discord.Embed(
+                    title=f"Traffic report for *{sysname}*",
+                    description=f"Today:`{today}`\nThis week:`{week}`\nTotal:`{total}`"
+                )
+
+                embed.add_field(name="Breakdown:", value=breakdown_string, inline=False)
+
+            except TypeError:
+                return await errormsg(msg="Cannot process the data. Your system name might be wrong", embed_only=True), None
+
+            embed.color = EmbedColors.lime_green
+            if return_sysname: return embed,sysname
+            else: return embed
+
+        else:
+            return await errormsg(msg="Cannot connect to the EDSM API. Is it down?",embed_only=True), None
