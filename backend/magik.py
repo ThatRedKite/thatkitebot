@@ -63,3 +63,4 @@ def do_gmagik(image: imageio.plugins.pillowmulti.GIFFormat.Reader):
         io.clear()
         buffer.seek(0)
         return File(buffer, filename="deepfried.gif")
+
