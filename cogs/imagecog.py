@@ -21,7 +21,7 @@
 import argparse
 import gc
 import re
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from datetime import datetime
 from functools import partial
 from io import BytesIO
@@ -673,11 +673,14 @@ class image_stuff(commands.Cog):
 
             io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
             fps = io.get_meta_data()["duration"]
-            with ThreadPoolExecutor(4) as pool:
-                io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
-                with BytesIO() as image_buffer:
-                    image_buffer.seek(0)
-                    imageio.mimwrite(image_buffer, io, fps=fps, format="gif")
-                    image_buffer.seek(0)
-                    image_file = discord.File(image_buffer, filename="gmagik.gif")
+            with ProcessPoolExecutor() as pool:
+                future = pool.map(magik.magik,io)
+
+            io = [frame for frame in future]
+            #io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
+            with BytesIO() as image_buffer:
+                image_buffer.seek(0)
+                imageio.mimwrite(image_buffer, io, fps=fps, format="gif")
+                image_buffer.seek(0)
+                image_file = discord.File(image_buffer, filename="gmagik.gif")
             await ctx.send(file=image_file)
