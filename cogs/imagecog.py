@@ -21,7 +21,8 @@
 import argparse
 import gc
 import re
-from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from datetime import datetime
 from functools import partial
 from io import BytesIO
@@ -664,6 +665,7 @@ class image_stuff(commands.Cog):
     @commands.command()
     async def gmagik2(self, ctx):
         with ctx.channel.typing():
+            all = datetime.now()
             image_url = await url_util.imageurlgetter(
                 session=self.bot.aiohttp_session,
                 history=ctx.channel.history(limit=50, around=datetime.now()),
@@ -671,13 +673,28 @@ class image_stuff(commands.Cog):
                 gif=True,
             )
 
+            dt = datetime.now()
             io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
+            print("downloading time:",datetime.now() - dt)
             fps = io.get_meta_data()["duration"]
-            with ThreadPoolExecutor(4) as pool:
-                io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
-                with BytesIO() as image_buffer:
-                    image_buffer.seek(0)
-                    imageio.mimwrite(image_buffer, io, fps=fps, format="gif")
-                    image_buffer.seek(0)
-                    image_file = discord.File(image_buffer, filename="gmagik.gif")
+
+            with ProcessPoolExecutor() as pool:
+                ps = datetime.now()
+                futures = [pool.submit(magik.magik, frame,fn) for fn, frame in enumerate(io)]
+
+            io = [[frame.result()[1], frame.result()[0]] for frame in as_completed(futures)]
+            print("processing time:", datetime.now() - ps)
+            st = datetime.now()
+            io.sort(key=lambda fn: fn[0])
+            io = [frame[1] for frame in io]
+            print("sorting time:", datetime.now() - st)
+            #io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
+            with BytesIO() as image_buffer:
+                image_buffer.seek(0)
+                st = datetime.now()
+                imageio.mimwrite(image_buffer, io, fps=fps, format="gif")
+                image_buffer.seek(0)
+                image_file = discord.File(image_buffer, filename="gmagik.gif")
+                print("saving time:", datetime.now() - st)
+                print("time total:", datetime.now() - all)
             await ctx.send(file=image_file)

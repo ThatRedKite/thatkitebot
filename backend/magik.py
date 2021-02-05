@@ -26,11 +26,13 @@ from discord import File
 
 
 # define filters which all take one argument (i) which is a numpy array:
-def magik(i):
+def magik(i, fn):
     with WandImage.from_array(i) as a:
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
+        a.resize(width=int(a.width / 2), height=int(a.height / 2))
+        #a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
         a.liquid_rescale(width=a.width * 2, height=a.height * 2, delta_x=2, rigidity=0)
-        return np.array(a)
+        print(fn)
+        return np.array(a), fn
 
 
 def wide(i):
