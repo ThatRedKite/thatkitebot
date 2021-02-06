@@ -174,13 +174,13 @@ def quoter(buffer, chan, path, quotestring):
 
 
 def do_gmagik(
-    inbuffer,
-    path,
-    dry=False,
-    deepfry=False,
-    wide=False,
-    speedup=False,
-    caption: tuple = (False, ""),
+        inbuffer,
+        path,
+        dry=False,
+        deepfry=False,
+        wide=False,
+        speedup=False,
+        caption: tuple = (False, ""),
 ):
     # a queue where the durations of each frame are stored
     durations = Queue()
@@ -337,7 +337,7 @@ class image_stuff(commands.Cog):
         self.tenorpattern = re.compile("^https://tenor.com\S+-(\d+)$")
 
     async def image_url_fetcher(
-        self, ctx, api_token: str = None, bypass=False, gif=False
+            self, ctx, api_token: str = None, bypass=False, gif=False
     ):
         # when bypass is True, the ctx variable is actually treated as a plain string
         # instead of a commands.Context object. This is needed, if you already have the URL
@@ -381,9 +381,9 @@ class image_stuff(commands.Cog):
                         }
 
                         async with self.bot.aiohttp_session.get(
-                            url="https://api.tenor.com/v1/gifs",
-                            params=payload,
-                            headers=headers,
+                                url="https://api.tenor.com/v1/gifs",
+                                params=payload,
+                                headers=headers,
                         ) as r:
                             gifs = await r.json()
                         # some dictionary magic to get the source url of the gif
@@ -464,11 +464,11 @@ class image_stuff(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
     async def quote(
-        self,
-        ctx: commands.Context,
-        user="dirnenspross123",
-        old: int = 100,
-        new: int = 100,
+            self,
+            ctx: commands.Context,
+            user="dirnenspross123",
+            old: int = 100,
+            new: int = 100,
     ):
         """Generates a fake quote of a user using a markov chain"""
         with ctx.channel.typing():
@@ -502,7 +502,7 @@ class image_stuff(commands.Cog):
         with ctx.channel.typing():
             buffer = await self.image_url_fetcher(ctx=ctx, api_token=self.bot.tom.tenortoken)
             with ThreadPoolExecutor(4) as executor:
-                embed,image_file = await self.bot.loop.run_in_executor(executor, do_magik, buffer)
+                embed, image_file = await self.bot.loop.run_in_executor(executor, do_magik, buffer)
                 executor.shutdown()
             await ctx.send(file=image_file)
             del buffer, embed, image_file
@@ -675,9 +675,9 @@ class image_stuff(commands.Cog):
 
             dt = datetime.now()
             io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
-            pmsg = await ctx.send(f"""This GIF has {len(io)} frames. 
-                                    It might take a while or it might fail if the GIF has too many frames""")
-            print("downloading time:",datetime.now() - dt)
+            pmsg = await ctx.send(
+                f"This GIF has {len(io)} frames. It might take a while or it might fail if the GIF has too many frames")
+            print("downloading time:", datetime.now() - dt)
             fps = io.get_meta_data()["duration"]
 
             with ProcessPoolExecutor() as pool:
@@ -694,7 +694,7 @@ class image_stuff(commands.Cog):
             io.sort(key=lambda fn: fn[0])
             io = [frame[1] for frame in io]
             print("sorting time:", datetime.now() - st)
-            #io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
+            # io = await self.bot.loop.run_in_executor(pool, magik.do_gmagik, io)
             with BytesIO() as image_buffer:
                 image_buffer.seek(0)
                 st = datetime.now()
