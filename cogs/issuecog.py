@@ -26,7 +26,7 @@ from time import time
 import discord
 import sqlalchemy
 from discord.ext import commands, tasks
-from sqlalchemy import Integer, String, Boolean, Column
+from sqlalchemy import Integer, String, Boolean, Column, Float, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.query import Query
 from sqlalchemy.orm.session import Session, sessionmaker
@@ -58,36 +58,22 @@ class issues(commands.Cog):
     async def trashman(self):
         self.dispose(self.session)
 
-    class Issue(Base):
-        __tablename__ = "issues"
-        issue_id = Column(String, primary_key=True)
-        timestamp = Column(Integer)
-        author_id = Column(String)
-        author_name = Column(String)
-        message = Column(String)
-        status = Column(String)
-        hidden = Column(Boolean)
-        disposable = Column(Boolean)
+    class System(Base):
+        __tablename__ = "systems"
+        systemName = Column(String, primary_key=True)
+        id= Column(Integer)
+        id64 = Column(Integer)
+        coord_x = Column(Float)
+        coord_y = Column(Float)
+        coord_z = Column(Float)
+        allegiance = Column(String)
+        government = Column(String)
+        state = Column(String)
+        economy = Column(String)
+        security = Column(String)
+        population = Column(BigInteger)
 
-        def to_dict(self):
-            return dict(
-                issue_id=self.issue_id,
-                timestamp=self.timestamp,
-                author_id=int(self.author_id),
-                author_name=self.author_name,
-                message=self.message,
-                status=self.status,
-                hidden=self.hidden,
-                disposable=self.disposable
-            )
 
-    class IssueStatus:
-        Closed = "closed"
-        HighPriority = "high priority"
-        LowPriority = "low priority"
-        Open = "open"
-        InProgress = "in progress"
-        Frozen = "frozen"
 
     def dispose(self, session: Session):
         trashbin = session.query(self.Issue).filter_by(disposable=True).all()
