@@ -675,8 +675,8 @@ class image_stuff(commands.Cog):
 
             dt = datetime.now()
             io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
-            pmsg = await ctx.send(f"This GIF has {len(io)} frames.\
-            It might take a while or it might fail if the GIF has too many frames")
+            pmsg = await ctx.send(f"""This GIF has {len(io)} frames. 
+                                    It might take a while or it might fail if the GIF has too many frames""")
             print("downloading time:",datetime.now() - dt)
             fps = io.get_meta_data()["duration"]
 
