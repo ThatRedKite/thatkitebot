@@ -675,14 +675,20 @@ class image_stuff(commands.Cog):
 
             dt = datetime.now()
             io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
+            pmsg = await ctx.send(f"This GIF has {len(io)} frames.\
+            It might take a while or it might fail if the GIF has too many frames")
             print("downloading time:",datetime.now() - dt)
             fps = io.get_meta_data()["duration"]
 
             with ProcessPoolExecutor() as pool:
                 ps = datetime.now()
-                futures = [pool.submit(magik.magik, frame,fn) for fn, frame in enumerate(io)]
+                futures = [self.bot.loop.run_in_executor(pool, magik.magik, frame, fn) for fn, frame in enumerate(io)]
 
-            io = [[frame.result()[1], frame.result()[0]] for frame in as_completed(futures)]
+            io = []
+            for x in futures:
+                x = await x
+                io.append([x[1], x[0]])
+
             print("processing time:", datetime.now() - ps)
             st = datetime.now()
             io.sort(key=lambda fn: fn[0])
@@ -697,4 +703,6 @@ class image_stuff(commands.Cog):
                 image_file = discord.File(image_buffer, filename="gmagik.gif")
                 print("saving time:", datetime.now() - st)
                 print("time total:", datetime.now() - all)
-            await ctx.send(file=image_file)
+
+        await ctx.send(file=image_file)
+        await pmsg.delete()
