@@ -57,7 +57,8 @@ class ThatKiteBot(commands.Bot):
 
         # paths
         self.dirname = dirname
-        self.tempdir = self.dirname.joinpath("data", "temp")
+        self.datadir = self.dirname.joinpath("data")
+        self.tempdir = self.datadir.joinpath("temp")
 
         # info
         self.version = "2.5.1.0"

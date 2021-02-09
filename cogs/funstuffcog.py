@@ -22,10 +22,10 @@ import argparse
 import os
 import re
 from random import choice
+
 import discord
 import markovify
 from discord.ext import commands
-from gtts import gTTS
 import backend
 
 
@@ -49,9 +49,6 @@ async def mark(
     author: discord.User = ctx.message.author
     message: discord.Message = ctx.message
     # change the bot's status to "do not disturb" and set its game
-    await bot.change_presence(
-        status=discord.Status.dnd, activity=discord.Game("fetching . . .")
-    )
     chan, is_user, is_channel = backend.util.mentioner(bot, ctx, message, user, True)
     messages = []
     if is_user and not is_channel:
@@ -75,10 +72,6 @@ async def mark(
         # add :new: messages :chan: to the list :messages:
         async for message in chan.history(limit=new):
             messages.append(str(message.clean_content))
-    await bot.change_presence(
-        status=discord.Status.dnd,
-        activity=discord.Game("fetching done, processing . . ."),
-    )
     # generate a model based on the messages in :messages:
     model = markovify.NewlineText("\n".join(messages))
     generated_list = []
@@ -91,7 +84,6 @@ async def mark(
         # only add sentences that are not None to :generated_list:
         if generated is not None:
             generated_list.append(generated)
-    await bot.change_presence(status=discord.Status.online, activity=None)
     return generated_list, chan
 
 
