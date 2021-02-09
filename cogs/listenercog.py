@@ -61,12 +61,6 @@ class listeners(commands.Cog):
             (Status.dnd, "with myself"),
             (Status.online, "games"),
             (Status.online, "dead"),
-            (Status.online, "catch with myself"),
-            (Status.online, f"Python 3.{random.randint(5, 9)}"),
-            (Status.online, "a cool game"),
-            (Status.online, "chess"),
-            (Status.online, f"Fallout {random.randint(1, 4)}"),
-            (Status.online, "gecko eating contest"),
             (Status.online, "K.I.T.E The Game")
         ]
 
