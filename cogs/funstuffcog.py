@@ -20,9 +20,7 @@
 
 import argparse
 import os
-import re
-from random import choice
-
+from gtts import  gTTS
 import discord
 import markovify
 from discord.ext import commands
@@ -150,8 +148,6 @@ class fun_stuff(commands.Cog):
         except Exception as exc:
             await backend.util.errormsg(ctx, str(exc))
             raise exc
-        finally:
-            await self.bot.change_presence(status=discord.Status.online, activity=None)
 
     @commands.command()
     async def fakeword(self, ctx):

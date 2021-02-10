@@ -22,10 +22,13 @@ from io import BytesIO
 import imageio
 from wand.image import Image as WandImage
 import numpy as np
+from discord.ext.commands import Context
+from . import url as url_util
 from discord import File
 from os.path import join
 from numpy import array
 from PIL import ImageDraw, ImageFont, Image
+from concurrent.futures import ProcessPoolExecutor
 
 
 # define filters which all take one argument (i) which is a numpy array:
@@ -46,16 +49,16 @@ def caption(i, fn, ct, path):
         im = im.convert("RGBA")
         draw = ImageDraw.Draw(im)
         # draw the outline
-        draw.text(((W-w)/2-outline_width,int((H-h)/1.16)-outline_width), ct, fill="black", font=font)
-        draw.text(((W-w)/2-outline_width,int((H-h)/1.16)+outline_width), ct, fill="black", font=font)
-        draw.text(((W-w)/2+outline_width,int((H-h)/1.16)-outline_width), ct, fill="black", font=font)
-        draw.text(((W-w)/2+outline_width,int((H-h)/1.16)+outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 - outline_width, int((H - h) / 1.15) - outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 - outline_width, int((H - h) / 1.15) + outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 + outline_width, int((H - h) / 1.15) - outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 + outline_width, int((H - h) / 1.15) + outline_width), ct, fill="black", font=font)
         # draw the text itself
-        draw.text(((W-w)/2,int((H-h)/1.15)), ct, fill="white", font=font)
+        draw.text(((W - w) / 2, int((H - h) / 1.15)), ct, fill="white", font=font)
         return array(im), fn
 
 
-def wide(i,fn):
+def wide(i, fn):
     with WandImage.from_array(i) as a:
         a.resize(width=int(a.width * 3.3), height=int(a.height / 1.8))
         a.crop(left=int(a.width / 4), top=1, right=(a.width - (int(a.width / 4))), bottom=a.height)
@@ -68,3 +71,32 @@ def deepfry(i, fn):
         a.noise("gaussian", attenuate=0.1)
         return np.array(a), fn
 
+
+async def do_stuff(loop, session, history, mode: str, text: str = "", path=""):
+    # get the url of the image and download it
+    if type(history) is Context:
+        url = await url_util.imageurlgetter(session, history.channel.history(limit=30), False)
+    else:
+        url = str(history)
+    io = await url_util.imagedownloader(session, url)
+
+    modes = {
+        "magik":magik,
+        "deepfry":deepfry,
+        "wide": wide,
+        "caption": caption
+    }
+
+    chosen_mode = modes.get(mode)
+
+    with ProcessPoolExecutor(1) as pool:
+        if chosen_mode is not caption:
+            io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1)
+        else:
+            io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1, text, path)
+        del frame  # delete that frame counter, we don't need it
+
+    with BytesIO() as image_buffer:
+        imageio.imwrite(image_buffer, io, format="png")  # this writes the images to the image buffer, use PNG as format
+        image_buffer.seek(0)  # "rewind" the buffer. Otherwise the discord.File object can't see any image file
+        return File(image_buffer, filename="processed.png")  # return a discord.File object
