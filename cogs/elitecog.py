@@ -61,3 +61,19 @@ class EliteDangerous(commands.Cog):
         await ctx.send(embed=embed)
 
 
+    @commands.command(name="soldistance",aliases=["dts"], pass_context=True)
+    async def _get_distance_to_sol(self, ctx, *, sysname: str=""):
+        uid = ctx.author.id
+        if sysname:
+            embed = await elitedangerous.get_distance_to_sol(self.session, sysname)
+            self.last_system_by_user.update({uid: sysname})
+        else:
+            try:
+                last_system=self.last_system_by_user.get(uid)
+                embed = await elitedangerous.get_distance_to_sol(session=self.session, sysname=last_system)
+
+            except TypeError:
+                pass
+
+        await ctx.send(embed=embed)
+
