@@ -21,6 +21,35 @@
 import aiohttp
 import discord
 from .util import errormsg, EmbedColors
+import math
+
+
+def _dist(cd):
+    return round(math.sqrt(math.pow(-cd["x"],2)+math.pow(-cd["y"],2)+math.pow(-cd["z"],2)),2)
+
+
+async def get_distance_to_sol(session, sysname, return_sysname=False):
+    payload = dict(systemName=sysname, showCoordinates=1)
+
+    async with session.get(url="https://www.edsm.net/api-v1/system", params=payload) as r:
+        if r.status == 200:
+            response_dict = await r.json()
+            try:
+                dist = _dist(response_dict["coords"])
+                print(dist)
+            except TypeError:
+                return await errormsg(msg="Cannot process the data. Your system name might be wrong", embed_only=True), None
+
+            embed = discord.Embed(description=f"The system {sysname} is **{dist}** ly away from Sol")
+
+            embed.color = EmbedColors.lime_green
+
+            if return_sysname: return embed,sysname
+            else: return embed
+
+        else:
+            return await errormsg(msg="Cannot connect to the EDSM API. Is it down?",embed_only=True), None
+
 
 
 async def get_deaths(session:aiohttp.ClientSession,sysname:str,return_sysname=True):
@@ -80,3 +109,5 @@ async def traffic_report(session:aiohttp.ClientSession,sysname:str,return_sysnam
 
         else:
             return await errormsg(msg="Cannot connect to the EDSM API. Is it down?",embed_only=True), None
+
+
