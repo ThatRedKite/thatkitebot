@@ -114,7 +114,7 @@ class fun_stuff(commands.Cog):
 
         author: discord.User = ctx.message.author
         try:
-            with ctx.channel.typing():
+            async with ctx.channel.typing():
                 generated_list, chan = await mark(
                     self.bot,
                     ctx,
@@ -151,7 +151,7 @@ class fun_stuff(commands.Cog):
 
     @commands.command()
     async def fakeword(self, ctx):
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             embed = await backend.url.word(self.bot.aiohttp_session, embedmode=True)
             await ctx.send(embed=embed)
 

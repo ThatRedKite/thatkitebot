@@ -37,12 +37,11 @@ class ImageStuff(commands.Cog):
         self.ll = self.bot.loop
         self.session = self.bot.aiohttp_session
 
-    # TODO: add ta do_stuff function that does the stuff instead of having tons of duplicate code
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx,"magik")
             await ctx.send(file=image_file)
 
@@ -50,7 +49,7 @@ class ImageStuff(commands.Cog):
     @commands.command()
     async def widepfp(self, ctx: commands.Context, usermention="transfergesetz"):
         """sends a horizontally stretched version of someonme's profile picture"""
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             message = ctx.message
             chan,is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
             image_file = await magik.do_stuff(self.ll, self.session, str(chan.avatar_url), "wide")
@@ -68,7 +67,7 @@ class ImageStuff(commands.Cog):
     @commands.command()
     async def pfpmagik(self, ctx, usermention="nonetti"):
         """applies content aware scaling to someone's pfp"""
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             message = ctx.message
             chan,is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
             image_file = await magik.do_stuff(self.ll, self.session, str(chan.avatar_url), "magik")
@@ -78,7 +77,7 @@ class ImageStuff(commands.Cog):
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "deepfry")
             await ctx.send(file=image_file)
 
@@ -86,14 +85,14 @@ class ImageStuff(commands.Cog):
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "wide")
             await ctx.send(file=image_file)
 
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
             await ctx.send(file=image_file)
 
@@ -110,7 +109,7 @@ class ImageStuff(commands.Cog):
         ll = self.ll
         p = join(self.dd, "DejaVuSans.ttf")
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             # this just gets an image url to download
             image_url = await url_util.imageurlgetter(
                 session=self.bot.aiohttp_session,
@@ -131,7 +130,7 @@ class ImageStuff(commands.Cog):
                 fps = (io.get_meta_data()["duration"]) * 2
                 dry = True
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             # dict of possible functions to call
             fc = {
                 "deepfry": magik.deepfry,
