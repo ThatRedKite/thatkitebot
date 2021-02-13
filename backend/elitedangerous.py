@@ -25,7 +25,7 @@ import math
 
 
 def _dist(cd):
-    return round(math.sqrt(math.pow(-cd["x"],2)+math.pow(-cd["y"],2)+math.pow(-cd["z"],2)),2)
+    return round(math.sqrt(math.pow(-cd["x"], 2)+math.pow(-cd["y"], 2)+math.pow(-cd["z"], 2)), 2)
 
 
 async def get_distance_to_sol(session, sysname, return_sysname=False):
