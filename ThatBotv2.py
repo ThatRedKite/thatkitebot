@@ -54,7 +54,7 @@ class ThatKiteBot(commands.Bot):
     def __init__(self, command_prefix, dirname, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
-
+        self.prefix = command_prefix
         # paths
         self.dirname = dirname
         self.datadir = self.dirname.joinpath("data")
