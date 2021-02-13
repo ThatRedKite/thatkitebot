@@ -24,7 +24,7 @@ from backend import util
 import discord
 import asyncio
 from discord.ext import commands
-
+import subprocess
 
 class sudo_commands(commands.Cog):
     def __init__(self, bot, dirname):
@@ -41,32 +41,30 @@ class sudo_commands(commands.Cog):
         await self.bot.aiohttp_session.close()
         # close the discord session
         await self.bot.close()
-        # close the tom session
-
-    @commands.is_owner()
-    @commands.command()
-    async def botpurge(self,ctx,count:int=100):
-        me=self.bot.user
-        messages=list()
-        channel:discord.TextChannel=ctx.channel
-        msgcounter=0
-        async for message in channel.history(limit=5000).filter(lambda x: x.author == me):
-            msgcounter += 1
-            if msgcounter < count:
-                await message.delete()
-            else:
-                break
     
     @commands.is_owner()
     @commands.command()
-    async def debug(self,ctx,state:str):
-        self.bot.debugmode=util.bool_parse(state)
-        msg=await ctx.send(f"set debug to {self.bot.debugmode}")
-        await asyncio.sleep(2)
-        await msg.delete()
-
+    async def debug(self, ctx, state: str):
+        self.bot.debugmode = util.bool_parse(state.lower())
+        await ctx.message.delete()
 
     @commands.is_owner()
     @commands.command()
-    async def gcrun(self,ctx):
-        gc.collect()
+    async def echo(self, ctx, *, message: str):
+        await ctx.message.delete()
+        await ctx.send(message)
+
+    @commands.is_owner()
+    @commands.command(aliases=["pull"])
+    async def update(self, ctx):
+        """Pull new git changes"""
+        process = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE)
+        out, error = process.communicate()
+        if out:
+            text = out.decode()
+            if text == "Already up to date.\n":
+                await ctx.send(f"Nothing to pull")
+            else:
+                await ctx.send(f"Pull *successful, restart the bot for the update to take effect.")
+        if error:
+            await util.errormsg(ctx=ctx, msg="Could not pull")
