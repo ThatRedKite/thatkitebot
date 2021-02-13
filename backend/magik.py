@@ -88,8 +88,7 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path=""):
     }
 
     chosen_mode = modes.get(mode)
-
-    with ProcessPoolExecutor(1) as pool:
+    with ProcessPoolExecutor() as pool:
         if chosen_mode is not caption:
             io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1)
         else:
