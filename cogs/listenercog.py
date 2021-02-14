@@ -34,6 +34,7 @@ class listeners(commands.Cog):
         self.dirname = dirname
         self.bot: discord.Client = bot
         self.colors = colors()
+        self.strikes = {}
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
@@ -67,8 +68,39 @@ class listeners(commands.Cog):
         chosen_status, chosen_message = random.choice(possible_status)
         await self.bot.change_presence(status=chosen_status, activity=discord.Game(chosen_message))
 
+    @tasks.loop(hours=1.0)
+    async def reset_invoke_counter(self):
+        self.bot.command_invokes_hour = 0
+
+    @commands.Cog.listener()
+    @commands.bot_has_guild_permissions(ban_members=True)
+    async def on_message(self, message: discord.Message):
+        id_of_role = 15789234234234
+        if message.content.lower() in ["@everyone", "@here"]:
+            author: discord.User = message.author
+            guild: discord.Guild = message.guild
+            allowed_role = guild.get_role(id_of_role)
+            member: discord.member = guild.get_member(message.author.id)
+            channel: discord.TextChannel = message.channel
+
+            if allowed_role not in message.author.roles and not self.strikes.get(member):
+                self.strikes.update({member: 1})
+                await channel.send("HEY, you pinged everyone without permission. This is your first warning")
+            elif allowed_role not in message.author.roles and self.strikes.get(member) == 1:
+                self.strikes.update({member: 2})
+                await channel.send("HEY, you pinged everyone without permission. This is your final warning!")
+            elif allowed_role not in message.author.roles and self.strikes.get(member) == 2:
+                await author.send("Okay you didn't listen. You have been banned.")
+                #await guild.ban(member, reason="mentioning everyone without permission")
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"\nbot successfully started!")
         await self.bot.change_presence(status=discord.Status.dnd, activity=discord.Game("booting"))
         self.statuschange.start()
+        self.reset_invoke_counter.start()
+
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        self.bot.command_invokes_hour += 1
+        self.bot.command_invokes_total += 1

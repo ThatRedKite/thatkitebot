@@ -61,7 +61,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir = self.datadir.joinpath("temp")
 
         # info
-        self.version = "2.6.2.0"
+        self.version = "2.6.3.0"
         self.tom = BotSettings(dirname)
         self.starttime = datetime.now()
         self.pid = os.getpid()
@@ -78,6 +78,8 @@ class ThatKiteBot(commands.Bot):
 
         # bot status info
         self.cpu_usage = 0
+        self.command_invokes_hour = 0
+        self.command_invokes_total = 0
 
     async def aiohttp_start(self):
         self.aiohttp_session = aiohttp.ClientSession()
@@ -95,7 +97,6 @@ bot.add_cog(cogs.nsfwcog.NSFW(bot))
 bot.add_cog(cogs.listenercog.listeners(bot, dirname))
 bot.add_cog(cogs.sudocog.sudo_commands(bot, dirname))
 bot.add_cog(cogs.utilitiescog.utility_commands(bot, dirname))
-# bot.add_cog(cogs.issuecog.issues(bot,dirname))
 bot.add_cog(cogs.elitecog.EliteDangerous(bot))
 
 bot.case_insensitive = True
