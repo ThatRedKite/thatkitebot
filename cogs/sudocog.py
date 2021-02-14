@@ -65,6 +65,7 @@ class sudo_commands(commands.Cog):
             if text == "Already up to date.\n":
                 await ctx.send(f"Nothing to pull")
             else:
-                await ctx.send(f"Pull *successful, restart the bot for the update to take effect.")
+                await ctx.send(f"Pull successful, restart the bot for the update to take effect.")
         if error:
             await util.errormsg(ctx=ctx, msg="Could not pull")
+
