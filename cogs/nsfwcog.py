@@ -130,3 +130,7 @@ class NSFW(commands.Cog):
                         continue
         else:
             await errormsg(ctx, "nsfw content is disabled")
+
+
+def setup(bot):
+    bot.add_cog(NSFW(bot))

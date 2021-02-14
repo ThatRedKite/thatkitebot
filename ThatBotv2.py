@@ -26,7 +26,6 @@ from pathlib import Path
 import aiohttp
 import psutil
 from discord.ext import commands
-import cogs
 from backend.util import colors, clear_temp_folder
 from backend.settings import BotSettings
 
@@ -49,19 +48,30 @@ if tenortoken is None or tenortoken == "":
 # clean up some shit
 clear_temp_folder(dirname)
 
+enabled_ext = [
+    "cogs.elitecog",
+    "cogs.funstuffcog",
+    "cogs.imagecog",
+    "cogs.musiccog",
+    "cogs.nsfwcog",
+    "cogs.listenercog",
+    "cogs.sudocog",
+    "cogs.utilitiescog"
+]
+
 
 class ThatKiteBot(commands.Bot):
     def __init__(self, command_prefix, dirname, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
-
+        self.prefix = command_prefix
         # paths
         self.dirname = dirname
         self.datadir = self.dirname.joinpath("data")
         self.tempdir = self.datadir.joinpath("temp")
 
         # info
-        self.version = "2.6.2.0"
+        self.version = "2.7.0.0"
         self.tom = BotSettings(dirname)
         self.starttime = datetime.now()
         self.pid = os.getpid()
@@ -78,6 +88,8 @@ class ThatKiteBot(commands.Bot):
 
         # bot status info
         self.cpu_usage = 0
+        self.command_invokes_hour = 0
+        self.command_invokes_total = 0
 
     async def aiohttp_start(self):
         self.aiohttp_session = aiohttp.ClientSession()
@@ -85,18 +97,14 @@ class ThatKiteBot(commands.Bot):
 
 print("initilizing bot . . .")
 bot = ThatKiteBot(prefix, dirname)
+for ext in enabled_ext:
+    try:
+        bot.load_extension(ext)
+    except Exception as exc:
+        print(f"error loading {ext}")
+        raise exc
 
 # cogs
 gc.enable()
-bot.add_cog(cogs.funstuffcog.fun_stuff(bot, dirname))
-bot.add_cog(cogs.musiccog.music(bot, dirname))
-bot.add_cog(cogs.imagecog.ImageStuff(bot))
-bot.add_cog(cogs.nsfwcog.NSFW(bot))
-bot.add_cog(cogs.listenercog.listeners(bot, dirname))
-bot.add_cog(cogs.sudocog.sudo_commands(bot, dirname))
-bot.add_cog(cogs.utilitiescog.utility_commands(bot, dirname))
-# bot.add_cog(cogs.issuecog.issues(bot,dirname))
-bot.add_cog(cogs.elitecog.EliteDangerous(bot))
-
 bot.case_insensitive = True
 bot.run(discordtoken)

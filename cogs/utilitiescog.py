@@ -25,9 +25,9 @@ from backend import misc as back
 from backend.util import EmbedColors as ec
 
 
-class utility_commands(commands.Cog):
-    def __init__(self, bot: commands.Bot, dirname):
-        self.dirname = dirname
+class UtilityCommands(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.dirname = bot.dirname
         self.bot = bot
 
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -49,24 +49,43 @@ class utility_commands(commands.Cog):
         """
         Bot's Current Status
         """
-        mem, cpu, cores_used, cores_total, ping, uptime = await back.get_status(self.bot.pid, self.bot)
-        embed = discord.Embed()
-        embed.add_field(name="RAM usage <:rammy:784103886150434866>",
-                        value=f"{mem} MB\n**CPU usage** <:cpu:784103413804826665>\n{cpu}%", inline=True)
-        embed.add_field(name="cores <:cpu:784103413804826665>",
-                        value=f"{cores_used}/{cores_total}\n**ping** <:ping:784103830102736908>\n{ping} ms")
-        embed.add_field(name="uptime <:uptime:784103801896042547>",
-                        value=f"{uptime}\n**debug mode** <:buggy:784103932204548151>\n{self.bot.debugmode}")
-        embed.set_footer(text="version: {}".format(self.bot.version))
-        embed.set_thumbnail(url=str(self.bot.user.avatar_url))
-        if not self.bot.debugmode:
-            if cpu >= 90.0: embed.color = ec.traffic_red
-            else: embed.color = ec.lime_green
-        else:embed.color = ec.purple_violet
-        await ctx.trigger_typing()
+        async with ctx.typing():
+            mem, cpu, cores_used, cores_total, ping, uptime = await back.get_status(self.bot.pid, self.bot)
+            total_users = sum([users.member_count for users in self.bot.guilds])
+            guilds = len(self.bot.guilds)
+            embed = discord.Embed()
+            embed.add_field(name="System status",
+                            value=f"""RAM usage: **{mem} Mb**
+                                    CPU usage: **{cpu} %**
+                                    core affinity: **{cores_used}/{cores_total}**
+                                    uptime: **{uptime}**
+                                    ping: **{ping} ms**""")
+
+            embed.add_field(name="Bot stats",
+                            value=f"""guilds: **{guilds}**
+                                    extensions loaded: **{len(self.bot.extensions)}**
+                                    total users: **{total_users}**
+                                    bot version: **{self.bot.version}**
+                                    total command invokes: **{self.bot.command_invokes_total}**
+                                    commands invoked this hour: **{self.bot.command_invokes_hour}**
+                                    """, inline=False)
+
+            embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+
+            if not self.bot.debugmode:
+                if cpu >= 90.0:
+                    embed.color = ec.traffic_red
+                    embed.set_footer(text="Warning: CPU usage over 90%")
+                else: embed.color = ec.lime_green
+            else:embed.color = ec.purple_violet
         await ctx.send(embed=embed)
 
+    # TODO: make this command actually do something
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(pass_context=True)
     async def about(self, ctx):
         pass
+
+
+def setup(bot):
+    bot.add_cog(UtilityCommands(bot))
