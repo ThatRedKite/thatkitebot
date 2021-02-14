@@ -27,7 +27,7 @@ from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from backend.util import colors
 from backend.util import errormsg
-
+import gc
 
 class ListenerCog(commands.Cog):
     def __init__(self, bot):
@@ -104,6 +104,7 @@ class ListenerCog(commands.Cog):
     async def on_command_completion(self, ctx):
         self.bot.command_invokes_hour += 1
         self.bot.command_invokes_total += 1
+        gc.collect()
 
 
 def setup(bot):
