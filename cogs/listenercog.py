@@ -29,9 +29,9 @@ from backend.util import colors
 from backend.util import errormsg
 
 
-class listeners(commands.Cog):
-    def __init__(self, bot, dirname, ):
-        self.dirname = dirname
+class ListenerCog(commands.Cog):
+    def __init__(self, bot):
+        self.dirname = bot.dirname
         self.bot: discord.Client = bot
         self.colors = colors()
         self.strikes = {}
@@ -104,3 +104,7 @@ class listeners(commands.Cog):
     async def on_command_completion(self, ctx):
         self.bot.command_invokes_hour += 1
         self.bot.command_invokes_total += 1
+
+
+def setup(bot):
+    bot.add_cog(ListenerCog(bot))

@@ -85,11 +85,11 @@ async def mark(
     return generated_list, chan
 
 
-class fun_stuff(commands.Cog):
-    def __init__(self, bot, dirname):
+class FunStuff(commands.Cog):
+    def __init__(self, bot):
         self.bot = bot
         self._last_member = None
-        self.dirname = dirname
+        self.dirname = bot.dirname
         # Variables for markov game
 
     @commands.command()
@@ -158,3 +158,6 @@ class fun_stuff(commands.Cog):
     @commands.command()
     async def vision(self, ctx):
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
+
+def setup(bot):
+    bot.add_cog(FunStuff(bot))

@@ -26,10 +26,11 @@ import asyncio
 from discord.ext import commands
 import subprocess
 
-class sudo_commands(commands.Cog):
-    def __init__(self, bot, dirname):
+
+class SudoCommands(commands.Cog):
+    def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.dirname = dirname
+        self.dirname = bot.dirname
 
     @commands.is_owner()
     @commands.command()
@@ -41,7 +42,17 @@ class sudo_commands(commands.Cog):
         await self.bot.aiohttp_session.close()
         # close the discord session
         await self.bot.close()
-    
+
+    @commands.is_owner()
+    @commands.command()
+    async def restart(self, ctx):
+        extensions = list(self.bot.extensions.keys())
+        for extension in extensions:
+            try:
+                self.bot.reload_extension(extension)
+            except Exception as exc:
+                raise exc
+
     @commands.is_owner()
     @commands.command()
     async def debug(self, ctx, state: str):
@@ -69,3 +80,6 @@ class sudo_commands(commands.Cog):
         if error:
             await util.errormsg(ctx=ctx, msg="Could not pull")
 
+
+def setup(bot):
+    bot.add_cog(SudoCommands(bot))

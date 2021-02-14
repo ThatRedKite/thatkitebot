@@ -166,3 +166,7 @@ class ImageStuff(commands.Cog):
 
         await ctx.send(file=image_file)  # send the result to the channel where the command was sent
         await pmsg.delete()  # delete the "download successful" message from earlier
+
+
+def setup(bot):
+    bot.add_cog(ImageStuff(bot))

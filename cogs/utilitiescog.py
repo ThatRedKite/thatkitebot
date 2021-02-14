@@ -25,9 +25,9 @@ from backend import misc as back
 from backend.util import EmbedColors as ec
 
 
-class utility_commands(commands.Cog):
-    def __init__(self, bot: commands.Bot, dirname):
-        self.dirname = dirname
+class UtilityCommands(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.dirname = bot.dirname
         self.bot = bot
 
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -63,6 +63,7 @@ class utility_commands(commands.Cog):
 
             embed.add_field(name="Bot stats",
                             value=f"""guilds: **{guilds}**
+                                    extensions loaded: **{len(self.bot.extensions)}**
                                     total users: **{total_users}**
                                     bot version: **{self.bot.version}**
                                     total command invokes: **{self.bot.command_invokes_total}**
@@ -70,6 +71,7 @@ class utility_commands(commands.Cog):
                                     """, inline=False)
 
             embed.set_thumbnail(url=str(self.bot.user.avatar_url))
+
             if not self.bot.debugmode:
                 if cpu >= 90.0:
                     embed.color = ec.traffic_red
@@ -83,3 +85,7 @@ class utility_commands(commands.Cog):
     @commands.command(pass_context=True)
     async def about(self, ctx):
         pass
+
+
+def setup(bot):
+    bot.add_cog(UtilityCommands(bot))
