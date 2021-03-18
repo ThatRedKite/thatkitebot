@@ -52,24 +52,28 @@ async def mark(
     if is_user and not is_channel:
         for channel in guild.text_channels:
             # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
-            async for message in channel.history(limit=old, oldest_first=True).filter(
-                lambda m: m.author == chan
-            ):
-                messages.append(str(message.clean_content))
+            try:
+                async for message in channel.history(limit=old, oldest_first=True).filter(lambda m: m.author == chan):
+                    messages.append(str(message.clean_content))
 
-            # add :new: messages of the user :chan: to the list :messages:
-            async for message in channel.history(limit=new).filter(
-                lambda m: m.author == chan
-            ):
-                messages.append(str(message.clean_content))
+                # add :new: messages of the user :chan: to the list :messages:
+                async for message in channel.history(limit=new).filter(
+                    lambda m: m.author == chan
+                ):
+                    messages.append(str(message.clean_content))
+            except discord.Forbidden:
+                pass
 
     else:
         # add :old: messages :chan: to the list :messages:
-        async for message in chan.history(limit=old, oldest_first=True):
-            messages.append(str(message.clean_content))
-        # add :new: messages :chan: to the list :messages:
-        async for message in chan.history(limit=new):
-            messages.append(str(message.clean_content))
+        try:
+            async for message in chan.history(limit=old, oldest_first=True):
+                messages.append(str(message.clean_content))
+            # add :new: messages :chan: to the list :messages:
+            async for message in chan.history(limit=new):
+                messages.append(str(message.clean_content))
+        except discord.Forbidden:
+            pass    
     # generate a model based on the messages in :messages:
     model = markovify.NewlineText("\n".join(messages))
     generated_list = []
@@ -94,12 +98,10 @@ class FunStuff(commands.Cog):
 
     @commands.command()
     async def inspirobot(self, ctx):
-        await ctx.send(
-            embed=await backend.url.inspirourl(session=self.bot.aiohttp_session)
-        )
+        await ctx.send(embed=await backend.url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(aliases=["mark", "m"])
-    async def markov(self, ctx, user="", *, args="-tts False"):
+    async def markov(self, ctx, user, *, args="-"):
         parser = NoExitParser()
         try:
             parser.add_argument("-old", type=int, nargs="?", default=100)
