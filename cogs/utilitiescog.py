@@ -89,7 +89,7 @@ class UtilityCommands(commands.Cog):
     @commands.command()
     async def invite(self,ctx):
         await ctx.author.send(
-            "https://discord.com/api/oauth2/authorize?client_id=589234402148614157&permissions=4058176&scope=bot"
+            "https://discord.com/api/oauth2/authorize?client_id=589234402148614157&permissions=37088256&scope=bot"
         )
 
 def setup(bot):
