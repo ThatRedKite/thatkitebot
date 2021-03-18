@@ -25,68 +25,37 @@ import discord
 import markovify
 from discord.ext import commands
 import backend
-
+import typing
 
 class NoExitParser(argparse.ArgumentParser):
     def error(self, message):
         raise ValueError(message)
 
 
-async def mark(
-    bot,
-    ctx: commands.Context,
-    user,
-    old: int = 200,
-    new: int = 200,
-    leng: int = 5,
-    leng2: int = 20,
-    mode: str = "long",
-):
-    # some general variables
-    guild = ctx.guild
-    author: discord.User = ctx.message.author
-    message: discord.Message = ctx.message
-    # change the bot's status to "do not disturb" and set its game
-    chan, is_user, is_channel = backend.util.mentioner(bot, ctx, message, user, True)
+async def markov(guild, chan, old=200, new=200, leng=5):
     messages = []
-    if is_user and not is_channel:
-        for channel in guild.text_channels:
-            # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
-            try:
-                async for message in channel.history(limit=old, oldest_first=True).filter(lambda m: m.author == chan):
-                    messages.append(str(message.clean_content))
-
-                # add :new: messages of the user :chan: to the list :messages:
-                async for message in channel.history(limit=new).filter(
-                    lambda m: m.author == chan
-                ):
-                    messages.append(str(message.clean_content))
-            except discord.Forbidden:
-                pass
-
-    else:
-        # add :old: messages :chan: to the list :messages:
+    for channel in guild.text_channels:
+        # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
         try:
-            async for message in chan.history(limit=old, oldest_first=True):
+            async for message in channel.history(limit=old, oldest_first=True).filter(lambda m: m.author == chan):
                 messages.append(str(message.clean_content))
-            # add :new: messages :chan: to the list :messages:
-            async for message in chan.history(limit=new):
+
+            # add :new: messages of the user :chan: to the list :messages:
+            async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
                 messages.append(str(message.clean_content))
         except discord.Forbidden:
-            pass    
+            pass
     # generate a model based on the messages in :messages:
     model = markovify.NewlineText("\n".join(messages))
-    generated_list = []
-    # generate :leng: sentences
+
+    generated_list = list()
+
     for i in range(leng):
-        if mode == "long":
-            generated = model.make_sentence()
-        else:
-            generated = model.make_short_sentence(leng2)
-        # only add sentences that are not None to :generated_list:
-        if generated is not None:
-            generated_list.append(generated)
-    return generated_list, chan
+        a = model.make_sentence()
+        if a:
+            generated_list.append(a)
+
+    return generated_list
 
 
 class FunStuff(commands.Cog):
@@ -100,56 +69,25 @@ class FunStuff(commands.Cog):
     async def inspirobot(self, ctx):
         await ctx.send(embed=await backend.url.inspirourl(session=self.bot.aiohttp_session))
 
-    @commands.command(aliases=["mark", "m"])
-    async def markov(self, ctx, user, *, args="-"):
-        parser = NoExitParser()
-        try:
-            parser.add_argument("-old", type=int, nargs="?", default=100)
-            parser.add_argument("-new", type=int, nargs="?", default=100)
-            parser.add_argument("-leng", type=int, nargs="?", default=5)
-            parser.add_argument("-tts", type=str, nargs="?", default="en")
-            parser.add_argument("-lang", type=str, nargs="?", default="en")
-            parsed_args = parser.parse_args(args.split(" "))
-            use_tts = backend.util.bool_parse(parsed_args.tts)
-        except Exception as exc:
-            print(exc)
+    @commands.command(name="markov", aliases=["mark", "m"])
+    async def _markov(self, ctx, user: typing.Optional[discord.Member], tts: bool = False):
+        if not user:
+            user = ctx.message.author
+        async with ctx.channel.typing():
+            generated_list = await markov(ctx.guild, user)
+            embed = discord.Embed(title="**Markov Chain Output: **", description=f"*{'. '.join(generated_list)}*")
+            embed.color = 0x6E3513
+            embed.set_thumbnail(url=user.avatar_url)
 
-        author: discord.User = ctx.message.author
-        try:
-            async with ctx.channel.typing():
-                generated_list, chan = await mark(
-                    self.bot,
-                    ctx,
-                    user,
-                    parsed_args.old,
-                    parsed_args.new,
-                    parsed_args.leng,
-                )
+            if tts:
+                text = ". ".join(generated_list)
+                tts = gTTS(text=text, lang="en_US")
+                tts.save(os.path.join(self.dirname, "data/tts.mp3"))
+                file_attachment = discord.File(os.path.join(self.dirname, "data/tts.mp3"), filename="tts.mp3")
+                await ctx.send(embed=embed, file=file_attachment)
 
-                embed = discord.Embed(
-                    title="**Markov Chain Output: **",
-                    description=f"*{'. '.join(generated_list)}*",
-                )
-                embed.color = 0x6E3513
-                embed.set_footer(
-                    icon_url=author.avatar_url,
-                    text=f"generated by {author} the target was: {chan}",
-                )
-                if use_tts:
-                    text = ". ".join(generated_list)
-                    tts = gTTS(text=text, lang=parsed_args.lang)
-                    tts.save(os.path.join(self.dirname, "data/tts.mp3"))
-                    file_attachment = discord.File(
-                        os.path.join(self.dirname, "data/tts.mp3"),
-                        filename="tts.mp3",
-                    )
-                    await ctx.send(embed=embed)
-                    await ctx.send(file=file_attachment)
-                else:
-                    await ctx.send(embed=embed)
-        except Exception as exc:
-            await backend.util.errormsg(ctx, str(exc))
-            raise exc
+            else:
+                await ctx.send(embed=embed)
 
     @commands.command()
     async def fakeword(self, ctx):
