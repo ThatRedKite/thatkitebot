@@ -109,6 +109,16 @@ class ImageStuff(commands.Cog):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "implode")
             await ctx.send(file=image_file)
 
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command()
+    async def swirl(self, ctx: commands.Context):
+        """swirl an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "swirl")
+            await ctx.send(file=image_file)
+
+
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
