@@ -37,7 +37,21 @@ def magik(i, fn):
         a.resize(width=int(a.width / 2), height=int(a.height / 2))
         a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=2, rigidity=0)
         a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=1, rigidity=0)
+        a.resize(width=int(a.width * 2), height=int(a.height * 2))
         return np.array(a), fn
+
+
+def implode(i, fn):
+    with WandImage.from_array(i) as a:
+        a.implode(0.6)
+        return np.array(a), fn
+
+
+def explode(i, fn):
+    with WandImage.from_array(i) as a:
+        a.implode(-4.0)
+        return np.array(a), fn
+
 
 def caption(i, fn, ct, path):
     font = ImageFont.truetype(join(path, "DejaVuSans.ttf"), 47)  # load the font
@@ -84,7 +98,9 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path=""):
         "magik":magik,
         "deepfry":deepfry,
         "wide": wide,
-        "caption": caption
+        "caption": caption,
+        "implode": implode,
+        "explode": explode
     }
 
     chosen_mode = modes.get(mode)
