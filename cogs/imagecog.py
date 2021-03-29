@@ -27,6 +27,7 @@ import imageio
 from discord.ext import commands
 from backend import util, magik
 from backend import url as url_util
+from typing import Optional
 
 
 class ImageStuff(commands.Cog):
@@ -42,35 +43,38 @@ class ImageStuff(commands.Cog):
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx,"magik")
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "magik")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
-    async def widepfp(self, ctx: commands.Context, usermention="transfergesetz"):
+    async def widepfp(self, ctx: commands.Context, user: Optional[discord.User] = None):
         """sends a horizontally stretched version of someonme's profile picture"""
+        if not user:
+            user = ctx.message.author
+
         async with ctx.channel.typing():
-            message = ctx.message
-            chan,is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
-            image_file = await magik.do_stuff(self.ll, self.session, str(chan.avatar_url), "wide")
+            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "wide")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
-    async def pfp(self, ctx, usermention="passatwind"):
+    async def pfp(self, ctx, user: Optional[discord.User] = None):
         """sends the pfp of someone"""
-        message = ctx.message
-        chan, is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
-        await ctx.send(chan.avatar_url)
+        if not user:
+            user = ctx.message.author
+
+        await ctx.send(user.avatar_url)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
-    async def pfpmagik(self, ctx, usermention="nonetti"):
+    async def pfpmagik(self, ctx, user: Optional[discord.User] = None):
         """applies content aware scaling to someone's pfp"""
+        if not user:
+            user = ctx.message.author
+
         async with ctx.channel.typing():
-            message = ctx.message
-            chan,is_user, is_channel = util.mentioner(self.bot, ctx, message, usermention, False)
-            image_file = await magik.do_stuff(self.ll, self.session, str(chan.avatar_url), "magik")
+            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "magik")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -87,6 +91,22 @@ class ImageStuff(commands.Cog):
         """Horizonally stretch an image"""
         async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "wide")
+            await ctx.send(file=image_file)
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command()
+    async def explode(self, ctx: commands.Context):
+        """explode an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "explode")
+            await ctx.send(file=image_file)
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command()
+    async def implode(self, ctx: commands.Context):
+        """implode an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "implode")
             await ctx.send(file=image_file)
 
     @commands.command()
@@ -127,7 +147,7 @@ class ImageStuff(commands.Cog):
                 fps = io.get_meta_data()["duration"]
             else:
                 # double the framerate and set the variable to bypass any processing
-                fps = (io.get_meta_data()["duration"]) * 2
+                fps = (io.get_meta_data()["duration"]) * 4
                 dry = True
 
         async with ctx.channel.typing():
@@ -135,7 +155,7 @@ class ImageStuff(commands.Cog):
             fc = {
                 "deepfry": magik.deepfry,
                 "magik": magik.magik,
-                "wide": magik.wide,
+                "wide": magik.wide
             }
 
             # only process the frames if the dry variable is False
@@ -146,7 +166,7 @@ class ImageStuff(commands.Cog):
                         # create a list of awaitable future objects
                         futures = [ll.run_in_executor(pool, cf, fra, fn) for fn, fra in enumerate(io)]
                     else:
-                        futures = [ll.run_in_executor(pool, magik.caption, fra, fn, ct, p)for fn, fra in enumerate(io)]
+                        futures = [ll.run_in_executor(pool, magik.caption, fra, fn, ct, p) for fn, fra in enumerate(io)]
 
                     # wait for the futures to finish and add them to the :io: list
                     # TODO: turn this into a list comprehension

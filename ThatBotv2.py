@@ -25,9 +25,18 @@ from datetime import datetime
 from pathlib import Path
 import aiohttp
 import psutil
+import discord
 from discord.ext import commands
 from backend.util import colors, clear_temp_folder
 from backend.settings import BotSettings
+
+intents = discord.Intents.default()
+intents.typing = False
+intents.members = True
+intents.invites = False
+intents.presences = False
+intents.reactions = False
+
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 colors = colors()
@@ -49,7 +58,6 @@ if tenortoken is None or tenortoken == "":
 clear_temp_folder(dirname)
 
 enabled_ext = [
-    "cogs.elitecog",
     "cogs.funstuffcog",
     "cogs.imagecog",
     "cogs.musiccog",
@@ -96,7 +104,7 @@ class ThatKiteBot(commands.Bot):
 
 
 print("initilizing bot . . .")
-bot = ThatKiteBot(prefix, dirname)
+bot = ThatKiteBot(prefix, dirname,intents=intents)
 for ext in enabled_ext:
     try:
         bot.load_extension(ext)
