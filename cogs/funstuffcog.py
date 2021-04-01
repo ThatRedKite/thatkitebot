@@ -20,38 +20,37 @@
 
 import argparse
 import os
-from gtts import  gTTS
+from gtts import gTTS
 import discord
 import markovify
 from discord.ext import commands
 import backend
 import typing
 
+
 class NoExitParser(argparse.ArgumentParser):
     def error(self, message):
         raise ValueError(message)
 
 
-async def markov(guild, chan, old=200, new=200, leng=5):
+async def markov(guild, chan, old=50, new=10, leng=5):
     messages = []
     for channel in guild.text_channels:
         # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
         try:
-            async for message in channel.history(limit=old, oldest_first=True).filter(lambda m: m.author == chan):
-                messages.append(str(message.clean_content))
-
-            # add :new: messages of the user :chan: to the list :messages:
             async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
                 messages.append(str(message.clean_content))
         except discord.Forbidden:
-            pass
+            continue
     # generate a model based on the messages in :messages:
+    print(messages)
     model = markovify.NewlineText("\n".join(messages))
 
     generated_list = list()
 
     for i in range(leng):
         a = model.make_sentence()
+        print(a)
         if a:
             generated_list.append(a)
 
@@ -99,5 +98,8 @@ class FunStuff(commands.Cog):
     async def vision(self, ctx):
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
 
+
 def setup(bot):
     bot.add_cog(FunStuff(bot))
+    
+
