@@ -39,9 +39,9 @@ def magik(i, fn):
         return np.array(a), fn
 
 
-def swirl(i,fn):
+def swirl(i, fn, param: int = -60):
     with WandImage.from_array(i) as a:
-        a.swirl(degree=-60)
+        a.swirl(degree=param)
         return np.array(a), fn
 
 
