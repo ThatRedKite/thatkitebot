@@ -41,8 +41,9 @@ def magik(i, fn):
 
 def swirl(i,fn):
     with WandImage.from_array(i) as a:
-        a.swirl(degree=-45)
+        a.swirl(degree=-60)
         return np.array(a), fn
+
 
 def implode(i, fn):
     with WandImage.from_array(i) as a:
@@ -89,10 +90,10 @@ def deepfry(i, fn):
         return np.array(a), fn
 
 
-async def do_stuff(loop, session, history, mode: str, text: str = "", path=""):
+async def do_stuff(loop, session, history, mode: str, text: str = "", path="", gif: bool = False, token: str = ""):
     # get the url of the image and download it
     if type(history) is Context:
-        url = await url_util.imageurlgetter(session, history.channel.history(limit=30), False)
+        url = await url_util.imageurlgetter(session, history.channel.history(limit=30), gif=gif, token=token)
     else:
         url = str(history)
     io = await url_util.imagedownloader(session, url)
@@ -108,6 +109,8 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path=""):
     }
 
     chosen_mode = modes.get(mode)
+    if gif:
+        return io, chosen_mode
     with ProcessPoolExecutor() as pool:
         if chosen_mode is not caption:
             io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1)
