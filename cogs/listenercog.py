@@ -22,6 +22,7 @@
 import random
 from datetime import datetime
 import discord
+import asyncio
 from discord.enums import Status
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
@@ -39,9 +40,13 @@ class ListenerCog(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
         if isinstance(error, commands.CommandNotFound):
-            await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
+            msg = await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
+            await asyncio.sleep(60)
+            await msg.delete()
         elif isinstance(error, commands.CommandOnCooldown):
-            await errormsg(ctx, "Sorry, but this command is on cooldown! Try again in a few seconds.")
+            msg = await errormsg(ctx, "Sorry, but this command is on cooldown! Try again in a few seconds.")
+            await asyncio.sleep(60)
+            await msg.delete()
         elif isinstance(error, CommandInvokeError) and self.bot.debugmode:
             await errormsg(ctx, repr(error))
             raise error
