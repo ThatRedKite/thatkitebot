@@ -28,6 +28,7 @@ from discord.ext import commands
 from backend import util, magik
 from backend import url as url_util
 from typing import Optional
+from wand import resource
 
 
 class ImageStuff(commands.Cog):
@@ -109,7 +110,6 @@ class ImageStuff(commands.Cog):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "implode")
             await ctx.send(file=image_file)
 
-
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context):
@@ -118,7 +118,6 @@ class ImageStuff(commands.Cog):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "swirl")
             await ctx.send(file=image_file)
 
-
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
@@ -126,7 +125,7 @@ class ImageStuff(commands.Cog):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.command()
     async def gmagik(self, ctx: commands.Context, mode: str = "", *, ct: str = ""):
         """
@@ -140,16 +139,8 @@ class ImageStuff(commands.Cog):
         p = join(self.dd, "DejaVuSans.ttf")
 
         async with ctx.channel.typing():
-            # this just gets an image url to download
-            image_url = await url_util.imageurlgetter(
-                session=self.bot.aiohttp_session,
-                history=ctx.channel.history(limit=30, around=datetime.now()),
-                token=self.bot.tom.tenortoken,
-                gif=True,
-            )
-
             # download the image from the URL and send a message which indicates a successful download
-            io = await url_util.imagedownloader(session=self.bot.aiohttp_session, url=image_url)
+            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, token=self.bot.tom.tenortoken)
             pmsg = await ctx.send(f"This GIF has {len(io)} frames. Too many frames make the file too big for discord.")
 
             # when we speed the GIF up, we don't need any processing to be done, just double the framerate
@@ -161,13 +152,6 @@ class ImageStuff(commands.Cog):
                 dry = True
 
         async with ctx.channel.typing():
-            # dict of possible functions to call
-            fc = {
-                "deepfry": magik.deepfry,
-                "magik": magik.magik,
-                "wide": magik.wide
-            }
-
             # only process the frames if the dry variable is False
             if not dry:
                 with ProcessPoolExecutor() as pool:
