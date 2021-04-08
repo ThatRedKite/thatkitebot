@@ -19,6 +19,7 @@
 # ------------------------------------------------------------------------------
 
 from io import BytesIO
+import random
 import imageio
 from wand.image import Image as WandImage
 import numpy as np
@@ -32,10 +33,20 @@ from concurrent.futures import ProcessPoolExecutor
 
 
 # define filters which all take one argument (i) which is a numpy array:
+def fart_magik(i, fn):
+    with WandImage.from_array(i) as a:
+        rx = random.randint(1, 3)
+        rw = int(a.width * (2 - (rx / 100)))
+        rh = int(a.height * (2 + (rx / 100)))
+        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=rx, rigidity=(rx / 100))
+        a.liquid_rescale(width=rw, height=rh, delta_x=rx + 1, rigidity=0)
+        return np.array(a), fn
+
+
 def magik(i, fn):
     with WandImage.from_array(i) as a:
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=2, rigidity=0)
-        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=1, rigidity=0)
+        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
+        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=2, rigidity=0)
         return np.array(a), fn
 
 
@@ -90,16 +101,17 @@ def deepfry(i, fn):
         return np.array(a), fn
 
 
-async def do_stuff(loop, session, history, mode: str, text: str = "", path="", gif: bool = False, token: str = ""):
+async def do_stuff(loop, session, history, mode: str, text: str = "", path="", gif: bool = False, tk="", deg=60):
     # get the url of the image and download it
     if type(history) is Context:
-        url = await url_util.imageurlgetter(session, history.channel.history(limit=30), gif=gif, token=token)
+        url = await url_util.imageurlgetter(session, history.channel.history(limit=30), gif=gif, token=tk)
     else:
         url = str(history)
     io = await url_util.imagedownloader(session, url)
 
     modes = {
         "magik":magik,
+        "rmagik": fart_magik,
         "deepfry":deepfry,
         "wide": wide,
         "caption": caption,
@@ -108,11 +120,14 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path="", g
         "swirl": swirl
     }
 
-    chosen_mode = modes.get(mode)
+    chosen_mode = modes.get(mode, magik)
     if gif:
         return io, chosen_mode
     with ProcessPoolExecutor() as pool:
-        if chosen_mode is not caption:
+
+        if chosen_mode is swirl:
+            io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1, deg)
+        elif chosen_mode is not caption:
             io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1)
         else:
             io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1, text, path)

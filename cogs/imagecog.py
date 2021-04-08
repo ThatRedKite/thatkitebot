@@ -112,10 +112,10 @@ class ImageStuff(commands.Cog):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
-    async def swirl(self, ctx: commands.Context):
+    async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "swirl")
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "swirl", deg=degree)
             await ctx.send(file=image_file)
 
     @commands.command()
@@ -123,6 +123,14 @@ class ImageStuff(commands.Cog):
         """Adds a caption to an image."""
         async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
+            await ctx.send(file=image_file)
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command()
+    async def rmagik(self, ctx: commands.Context):
+        """implode an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "rmagik")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 20, commands.BucketType.user)
@@ -140,7 +148,7 @@ class ImageStuff(commands.Cog):
 
         async with ctx.channel.typing():
             # download the image from the URL and send a message which indicates a successful download
-            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, token=self.bot.tom.tenortoken)
+            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, tk=self.bot.tom.tenortoken)
             pmsg = await ctx.send(f"This GIF has {len(io)} frames. Too many frames make the file too big for discord.")
 
             # when we speed the GIF up, we don't need any processing to be done, just double the framerate
@@ -148,17 +156,16 @@ class ImageStuff(commands.Cog):
                 fps = io.get_meta_data()["duration"]
             else:
                 # double the framerate and set the variable to bypass any processing
-                fps = (io.get_meta_data()["duration"]) * 4
+                fps = (io.get_meta_data()["duration"]) * 2
                 dry = True
 
         async with ctx.channel.typing():
             # only process the frames if the dry variable is False
             if not dry:
                 with ProcessPoolExecutor() as pool:
-                    if not mode.lower() == "caption":
-                        cf = fc.get(mode.lower(), magik.magik)  # get the right function for the set mode
+                    if not mode.lower() == "caption": # get the right function for the set mode
                         # create a list of awaitable future objects
-                        futures = [ll.run_in_executor(pool, cf, fra, fn) for fn, fra in enumerate(io)]
+                        futures = [ll.run_in_executor(pool, fc, fra, fn) for fn, fra in enumerate(io)]
                     else:
                         futures = [ll.run_in_executor(pool, magik.caption, fra, fn, ct, p) for fn, fra in enumerate(io)]
 
