@@ -60,7 +60,6 @@ clear_temp_folder(dirname)
 enabled_ext = [
     "cogs.funstuffcog",
     "cogs.imagecog",
-    "cogs.musiccog",
     "cogs.nsfwcog",
     "cogs.listenercog",
     "cogs.sudocog",
