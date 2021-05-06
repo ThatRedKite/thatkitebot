@@ -96,6 +96,14 @@ class ImageStuff(commands.Cog):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
+    async def opacify(self, ctx: commands.Context):
+        """Horizonally stretch an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "opacify")
+            await ctx.send(file=image_file)
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command()
     async def explode(self, ctx: commands.Context):
         """explode an image"""
         async with ctx.channel.typing():

@@ -22,6 +22,8 @@ from io import BytesIO
 import random
 import imageio
 from wand.image import Image as WandImage
+from wand.color import Color
+from wand.drawing import Drawing
 import numpy as np
 from discord.ext.commands import Context
 from . import url as url_util
@@ -59,6 +61,13 @@ def swirl(i, fn, param: int = -60):
 def implode(i, fn):
     with WandImage.from_array(i) as a:
         a.implode(0.6)
+        return np.array(a), fn
+
+
+def opacify(i, fn):
+    with WandImage.from_array(i) as a:
+        a.alpha_channel = "remove"
+        a.background_color = Color("white")
         return np.array(a), fn
 
 
@@ -117,7 +126,8 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path="", g
         "caption": caption,
         "implode": implode,
         "explode": explode,
-        "swirl": swirl
+        "swirl": swirl,
+        "opacify": opacify
     }
 
     chosen_mode = modes.get(mode, magik)
