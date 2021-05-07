@@ -20,7 +20,6 @@
 
 import argparse
 import os
-from gtts import gTTS
 import discord
 import markovify
 from discord.ext import commands
