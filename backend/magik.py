@@ -23,7 +23,6 @@ import random
 import imageio
 from wand.image import Image as WandImage
 from wand.color import Color
-from wand.drawing import Drawing
 import numpy as np
 from discord.ext.commands import Context
 from . import url as url_util
@@ -35,15 +34,6 @@ from concurrent.futures import ProcessPoolExecutor
 
 
 # define filters which all take one argument (i) which is a numpy array:
-def fart_magik(i, fn):
-    with WandImage.from_array(i) as a:
-        rx = random.randint(1, 3)
-        rw = int(a.width * (2 - (rx / 100)))
-        rh = int(a.height * (2 + (rx / 100)))
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=rx, rigidity=(rx / 100))
-        a.liquid_rescale(width=rw, height=rh, delta_x=rx + 1, rigidity=0)
-        return np.array(a), fn
-
 
 def magik(i, fn):
     with WandImage.from_array(i) as a:
@@ -74,6 +64,12 @@ def opacify(i, fn):
 def explode(i, fn):
     with WandImage.from_array(i) as a:
         a.implode(-4.0)
+        return np.array(a), fn
+
+
+def eightbit(i, fn):
+    with WandImage.from_array(i) as a:
+        a.posterize(levels=4)
         return np.array(a), fn
 
 
@@ -119,15 +115,15 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path="", g
     io = await url_util.imagedownloader(session, url)
 
     modes = {
-        "magik":magik,
-        "rmagik": fart_magik,
+        "magik": magik,
         "deepfry":deepfry,
         "wide": wide,
         "caption": caption,
         "implode": implode,
         "explode": explode,
         "swirl": swirl,
-        "opacify": opacify
+        "opacify": opacify,
+        "reduce": eightbit
     }
 
     chosen_mode = modes.get(mode, magik)

@@ -97,7 +97,7 @@ class ImageStuff(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
     async def opacify(self, ctx: commands.Context):
-        """Horizonally stretch an image"""
+        """remove the alpha channel and replace it with white"""
         async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "opacify")
             await ctx.send(file=image_file)
@@ -120,6 +120,14 @@ class ImageStuff(commands.Cog):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
+    async def reduce(self, ctx: commands.Context):
+        """implode an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "assa")
+            await ctx.send(file=image_file)
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
         async with ctx.channel.typing():
@@ -133,13 +141,6 @@ class ImageStuff(commands.Cog):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.command()
-    async def rmagik(self, ctx: commands.Context):
-        """implode an image"""
-        async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "rmagik")
-            await ctx.send(file=image_file)
 
     @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.command()
