@@ -20,15 +20,15 @@
 
 
 import random
-from datetime import datetime
+from discord_slash import cog_ext, SlashContext, SlashCommand
 import discord
 import asyncio
-from discord.enums import Status
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from backend.util import colors
 from backend.util import errormsg
 import gc
+
 
 class ListenerCog(commands.Cog):
     def __init__(self, bot):
@@ -56,28 +56,6 @@ class ListenerCog(commands.Cog):
     @tasks.loop(hours=1.0)
     async def reset_invoke_counter(self):
         self.bot.command_invokes_hour = 0
-    """
-    @commands.Cog.listener()
-    @commands.bot_has_guild_permissions(ban_members=True)
-    async def on_message(self, message: discord.Message):
-        id_of_role = 15789234234234
-        if message.content.lower() in ["@everyone", "@here"]:
-            author: discord.User = message.author
-            guild: discord.Guild = message.guild
-            allowed_role = guild.get_role(id_of_role)
-            member: discord.member = guild.get_member(message.author.id)
-            channel: discord.TextChannel = message.channel
-
-            if allowed_role not in message.author.roles and not self.strikes.get(member):
-                self.strikes.update({member: 1})
-                await channel.send("HEY, you pinged everyone without permission. This is your first warning")
-            elif allowed_role not in message.author.roles and self.strikes.get(member) == 1:
-                self.strikes.update({member: 2})
-                await channel.send("HEY, you pinged everyone without permission. This is your final warning!")
-            elif allowed_role not in message.author.roles and self.strikes.get(member) == 2:
-                await author.send("Okay you didn't listen. You have been banned.")
-                #await guild.ban(member, reason="mentioning everyone without permission")
-    """
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -89,6 +67,10 @@ class ListenerCog(commands.Cog):
         self.bot.command_invokes_hour += 1
         self.bot.command_invokes_total += 1
         gc.collect()
+
+    @commands.Cog.listener()
+    async def on_slash_command_error(self, ctx, ex):
+        raise ex
 
 
 def setup(bot):

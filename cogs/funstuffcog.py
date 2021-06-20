@@ -25,6 +25,9 @@ import markovify
 from discord.ext import commands
 import backend
 import typing
+from discord_slash import cog_ext, SlashContext
+import glob
+from random import choice
 
 
 class NoExitParser(argparse.ArgumentParser):
@@ -96,6 +99,15 @@ class FunStuff(commands.Cog):
     @commands.command()
     async def vision(self, ctx):
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
+
+    @cog_ext.cog_slash(name="train",
+                       description="Sends a random image of a train",
+                       guild_ids=[685989658555056212, 759419755253465188, 677909523725549582])
+    async def train(self, ctx: SlashContext):
+        images = [image for image in glob.glob(os.path.join(self.dirname, "data", "static", "*.jpg"))]
+        train = discord.File(choice(images))
+        await ctx.defer()
+        await ctx.send(file=train)
 
 
 def setup(bot):
