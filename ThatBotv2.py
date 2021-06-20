@@ -29,6 +29,7 @@ import discord
 from discord.ext import commands
 from backend.util import colors, clear_temp_folder
 from backend.settings import BotSettings
+from discord_slash import SlashCommand
 
 intents = discord.Intents.default()
 intents.typing = False
@@ -98,12 +99,15 @@ class ThatKiteBot(commands.Bot):
         self.command_invokes_hour = 0
         self.command_invokes_total = 0
 
+        self.slash = SlashCommand(self, sync_commands=True)
+
     async def aiohttp_start(self):
         self.aiohttp_session = aiohttp.ClientSession()
 
 
 print("initilizing bot . . .")
-bot = ThatKiteBot(prefix, dirname,intents=intents)
+bot = ThatKiteBot(prefix, dirname, intents=intents)
+
 for ext in enabled_ext:
     try:
         bot.load_extension(ext)
@@ -112,6 +116,4 @@ for ext in enabled_ext:
         raise exc
 
 # cogs
-gc.enable()
-bot.case_insensitive = True
 bot.run(discordtoken)
