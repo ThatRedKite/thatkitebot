@@ -100,14 +100,13 @@ class FunStuff(commands.Cog):
     async def vision(self, ctx):
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
 
-    @cog_ext.cog_slash(name="train",
-                       description="Sends a random image of a train",
-                       guild_ids=[685989658555056212, 759419755253465188, 677909523725549582])
-    async def train(self, ctx: SlashContext):
+    @commands.cooldown(1, 1, commands.BucketType.user)
+    @commands.command(name="train", aliases=["zug"])
+    async def _train(self, ctx):
         images = [image for image in glob.glob(os.path.join(self.dirname, "data", "static", "*.jpg"))]
-        train = discord.File(choice(images))
-        await ctx.defer()
-        await ctx.send(file=train)
+        train = discord.File(choice(images), "train.jpg")
+        async with ctx.typing():
+            await ctx.send(file=train)
 
 
 def setup(bot):
