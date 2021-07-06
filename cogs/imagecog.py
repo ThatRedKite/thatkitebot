@@ -123,7 +123,7 @@ class ImageStuff(commands.Cog):
     async def reduce(self, ctx: commands.Context):
         """implode an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "assa")
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "reduce")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
