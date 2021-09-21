@@ -17,7 +17,7 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
-
+import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from io import BytesIO
@@ -173,16 +173,15 @@ class ImageStuff(commands.Cog):
             if not dry:
                 with ProcessPoolExecutor() as pool:
                     if not mode.lower() == "caption": # get the right function for the set mode
-                        # create a list of awaitable future objects
-                        futures = [ll.run_in_executor(pool, fc, fra, fn) for fn, fra in enumerate(io)]
+                        # create a list of awaitable future objects and do stuff with asyncio.gather
+                        r = await asyncio.gather(*[ll.run_in_executor(pool, fc, fra, fn) for fn, fra in enumerate(io)])
                     else:
-                        futures = [ll.run_in_executor(pool, magik.caption, fra, fn, ct, p) for fn, fra in enumerate(io)]
+                        r = await asyncio.gather(*[ll.run_in_executor(pool, magik.caption, fra, fn, ct, p) for fn, fra in enumerate(io)])
 
                     # wait for the futures to finish and add them to the :io: list
                     # TODO: turn this into a list comprehension
                     io = []
-                    for x in futures:
-                        x = await x  # get the result of the future object
+                    for x in r:
                         io.append([x[1], x[0]])
 
                 io.sort(key=lambda fn: fn[0])  # this sorts the frame list by frame number :fn:
