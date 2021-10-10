@@ -23,9 +23,7 @@ import os
 import discord
 import markovify
 from discord.ext import commands
-import backend
 import typing
-from discord_slash import cog_ext, SlashContext
 import glob
 from random import choice
 
@@ -68,7 +66,7 @@ class FunStuff(commands.Cog):
 
     @commands.command()
     async def inspirobot(self, ctx):
-        await ctx.send(embed=await backend.url.inspirourl(session=self.bot.aiohttp_session))
+        await ctx.send(embed=await thatkitebot.backend.url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(name="markov", aliases=["mark", "m"])
     async def _markov(self, ctx, user: typing.Optional[discord.Member], tts: bool = False):
@@ -93,7 +91,7 @@ class FunStuff(commands.Cog):
     @commands.command()
     async def fakeword(self, ctx):
         async with ctx.channel.typing():
-            embed = await backend.url.word(self.bot.aiohttp_session, embedmode=True)
+            embed = await thatkitebot.backend.url.word(self.bot.aiohttp_session, embedmode=True)
             await ctx.send(embed=embed)
 
     @commands.command()

@@ -27,8 +27,8 @@ import aiohttp
 import psutil
 import discord
 from discord.ext import commands
-from backend.util import colors, clear_temp_folder
-from backend.settings import BotSettings
+from thatkitebot.backend.util import colors, clear_temp_folder
+from thatkitebot.backend.settings import BotSettings
 from discord_slash import SlashCommand
 
 intents = discord.Intents.default()

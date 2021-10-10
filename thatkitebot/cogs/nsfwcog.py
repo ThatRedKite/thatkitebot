@@ -26,9 +26,9 @@ from concurrent.futures import ThreadPoolExecutor
 from random import choice, choices
 import discord
 from discord.ext import commands
-from backend import url
-from backend.util import errormsg
-from backend.util import EmbedColors as ec
+from thatkitebot.backend import url
+from thatkitebot.backend.util import errormsg
+from thatkitebot.backend.util import EmbedColors as ec
 
 
 class NSFW(commands.Cog):

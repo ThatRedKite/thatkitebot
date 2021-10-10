@@ -20,7 +20,7 @@
 
 import gc
 
-from backend import util
+from thatkitebot.backend import util
 import discord
 import asyncio
 from discord.ext import commands

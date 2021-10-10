@@ -21,8 +21,8 @@
 
 import discord
 from discord.ext import commands
-from backend import misc as back
-from backend.util import EmbedColors as ec
+from thatkitebot.backend import misc as back
+from thatkitebot.backend.util import EmbedColors as ec
 
 
 class UtilityCommands(commands.Cog):
