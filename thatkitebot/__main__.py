@@ -29,7 +29,8 @@ import discord
 from discord.ext import commands
 from thatkitebot.backend.util import colors, clear_temp_folder
 from thatkitebot.backend.settings import BotSettings
-from discord_slash import SlashCommand
+
+tempdir = "/tmp/tkb/"
 
 intents = discord.Intents.default()
 intents.typing = False
@@ -41,11 +42,10 @@ intents.reactions = False
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 colors = colors()
-if not dirname.joinpath("data", "temp").exists():
+if not Path(tempdir).exists():
     print(colors.red + f"    temp directory not found,creating temp directory")
-    os.mkdir(dirname.joinpath("data", "temp"))
+    os.mkdir(tempdir)
 
-tempdir = dirname.joinpath("data", "temp")
 tom = BotSettings(dirname)
 prefix = tom.prefix
 discordtoken = tom.token
@@ -76,7 +76,7 @@ class ThatKiteBot(commands.Bot):
         # paths
         self.dirname = dirname
         self.datadir = self.dirname.joinpath("data")
-        self.tempdir = self.datadir.joinpath("temp")
+        self.tempdir = tempdir
 
         # info
         self.version = "2.7.0.0"
@@ -98,8 +98,6 @@ class ThatKiteBot(commands.Bot):
         self.cpu_usage = 0
         self.command_invokes_hour = 0
         self.command_invokes_total = 0
-
-        self.slash = SlashCommand(self, sync_commands=True)
 
     async def aiohttp_start(self):
         self.aiohttp_session = aiohttp.ClientSession()
