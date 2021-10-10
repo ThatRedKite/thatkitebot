@@ -59,12 +59,12 @@ if tenortoken is None or tenortoken == "":
 clear_temp_folder(tempdir)
 
 enabled_ext = [
-    "cogs.funstuffcog",
-    "cogs.imagecog",
-    "cogs.nsfwcog",
-    "cogs.listenercog",
-    "cogs.sudocog",
-    "cogs.utilitiescog"
+    "thatkitebot.cogs.funstuffcog",
+    "thatkitebot.cogs.imagecog",
+    "thatkitebot.cogs.nsfwcog",
+    "thatkitebot.cogs.listenercog",
+    "thatkitebot.cogs.sudocog",
+    "thatkitebot.cogs.utilitiescog"
 ]
 
 
