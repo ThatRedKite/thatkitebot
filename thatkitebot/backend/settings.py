@@ -20,7 +20,6 @@
 
 
 import json
-import logging
 from copy import deepcopy
 from os import path
 from pathlib import Path
@@ -36,10 +35,6 @@ class TokenErrorCritical(Exception):
 
 class BotSettings:
     def __init__(self, dirname: str):
-        logging.basicConfig(
-            filename=f"{dirname}/data/bot.log",
-            level=logging.WARN,
-            format="%(levelname)s|%(message)s| @ %(asctime)s")
 
         # set the absolute path to the settings file
         self.path = Path(path.join(dirname, "data/settings.json"))
@@ -78,14 +73,10 @@ class BotSettings:
             # the settings for a specific guild
 
         except (KeyError, TokenErrorCritical, json.JSONDecodeError) as exc:
-            logging.critical(f"{str(type(exc))}: {exc}")
-
             raise exc
 
         except TokenError as exc:
             print(TokenError)
-            logging.warning(exc.message)
-
 
     def update(self, data, guild_id: str):
         """ update a setting (not the token or prefix) """
