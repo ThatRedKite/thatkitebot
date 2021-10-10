@@ -153,10 +153,10 @@ def clear_temp_folder(dirname):
     """
         a simple function to clear the temp data folder of the bot
     """
-    cleanupfiles = glob.glob(os.path.join(dirname, "data", "temp", "*.png"))
-    cleanupfiles += glob.glob(os.path.join(dirname, "data", "temp", "*.webp"))
-    cleanupfiles += glob.glob(os.path.join(dirname, "data", "temp", "*.gif"))
-    cleanupfiles += glob.glob(os.path.join(dirname, "data", "temp", "*.mp3"))
+    cleanupfiles = glob.glob(os.path.join(dirname, "*.png"))
+    cleanupfiles += glob.glob(os.path.join(dirname, "*.webp"))
+    cleanupfiles += glob.glob(os.path.join(dirname, "*.gif"))
+    cleanupfiles += glob.glob(os.path.join(dirname, "*.mp3"))
     for file in cleanupfiles:
         os.remove(file)
 

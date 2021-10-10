@@ -31,6 +31,7 @@ from thatkitebot.backend.util import colors, clear_temp_folder
 from thatkitebot.backend.settings import BotSettings
 
 tempdir = "/tmp/tkb/"
+datadir = "/app/data"
 
 intents = discord.Intents.default()
 intents.typing = False
@@ -39,14 +40,13 @@ intents.invites = False
 intents.presences = False
 intents.reactions = False
 
-
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 colors = colors()
 if not Path(tempdir).exists():
     print(colors.red + f"    temp directory not found,creating temp directory")
     os.mkdir(tempdir)
 
-tom = BotSettings(dirname)
+tom = BotSettings("/app/data/settings.json")
 prefix = tom.prefix
 discordtoken = tom.token
 tenortoken = tom.tenortoken
@@ -56,7 +56,7 @@ if tenortoken is None or tenortoken == "":
         colors.red + colors.bold + colors.underlined + f"*** tenor token not found! Cannot use features that use tenor! ***{colors.clear}")
 
 # clean up some shit
-clear_temp_folder(dirname)
+clear_temp_folder(tempdir)
 
 enabled_ext = [
     "cogs.funstuffcog",
@@ -75,11 +75,11 @@ class ThatKiteBot(commands.Bot):
         self.prefix = command_prefix
         # paths
         self.dirname = dirname
-        self.datadir = self.dirname.joinpath("data")
-        self.tempdir = tempdir
+        self.datadir = "/app/data/"
+        self.tempdir = "/tmp/"
 
         # info
-        self.version = "2.7.0.0"
+        self.version = "2.8"
         self.tom = BotSettings(dirname)
         self.starttime = datetime.now()
         self.pid = os.getpid()

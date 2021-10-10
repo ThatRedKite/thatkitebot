@@ -25,7 +25,7 @@ from os.path import join
 import discord
 import imageio
 from discord.ext import commands
-from backend import util, magik
+from thatkitebot.backend import util, magik
 from thatkitebot.backend import url as url_util
 from typing import Optional
 from wand import resource

@@ -19,14 +19,12 @@
 # ------------------------------------------------------------------------------
 
 
-import random
-from discord_slash import cog_ext, SlashContext, SlashCommand
 import discord
 import asyncio
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
-from backend.util import colors
-from backend.util import errormsg
+from thatkitebot.backend.util import colors
+from thatkitebot.backend.util import errormsg
 import gc
 
 

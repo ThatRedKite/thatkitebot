@@ -34,10 +34,10 @@ class TokenErrorCritical(Exception):
 
 
 class BotSettings:
-    def __init__(self, dirname: str):
+    def __init__(self, fp):
 
         # set the absolute path to the settings file
-        self.path = Path(path.join(dirname, "data/settings.json"))
+        self.path = Path(fp)
         # load the settings file and parse it
         if self.path.exists():  # check if the file exists
             with open(self.path, "rt") as stream:
