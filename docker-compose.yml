@@ -1,0 +1,11 @@
+services:
+  thatkitebot:
+    build:  .
+    volumes:
+      - ./data/temp:/tmp/
+      - ./thatkitebot:/tkb/
+      - ./thatkitebotdata:/tkb/data/
+    restart:  unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: bash -c "cd /tkb/ && python3 -m thatkitebot"
