@@ -26,6 +26,7 @@ from discord.ext import commands
 import typing
 import glob
 from random import choice
+from thatkitebot.backend import url
 
 
 class NoExitParser(argparse.ArgumentParser):
@@ -66,7 +67,7 @@ class FunStuff(commands.Cog):
 
     @commands.command()
     async def inspirobot(self, ctx):
-        await ctx.send(embed=await thatkitebot.backend.url.inspirourl(session=self.bot.aiohttp_session))
+        await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(name="markov", aliases=["mark", "m"])
     async def _markov(self, ctx, user: typing.Optional[discord.Member], tts: bool = False):
@@ -91,7 +92,7 @@ class FunStuff(commands.Cog):
     @commands.command()
     async def fakeword(self, ctx):
         async with ctx.channel.typing():
-            embed = await thatkitebot.backend.url.word(self.bot.aiohttp_session, embedmode=True)
+            embed = await url.word(self.bot.aiohttp_session, embedmode=True)
             await ctx.send(embed=embed)
 
     @commands.command()
@@ -101,7 +102,7 @@ class FunStuff(commands.Cog):
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.command(name="train", aliases=["zug"])
     async def _train(self, ctx):
-        images = [image for image in glob.glob(os.path.join(self.dirname, "data", "static", "*.jpg"))]
+        images = [image for image in glob.glob("/app/data/trains/*.jpg")]
         train = discord.File(choice(images), "train.jpg")
         async with ctx.typing():
             await ctx.send(file=train)
