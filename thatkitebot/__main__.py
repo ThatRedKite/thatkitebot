@@ -69,7 +69,7 @@ enabled_ext = [
 
 
 class ThatKiteBot(commands.Bot):
-    def __init__(self, command_prefix, dirname, help_command=None, description=None, **options):
+    def __init__(self, command_prefix, dirname,tom, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
         self.prefix = command_prefix
@@ -80,7 +80,7 @@ class ThatKiteBot(commands.Bot):
 
         # info
         self.version = "2.8"
-        self.tom = BotSettings(dirname)
+        self.tom = tom
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
@@ -104,7 +104,7 @@ class ThatKiteBot(commands.Bot):
 
 
 print("initilizing bot . . .")
-bot = ThatKiteBot(prefix, dirname, intents=intents)
+bot = ThatKiteBot(prefix, dirname, tom, intents=intents)
 
 for ext in enabled_ext:
     try:
