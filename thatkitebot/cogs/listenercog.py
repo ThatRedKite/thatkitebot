@@ -39,7 +39,7 @@ class ListenerCog(commands.Cog):
         if isinstance(error, commands.CommandNotFound):
             await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
         elif isinstance(error, commands.CommandOnCooldown):
-            await errormsg(ctx, "Sorry, but this command is on cooldown! ")
+            await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
         elif isinstance(error, CommandInvokeError) and self.bot.debugmode:
             await errormsg(ctx, repr(error))
             raise error
