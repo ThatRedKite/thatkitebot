@@ -19,17 +19,19 @@
 # ------------------------------------------------------------------------------
 
 
-import gc
 import os
+import redis
 from datetime import datetime
 from pathlib import Path
 import aiohttp
 import psutil
 import discord
 from discord.ext import commands
-from backend.util import colors, clear_temp_folder
-from backend.settings import BotSettings
-from discord_slash import SlashCommand
+
+import thatkitebot.tkb_first_setup
+
+tempdir = "/tmp/tkb/"
+datadir = "/app/data"
 
 intents = discord.Intents.default()
 intents.typing = False
@@ -38,33 +40,26 @@ intents.invites = False
 intents.presences = False
 intents.reactions = False
 
-
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
-colors = colors()
-if not dirname.joinpath("data", "temp").exists():
-    print(colors.red + f"    temp directory not found,creating temp directory")
-    os.mkdir(dirname.joinpath("data", "temp"))
 
-tempdir = dirname.joinpath("data", "temp")
-tom = BotSettings(dirname)
-prefix = tom.prefix
-discordtoken = tom.token
-tenortoken = tom.tenortoken
-
-if tenortoken is None or tenortoken == "":
-    print(
-        colors.red + colors.bold + colors.underlined + f"*** tenor token not found! Cannot use features that use tenor! ***{colors.clear}")
-
-# clean up some shit
-clear_temp_folder(dirname)
+with redis.Redis(host="redis", db=0,charset="utf-8", decode_responses=True) as tr:
+    print("Loading tokens from redis")
+    tokens = tr.mget(["DISCORDTOKEN", "TENORTOKEN", "PREFIX"])
+    if None in tokens:
+        print("Trying to initialize tokens from settings.json ...")
+        thatkitebot.tkb_first_setup.initial()
+        tokens = tr.mget(["DISCORDTOKEN", "TENORTOKEN", "PREFIX"])
+    discord_token, tenor_token, prefix = tokens
 
 enabled_ext = [
-    "cogs.funstuffcog",
-    "cogs.imagecog",
-    "cogs.nsfwcog",
-    "cogs.listenercog",
-    "cogs.sudocog",
-    "cogs.utilitiescog"
+    "thatkitebot.cogs.funstuffcog",
+    "thatkitebot.cogs.imagecog",
+    "thatkitebot.cogs.nsfwcog",
+    "thatkitebot.cogs.listenercog",
+    "thatkitebot.cogs.sudocog",
+    "thatkitebot.cogs.utilitiescog",
+    "thatkitebot.cogs.settings",
+    "thatkitebot.cogs.help"
 ]
 
 
@@ -75,12 +70,11 @@ class ThatKiteBot(commands.Bot):
         self.prefix = command_prefix
         # paths
         self.dirname = dirname
-        self.datadir = self.dirname.joinpath("data")
-        self.tempdir = self.datadir.joinpath("temp")
+        self.datadir = "/app/data/"
+        self.tempdir = "/tmp/"
 
         # info
-        self.version = "2.7.0.0"
-        self.tom = BotSettings(dirname)
+        self.version = "3.0"
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
@@ -88,32 +82,34 @@ class ThatKiteBot(commands.Bot):
         # ---dynamic values---
 
         # settings
-        self.settings = tom.settings_all
         self.debugmode = False
-
         # sessions
         self.loop.run_until_complete(self.aiohttp_start())
+        self.redis = redis.Redis(host="redis", db=1, charset="utf8", decode_responses=True)
 
         # bot status info
         self.cpu_usage = 0
         self.command_invokes_hour = 0
         self.command_invokes_total = 0
 
-        self.slash = SlashCommand(self, sync_commands=True)
-
     async def aiohttp_start(self):
         self.aiohttp_session = aiohttp.ClientSession()
 
 
-print("initilizing bot . . .")
 bot = ThatKiteBot(prefix, dirname, intents=intents)
-
+print(f"Loading extensions: \n")
 for ext in enabled_ext:
     try:
+        print(f"   loading {ext}")
         bot.load_extension(ext)
     except Exception as exc:
         print(f"error loading {ext}")
         raise exc
 
 # cogs
-bot.run(discordtoken)
+try:
+    bot.run(discord_token)
+except discord.errors.LoginFailure:
+    with redis.Redis(host="redis", db=0, charset="utf-8", decode_responses=True) as tr:
+        tr.delete("DISCORDTOKEN")
+        print("Improper token in your settings. Please re-enter your token in init_settings.yml!")

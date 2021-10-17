@@ -19,19 +19,16 @@
 # ------------------------------------------------------------------------------
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
-from datetime import datetime
 from io import BytesIO
 from os.path import join
 import discord
 import imageio
 from discord.ext import commands
-from backend import util, magik
-from backend import url as url_util
+from thatkitebot.backend import util, magik
 from typing import Optional
-from wand import resource
 
 
-class ImageStuff(commands.Cog):
+class ImageStuff(commands.Cog, name="image commands"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.td = bot.tempdir  # temp directory
@@ -121,7 +118,7 @@ class ImageStuff(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
-        """implode an image"""
+        """reduce the amount of colors of an image"""
         async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "reduce")
             await ctx.send(file=image_file)
@@ -157,7 +154,7 @@ class ImageStuff(commands.Cog):
 
         async with ctx.channel.typing():
             # download the image from the URL and send a message which indicates a successful download
-            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, tk=self.bot.tom.tenortoken)
+            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, tk=self.bot.tom.tenor_token)
             pmsg = await ctx.send(f"This GIF has {len(io)} frames. Too many frames make the file too big for discord.")
 
             # when we speed the GIF up, we don't need any processing to be done, just double the framerate

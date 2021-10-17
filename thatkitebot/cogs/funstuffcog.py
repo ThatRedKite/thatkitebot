@@ -23,16 +23,10 @@ import os
 import discord
 import markovify
 from discord.ext import commands
-import backend
 import typing
-from discord_slash import cog_ext, SlashContext
 import glob
 from random import choice
-
-
-class NoExitParser(argparse.ArgumentParser):
-    def error(self, message):
-        raise ValueError(message)
+from thatkitebot.backend import url
 
 
 async def markov(guild, chan, old=50, new=10, leng=5):
@@ -59,7 +53,7 @@ async def markov(guild, chan, old=50, new=10, leng=5):
     return generated_list
 
 
-class FunStuff(commands.Cog):
+class FunStuff(commands.Cog, name="fun commands"):
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
@@ -68,10 +62,11 @@ class FunStuff(commands.Cog):
 
     @commands.command()
     async def inspirobot(self, ctx):
-        await ctx.send(embed=await backend.url.inspirourl(session=self.bot.aiohttp_session))
+        """Sends a motivational quote from inspirobot.me."""
+        await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, user: typing.Optional[discord.Member], tts: bool = False):
+    async def _markov(self, ctx, user: typing.Optional[discord.Member]):
         if not user:
             user = ctx.message.author
         async with ctx.channel.typing():
@@ -79,31 +74,25 @@ class FunStuff(commands.Cog):
             embed = discord.Embed(title="**Markov Chain Output: **", description=f"*{'. '.join(generated_list)}*")
             embed.color = 0x6E3513
             embed.set_thumbnail(url=user.avatar_url)
-
-            if tts:
-                text = ". ".join(generated_list)
-                tts = gTTS(text=text, lang="en_US")
-                tts.save(os.path.join(self.dirname, "data/tts.mp3"))
-                file_attachment = discord.File(os.path.join(self.dirname, "data/tts.mp3"), filename="tts.mp3")
-                await ctx.send(embed=embed, file=file_attachment)
-
-            else:
-                await ctx.send(embed=embed)
-
-    @commands.command()
-    async def fakeword(self, ctx):
-        async with ctx.channel.typing():
-            embed = await backend.url.word(self.bot.aiohttp_session, embedmode=True)
             await ctx.send(embed=embed)
 
     @commands.command()
+    async def fakeword(self, ctx):
+        """Sends a fake word from thisworddoesnotexist.com."""
+        async with ctx.channel.typing():
+            embed = await url.word(self.bot.aiohttp_session, embedmode=True)
+            await ctx.send(embed=embed)
+
+    @commands.command(hidden=True)
     async def vision(self, ctx):
+        """Ignore this."""
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
 
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.command(name="train", aliases=["zug"])
     async def _train(self, ctx):
-        images = [image for image in glob.glob(os.path.join(self.dirname, "data", "static", "*.jpg"))]
+        """Sends a random image of a train."""
+        images = [image for image in glob.glob("/app/data/trains/*.jpg")]
         train = discord.File(choice(images), "train.jpg")
         async with ctx.typing():
             await ctx.send(file=train)

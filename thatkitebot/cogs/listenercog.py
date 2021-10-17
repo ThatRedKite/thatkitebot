@@ -19,14 +19,12 @@
 # ------------------------------------------------------------------------------
 
 
-import random
-from discord_slash import cog_ext, SlashContext, SlashCommand
 import discord
 import asyncio
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
-from backend.util import colors
-from backend.util import errormsg
+from thatkitebot.backend.util import colors
+from thatkitebot.backend.util import errormsg
 import gc
 
 
@@ -35,18 +33,13 @@ class ListenerCog(commands.Cog):
         self.dirname = bot.dirname
         self.bot: discord.Client = bot
         self.colors = colors()
-        self.strikes = {}
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
         if isinstance(error, commands.CommandNotFound):
-            msg = await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
-            await asyncio.sleep(60)
-            await msg.delete()
+            await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
         elif isinstance(error, commands.CommandOnCooldown):
-            msg = await errormsg(ctx, "Sorry, but this command is on cooldown! Try again in a few seconds.")
-            await asyncio.sleep(60)
-            await msg.delete()
+            await errormsg(ctx, "Sorry, but this command is on cooldown! ")
         elif isinstance(error, CommandInvokeError) and self.bot.debugmode:
             await errormsg(ctx, repr(error))
             raise error
@@ -59,7 +52,7 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"\nbot successfully started!")
+        print("\nbot successfully started!")
         self.reset_invoke_counter.start()
 
     @commands.Cog.listener()

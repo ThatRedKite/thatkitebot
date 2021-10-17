@@ -20,14 +20,13 @@
 
 import gc
 
-from backend import util
+from thatkitebot.backend import util
 import discord
-import asyncio
 from discord.ext import commands
 import subprocess
 
 
-class SudoCommands(commands.Cog):
+class SudoCommands(commands.Cog, name="administrative commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.dirname = bot.dirname
@@ -35,17 +34,21 @@ class SudoCommands(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def kill(self, ctx):
+        """Kills the bot :("""
         await self.bot.change_presence(status=discord.Status.offline)
         # clear the temp file folder
         util.clear_temp_folder(self.dirname)
         # close the aiohttp session
         await self.bot.aiohttp_session.close()
+        # close the redis connection
+        self.redis.close()
         # close the discord session
         await self.bot.close()
 
     @commands.is_owner()
-    @commands.command()
+    @commands.command(aliases=["reload", "reboot"])
     async def restart(self, ctx):
+        """Reloads all cogs"""
         extensions = list(self.bot.extensions.keys())
         for extension in extensions:
             try:
@@ -56,12 +59,14 @@ class SudoCommands(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def debug(self, ctx, state: str):
+        """produces more verbose error messages"""
         self.bot.debugmode = util.bool_parse(state.lower())
         await ctx.message.delete()
 
     @commands.is_owner()
     @commands.command()
     async def echo(self, ctx, *, message: str):
+        """pretend to be the bot"""
         await ctx.message.delete()
         await ctx.send(message)
 
