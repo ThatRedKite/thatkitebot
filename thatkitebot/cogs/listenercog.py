@@ -33,18 +33,13 @@ class ListenerCog(commands.Cog):
         self.dirname = bot.dirname
         self.bot: discord.Client = bot
         self.colors = colors()
-        self.strikes = {}
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
         if isinstance(error, commands.CommandNotFound):
-            msg = await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
-            await asyncio.sleep(60)
-            await msg.delete()
+            await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
         elif isinstance(error, commands.CommandOnCooldown):
-            msg = await errormsg(ctx, "Sorry, but this command is on cooldown! Try again in a few seconds.")
-            await asyncio.sleep(60)
-            await msg.delete()
+            await errormsg(ctx, "Sorry, but this command is on cooldown! ")
         elif isinstance(error, CommandInvokeError) and self.bot.debugmode:
             await errormsg(ctx, repr(error))
             raise error
@@ -57,7 +52,7 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"\nbot successfully started!")
+        print("\nbot successfully started!")
         self.reset_invoke_counter.start()
 
     @commands.Cog.listener()

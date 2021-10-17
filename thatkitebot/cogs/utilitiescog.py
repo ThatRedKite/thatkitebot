@@ -25,11 +25,11 @@ from thatkitebot.backend import misc as back
 from thatkitebot.backend.util import EmbedColors as ec
 
 
-class UtilityCommands(commands.Cog):
+class UtilityCommands(commands.Cog, name="utility commands"):
     def __init__(self, bot: commands.Bot):
         self.dirname = bot.dirname
         self.bot = bot
-
+    """
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command()
     async def help(self, ctx):
@@ -42,7 +42,7 @@ class UtilityCommands(commands.Cog):
                 embed.add_field(name=f"**{cog}**", value=f"\n{commandstring}", inline=True)
         embed.set_footer(text=f"\nThatKiteBot² version {self.bot.version}", icon_url=self.bot.user.avatar_url)
         await ctx.send(embed=embed)
-
+    """
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(pass_context=True, aliases=["uptime", "load"])
     async def status(self, ctx):
@@ -87,10 +87,12 @@ class UtilityCommands(commands.Cog):
         pass
 
     @commands.command()
-    async def invite(self,ctx):
+    async def invite(self, ctx):
+        """This sends you an invite for the bot if you want to add it to one of your servers."""
         await ctx.author.send(
             "https://discord.com/api/oauth2/authorize?client_id=589234402148614157&permissions=37088256&scope=bot"
         )
+
 
 def setup(bot):
     bot.add_cog(UtilityCommands(bot))

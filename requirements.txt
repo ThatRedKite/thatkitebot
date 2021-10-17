@@ -1,6 +1,7 @@
 py-cord
 aiohttp
 bs4
+pyyaml
 Pillow
 gTTS
 Wand
@@ -10,3 +11,4 @@ imageio
 numpy
 psycopg2cffi
 redis
+lxml

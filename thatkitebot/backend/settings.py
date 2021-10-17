@@ -21,7 +21,6 @@
 
 import json
 from copy import deepcopy
-from os import path
 from pathlib import Path
 
 
@@ -44,7 +43,7 @@ class BotSettings:
             with open(self.path, "rt") as stream:
                 self.parsed: dict = json.loads(stream.read())
         else:
-            initdict = {"tokens": {"discordtoken": "", "prefix": "", "tenortoken": ""}, "settings": {}}
+            initdict = {"tokens": {"discordtoken": "", "prefix": "", "tenortoken": ""}}
             with open(self.path, "wt") as stream:
                 stream.write(json.dumps(initdict, indent=2))
                 print(f"""

@@ -1,11 +1,24 @@
 services:
   thatkitebot:
     build:  .
+    links:
+      - "redis:redis"
     volumes:
-      - ./data/temp:/tmp/
-      - ./thatkitebot:/tkb/
-      - ./thatkitebotdata:/tkb/data/
-    restart:  unless-stopped
+      - ./thatkitebot/:/app/thatkitebot
+      - ./data/:/app/data/
+      - ./trains/:/app/data/trains/
+    restart:  "no"
     environment:
       - PYTHONUNBUFFERED=1
-    command: bash -c "cd /tkb/ && python3 -m thatkitebot"
+    command: bash -c "cd /app/ && python3 -m thatkitebot"
+
+  redis:
+    image: "redis:alpine"
+
+  postgres:
+    image: "postgres:alpine"
+
+volumes:
+  redis_data:
+  postgres_data:
+

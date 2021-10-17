@@ -36,6 +36,8 @@ otherpattern = re.compile("(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
 tenorpattern = re.compile("^https://tenor.com\S+-(\d+)$")
 
+emoji_pattern = re.compile("<:\S+:\n+>")
+
 
 async def imageurlgetter(session: aiohttp.ClientSession, history, token=None, gif=False):
     if gif:
