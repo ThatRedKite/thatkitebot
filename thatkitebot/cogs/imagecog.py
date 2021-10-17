@@ -36,6 +36,9 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.ll = self.bot.loop
         self.session = self.bot.aiohttp_session
 
+    async def cog_check(self, ctx):
+        return self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
+
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
     async def magik(self, ctx: commands.Context):
