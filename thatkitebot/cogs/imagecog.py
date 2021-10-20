@@ -35,6 +35,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.dd = bot.datadir  # data directory
         self.ll = self.bot.loop
         self.session = self.bot.aiohttp_session
+        self.tt = self.bot.tenortoken
 
     async def cog_check(self, ctx):
         return self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
@@ -55,7 +56,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.message.author
 
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "wide")
+            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar.url), "wide")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -65,7 +66,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         if not user:
             user = ctx.message.author
 
-        await ctx.send(user.avatar_url)
+        await ctx.send(user.avatar.url)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
@@ -75,7 +76,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.message.author
 
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "magik")
+            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar.url), "magik")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -141,7 +142,6 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
             await ctx.send(file=image_file)
 
-
     @commands.cooldown(1, 20, commands.BucketType.user)
     @commands.command()
     async def gmagik(self, ctx: commands.Context, mode: str = "", *, ct: str = ""):
@@ -157,7 +157,7 @@ class ImageStuff(commands.Cog, name="image commands"):
 
         async with ctx.channel.typing():
             # download the image from the URL and send a message which indicates a successful download
-            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, tk=self.bot.tom.tenor_token)
+            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, tk=self.tt)
             pmsg = await ctx.send(f"This GIF has {len(io)} frames. Too many frames make the file too big for discord.")
 
             # when we speed the GIF up, we don't need any processing to be done, just double the framerate

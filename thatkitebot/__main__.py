@@ -64,7 +64,7 @@ enabled_ext = [
 
 
 class ThatKiteBot(commands.Bot):
-    def __init__(self, command_prefix, dirname, help_command=None, description=None, **options):
+    def __init__(self, command_prefix, dirname, tt, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
         self.prefix = command_prefix
@@ -83,6 +83,7 @@ class ThatKiteBot(commands.Bot):
 
         # settings
         self.debugmode = False
+        self.tenortoken = tt
         # sessions
         self.loop.run_until_complete(self.aiohttp_start())
         self.redis = redis.Redis(host="redis", db=1, charset="utf8", decode_responses=True)
@@ -96,7 +97,7 @@ class ThatKiteBot(commands.Bot):
         self.aiohttp_session = aiohttp.ClientSession()
 
 
-bot = ThatKiteBot(prefix, dirname, intents=intents)
+bot = ThatKiteBot(prefix, dirname, tt=tenor_token, intents=intents)
 print(f"Loading extensions: \n")
 for ext in enabled_ext:
     try:
