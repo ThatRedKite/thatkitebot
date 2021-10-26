@@ -29,7 +29,6 @@ import imageio
 from bs4 import BeautifulSoup
 from .util import EmbedColors as ec
 
-
 gifpattern = re.compile("(^https?://\S+.(?i)(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
 otherpattern = re.compile("(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
@@ -116,8 +115,8 @@ async def monosodiumglutamate(session, tags):
         async with session.get(api_url, headers=headers, params=payload) as r:
             contentdict = await r.json()
             for x in contentdict["posts"]:
-                if x != None:
-                    urls.append(x["file"]["url"])  # get the file URL and append it to the list
+                if x:
+                    urls.append((x["id"], x["file"]["url"]))  # get the file URL and append it to the list
                 else:
                     break
 
@@ -164,10 +163,10 @@ async def word(session, embedmode: bool = True):
             return word, definition
 
 
-async def inspirourl(session:aiohttp.ClientSession):
+async def inspirourl(session: aiohttp.ClientSession):
     payload = {"generate": "true"}
     headers = {"User-Agent": "ThatKiteBot/3.0", "content-type": "text/html"}
-    async with session.get("http://inspirobot.me/api", params=payload,headers=headers) as r:
+    async with session.get("http://inspirobot.me/api", params=payload, headers=headers) as r:
         url = await r.text()
     embed = discord.Embed(title="A motivating quote from InspiroBot")
     embed.color = ec.lime_green

@@ -102,21 +102,17 @@ class NSFW(commands.Cog, name="NSFW commands"):
     @commands.is_nsfw()  # only proceed when in an nsfw channel
     @commands.command(hidden=True)
     async def e621(self, ctx, *, tags):
-        await ctx.trigger_typing()
-        with ThreadPoolExecutor() as executor:
-            urllist = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
-        with ctx.channel.typing():
-            for x in range(0, 10):
-                try:
-                    myurl = choice(urllist)
-                    embed = discord.Embed(title="Link To picture", url=myurl)
-                    embed.color = ec.telemagenta
-                    #  change color to magenta
-                    embed.set_image(url=myurl)
-                    await ctx.send(embed=embed)
-                except Exception:
-                    continue
-
+        urllist = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
+        async with ctx.channel.typing():
+            try:
+                id, myurl = choice(urllist)
+                embed = discord.Embed(title="Original Post", url=f"https://e621.net/posts/{id}")
+                embed.color = ec.telemagenta
+                #  change color to telemagenta
+                embed.set_image(url=myurl)
+                await ctx.send(embed=embed)
+            except IndexError:
+                await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__")
 
 def setup(bot):
     bot.add_cog(NSFW(bot))
