@@ -56,7 +56,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.message.author
 
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar.url), "wide")
+            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "wide")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
@@ -66,7 +66,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         if not user:
             user = ctx.message.author
 
-        await ctx.send(user.avatar.url)
+        await ctx.send(user.avatar_url)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command()
@@ -76,7 +76,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.message.author
 
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar.url), "magik")
+            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "magik")
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
