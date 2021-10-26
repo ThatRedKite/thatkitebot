@@ -48,7 +48,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "magik")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def widepfp(self, ctx: commands.Context, user: Optional[discord.User] = None):
         """sends a horizontally stretched version of someonme's profile picture"""
@@ -59,7 +59,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "wide")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def pfp(self, ctx, user: Optional[discord.User] = None):
         """sends the pfp of someone"""
@@ -68,7 +68,7 @@ class ImageStuff(commands.Cog, name="image commands"):
 
         await ctx.send(user.avatar_url)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def pfpmagik(self, ctx, user: Optional[discord.User] = None):
         """applies content aware scaling to someone's pfp"""
@@ -79,7 +79,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "magik")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
@@ -87,7 +87,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "deepfry")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
@@ -103,7 +103,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "opacify")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def explode(self, ctx: commands.Context):
         """explode an image"""
@@ -111,7 +111,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "explode")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def implode(self, ctx: commands.Context):
         """implode an image"""
@@ -119,7 +119,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "implode")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
         """reduce the amount of colors of an image"""
@@ -127,7 +127,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "reduce")
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
@@ -135,6 +135,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "swirl", deg=degree)
             await ctx.send(file=image_file)
 
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
@@ -142,7 +143,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
             await ctx.send(file=image_file)
 
-    @commands.cooldown(1, 20, commands.BucketType.user)
+    @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.command()
     async def gmagik(self, ctx: commands.Context, mode: str = "", *, ct: str = ""):
         """
