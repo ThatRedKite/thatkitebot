@@ -24,7 +24,7 @@ import typing
 from concurrent.futures import ThreadPoolExecutor
 from random import choice, choices
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from thatkitebot.backend import url
 from thatkitebot.backend.util import errormsg
 from thatkitebot.backend.util import EmbedColors as ec
@@ -33,9 +33,10 @@ from thatkitebot.backend.util import EmbedColors as ec
 class NSFW(commands.Cog, name="NSFW commands"):
     def __init__(self, bot):
         self.bot = bot
+        self.redis = bot.redis
 
     async def cog_check(self, ctx):
-        return self.bot.redis.hget(ctx.guild.id, "NSFW") == "TRUE"
+        return self.redis.hget(ctx.guild.id, "NSFW") == "TRUE"
 
     @commands.is_nsfw()  # only proceed when in an nsfw channel
     @commands.command(hidden=True, aliases=["rule34"])
@@ -50,19 +51,16 @@ class NSFW(commands.Cog, name="NSFW commands"):
     @commands.is_nsfw()  # only proceed when in an nsfw channel
     @commands.command(hidden=True, aliases=["yande.re", "yandere"])
     async def yan(self, ctx, *, tags):
-        if self.bot.settings[str(ctx.message.guild.id)]["bnsfw"]:
-            #  only proceed if nsfw is enabled in the bot's settings
-            with ctx.channel.typing():
-                myurl = await url.yanurlget(
-                    session=self.bot.aiohttp_session,
-                    tags=tags
-                )
-                embed = discord.Embed(title="Link To picture", url=myurl)
-                embed.color = ec.telemagenta
-                embed.set_image(url=myurl)
-                await ctx.send(embed=embed)
-        else:
-            await errormsg(ctx, "nsfw content is disabled")
+        #  only proceed if nsfw is enabled in the bot's settings
+        with ctx.channel.typing():
+            myurl = await url.yanurlget(
+                session=self.bot.aiohttp_session,
+                tags=tags
+            )
+            embed = discord.Embed(title="Link To picture", url=myurl)
+            embed.color = ec.telemagenta
+            embed.set_image(url=myurl)
+            await ctx.send(embed=embed)
 
     @commands.is_nsfw()  # only proceed when in an nsfw channel
     @commands.command(hidden=True)
