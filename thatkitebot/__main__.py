@@ -74,7 +74,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir = "/tmp/"
 
         # info
-        self.version = "3.0"
+        self.version = "3.0.1"
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
@@ -110,6 +110,7 @@ for ext in enabled_ext:
 # cogs
 try:
     bot.run(discord_token)
+
 except discord.errors.LoginFailure:
     with redis.Redis(host="redis", db=0, charset="utf-8", decode_responses=True) as tr:
         tr.delete("DISCORDTOKEN")
