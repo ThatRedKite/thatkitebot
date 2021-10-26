@@ -9,6 +9,5 @@ markovify
 psutil
 imageio
 numpy
-psycopg2cffi
 redis
 lxml
