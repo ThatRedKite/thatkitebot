@@ -34,9 +34,10 @@ class NSFW(commands.Cog, name="NSFW commands"):
     def __init__(self, bot):
         self.bot = bot
         self.redis = bot.redis
+        self.bl = [] # guild blacklist
 
     async def cog_check(self, ctx):
-        return self.redis.hget(ctx.guild.id, "NSFW") == "TRUE"
+        return self.redis.hget(ctx.guild.id, "NSFW") == "TRUE" and not ctx.guild.id in self.bl
 
     @commands.is_nsfw()  # only proceed when in an nsfw channel
     @commands.command(hidden=True, aliases=["rule34"])
