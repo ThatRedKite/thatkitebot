@@ -22,7 +22,7 @@
 import discord
 from discord.ext import commands
 import random
-
+# thanks to dunnousername  for this help command. It was originally used in the styrobot discord bot
 info = {
     'repo': 'https://github.com/ThatRedKite/thatkitebot',
     'name': 'ThatKiteBot'
