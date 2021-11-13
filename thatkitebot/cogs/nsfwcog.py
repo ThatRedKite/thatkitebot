@@ -21,7 +21,6 @@
 
 import asyncio
 import typing
-from concurrent.futures import ThreadPoolExecutor
 from random import choice, choices
 import discord
 from discord.ext import commands, tasks
@@ -113,6 +112,23 @@ class NSFW(commands.Cog, name="NSFW commands"):
             finally:
                 await ctx.send(embed=embed)
 
+    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.command(hidden=True)
+    async def e621spam(self, ctx, *, tags):
+        async with ctx.channel.typing():
+            urllist = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
+            for x in range(5):
+                try:
+                    id, myurl = choice(urllist)
+                    embed = discord.Embed(title="link to original post", url=f"https://e621.net/posts/{id}")
+                    embed.color = ec.telemagenta
+                    embed.set_image(url=myurl)
+                except IndexError:
+                    embed = await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__", embed_only=True)
+                finally:
+                    await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(NSFW(bot))
+
