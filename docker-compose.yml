@@ -13,5 +13,9 @@ services:
     command: bash -c "cd /app/ && python3 -m thatkitebot"
 
   redis:
+    container_name: redis
+    volumes:
+      - ./data/redis:/data
     image: "redis:alpine"
+    entrypoint: redis-server --appendonly yes
 
