@@ -59,7 +59,8 @@ enabled_ext = [
     "thatkitebot.cogs.sudocog",
     "thatkitebot.cogs.utilitiescog",
     "thatkitebot.cogs.settings",
-    "thatkitebot.cogs.help"
+    "thatkitebot.cogs.help",
+    "thatkitebot.cogs.chemistry",
 ]
 
 
@@ -74,7 +75,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir = "/tmp/"
 
         # info
-        self.version = "3.0.1"
+        self.version = "3.0.2"
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())

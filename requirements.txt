@@ -9,5 +9,6 @@ markovify
 psutil
 imageio
 numpy
+molmass
 redis
 lxml
