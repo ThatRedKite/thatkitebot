@@ -23,7 +23,6 @@ import discord
 import asyncio
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
-from thatkitebot.backend.util import colors
 from thatkitebot.backend.util import errormsg
 import gc
 
@@ -32,7 +31,6 @@ class ListenerCog(commands.Cog):
     def __init__(self, bot):
         self.dirname = bot.dirname
         self.bot: discord.Client = bot
-        self.colors = colors()
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
