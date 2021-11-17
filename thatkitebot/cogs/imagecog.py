@@ -104,7 +104,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             await ctx.send(file=image_file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command()
+    @commands.command(aliases=["inflate"])
     async def explode(self, ctx: commands.Context):
         """explode an image"""
         async with ctx.channel.typing():
@@ -112,7 +112,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             await ctx.send(file=image_file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command()
+    @commands.command(aliases=["deflate"])
     async def implode(self, ctx: commands.Context):
         """implode an image"""
         async with ctx.channel.typing():
