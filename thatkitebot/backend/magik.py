@@ -118,7 +118,7 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path="", g
         url = await url_util.imageurlgetter(session, history.channel.history(limit=30), gif=gif, token=tk)
     else:
         url = str(history)
-    io = await url_util.imagedownloader(session, url)
+    input_image  = await url_util.imagedownloader(session, url)
 
     modes = {
         "magik": magik,
@@ -135,15 +135,15 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path="", g
 
     chosen_mode = modes.get(mode, magik)
     if gif:
-        return io, chosen_mode
+        return input_image, chosen_mode
     with ProcessPoolExecutor() as pool:
 
         if chosen_mode is swirl:
-            io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1, deg)
+            io, frame = await loop.run_in_executor(pool, chosen_mode, list(input_image)[0], 1, deg)
         elif chosen_mode is not caption:
-            io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1)
+            io, frame = await loop.run_in_executor(pool, chosen_mode, list(input_image)[0], 1)
         else:
-            io, frame = await loop.run_in_executor(pool, chosen_mode, list(io)[0], 1, text, path)
+            io, frame = await loop.run_in_executor(pool, chosen_mode, list(input_image)[0], 1, text, path)
         del frame  # delete that frame counter, we don't need it
 
     with BytesIO() as image_buffer:

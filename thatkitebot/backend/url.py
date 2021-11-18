@@ -75,9 +75,10 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token=None, gi
 
 async def imagedownloader(session: aiohttp.ClientSession, url: str):
     async with session.get(url) as r:
-        ob = BytesIO(await r.read())
-        ob.seek(0)
-        return imageio.get_reader(ob)
+        with BytesIO(await r.read()) as ob:
+            reader = imageio.get_reader(ob)
+            ob.seek(0)
+        return reader
 
 
 async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):
