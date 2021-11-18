@@ -48,6 +48,12 @@ def swirl(i, fn, param: int = -60):
         return np.array(a), fn
 
 
+def invert(i, fn):
+    with WandImage.from_array(i) as a:
+        a.negate()
+        return np.array(a), fn
+
+
 def implode(i, fn):
     with WandImage.from_array(i) as a:
         a.implode(0.6)
@@ -123,7 +129,8 @@ async def do_stuff(loop, session, history, mode: str, text: str = "", path="", g
         "explode": explode,
         "swirl": swirl,
         "opacify": opacify,
-        "reduce": eightbit
+        "reduce": eightbit,
+        "invert": invert,
     }
 
     chosen_mode = modes.get(mode, magik)
