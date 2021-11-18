@@ -41,7 +41,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         return self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
 
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.command()
+    @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         async with ctx.channel.typing():
@@ -96,7 +96,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             await ctx.send(file=image_file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.command()
+    @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
         """remove the alpha channel and replace it with white"""
         async with ctx.channel.typing():
@@ -117,6 +117,14 @@ class ImageStuff(commands.Cog, name="image commands"):
         """implode an image"""
         async with ctx.channel.typing():
             image_file = await magik.do_stuff(self.ll, self.session, ctx, "implode")
+            await ctx.send(file=image_file)
+
+    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.command(aliases=["inverse", "anti"])
+    async def invert(self, ctx: commands.Context):
+        """implode an image"""
+        async with ctx.channel.typing():
+            image_file = await magik.do_stuff(self.ll, self.session, ctx, "invert")
             await ctx.send(file=image_file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
