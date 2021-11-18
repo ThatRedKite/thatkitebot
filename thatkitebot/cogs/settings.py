@@ -15,8 +15,6 @@ class SettingsCog(commands.Cog, name="settings"):
         self.bot: discord.Client = bot
         self.redis = self.bot.redis
 
-    async def cog_check(self, ctx):
-        return
 
     @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
     @commands.has_permissions(administrator=True)
