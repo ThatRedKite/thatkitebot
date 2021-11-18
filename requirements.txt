@@ -3,12 +3,14 @@ aiohttp
 bs4
 pyyaml
 Pillow
-gTTS
 Wand
 markovify
 psutil
 imageio
 numpy
 molmass
+si-prefix
 redis
 lxml
+scipy
+imagehash
