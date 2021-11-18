@@ -15,14 +15,17 @@ class SettingsCog(commands.Cog, name="settings"):
         self.bot: discord.Client = bot
         self.redis = self.bot.redis
 
-    @commands.group(name="setting")
+    async def cog_check(self, ctx):
+        return
+
+    @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
     @commands.has_permissions(administrator=True)
     async def settings(self, ctx):
         if not ctx.subcommand_passed:
             cmds = "\n".join([c.name for c in ctx.command.commands])
             await ctx.send(f"This command cannot be used alone. Please use one of the following subcommands:\n**{cmds}**")
 
-    @settings.command(name="add", aliases=["update"])
+    @settings.command(name="add", aliases=["update"], hidden=True)
     @commands.cooldown(3, 10, commands.BucketType.user)
     async def _add(self, ctx, name: str, arg):
         channel = ctx.channel
