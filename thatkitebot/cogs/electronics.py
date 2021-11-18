@@ -117,8 +117,9 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed.add_field(
                 name="How to use this?",
                 value=f"""With this command you can calculate different values of an unloaded voltage divider.
-                Run `{self.bot.command_prefix}divider r1 vin=10v r2=3k vout=3v`to find the value of R1.
-                You can do the same for every value except Vin (why would you even want to do that?).
+                Example: `{self.bot.command_prefix}divider vin=10v r2=3k vout=3v`to find the value of R1.
+                The bot will try to figure out what you are looking for based on the value you didn't enter.
+                You can do the same for every value except Vin.
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                 Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
                 as it just confuses the bot (don't use R either).
@@ -130,39 +131,34 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             args_parsed = parse_input(args)
 
         if args_parsed.get("r1") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r2"):
-            result = calculate("r2", args_parsed)
+            res = calculate("r2", args_parsed)
             embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(result), inline=False)
+            embed.add_field(name="Image", value=draw_divider(res), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"""R1 =  {result['r1']}Ω\nR2 = __{result['r2']}Ω__\nVin = {result["vin"]}V\nVout = {result["vout"]}V
-                """
-            )
-            embed.set_footer(text="Note: the underlined result is the output of the calculator (i.e the missing value)")
+                value=f"R1 =  {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
+            embed.set_footer(text="Note: the underlined res is the output of the calculator (i.e the missing value)")
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r1"):
-            result = calculate("r1", args_parsed)
+            res = calculate("r1", args_parsed)
             embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(result), inline=False)
+            embed.add_field(name="Image", value=draw_divider(res), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"""R1 =  {result['r1']}Ω…\nR2 = __{result['r2']}Ω__\nVin = {result["vin"]}V\nVout = {result["vout"]}V
-                """
+                value=f"R1 = __{res['r1']}__Ω\nR2 = {res['r2']}Ω\nVin = {res['vin']}V\nVout = {res['vout']}V"
             )
-            embed.set_footer(text="Note: the underlined result is the output of the calculator (i.e the missing value)")
+            embed.set_footer(text="Note: the underlined res is the output of the calculator (i.e the missing value)")
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and not args_parsed.get("vout"):
-            result = calculate("vout", args_parsed)
+            res = calculate("vout", args_parsed)
             embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(result), inline=False)
+            embed.add_field(name="Image", value=draw_divider(res), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"""R1 =  {result['r1']}Ω\nR2 = __{result['r2']}Ω__\nVin = {result["vin"]}V\nVout = {result["vout"]}V
-                """
-            )
-            embed.set_footer(text="Note: the underlined result is the output of the calculator (i.e the missing value)")
+                value=f"R1 = {res['r1']}Ω\nR2 = {res['r2']}Ω\nVin = {res['vin']}V\nVout = __{res['vout']}V__")
+            embed.set_footer(text="Note: the underlined res is the output of the calculator (i.e the missing value)")
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout"):
