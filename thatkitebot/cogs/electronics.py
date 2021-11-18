@@ -135,11 +135,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed.add_field(name="Image", value=draw_divider(result), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"""
-                R1 =  {result['r1']}Ω
-                R2 = __{result['r2']}Ω__
-                Vin = {result["vin"]}V
-                Vout = {result["vout"]}V
+                value=f"""R1 =  {result['r1']}Ω\nR2 = __{result['r2']}Ω__\nVin = {result["vin"]}V\nVout = {result["vout"]}V
                 """
             )
             embed.set_footer(text="Note: the underlined result is the output of the calculator (i.e the missing value)")
@@ -151,11 +147,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed.add_field(name="Image", value=draw_divider(result), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"""
-                R1 =  {result['r1']}Ω
-                R2 = __{result['r2']}Ω__
-                Vin = {result["vin"]}V
-                Vout = {result["vout"]}V
+                value=f"""R1 =  {result['r1']}Ω…\nR2 = __{result['r2']}Ω__\nVin = {result["vin"]}V\nVout = {result["vout"]}V
                 """
             )
             embed.set_footer(text="Note: the underlined result is the output of the calculator (i.e the missing value)")
@@ -167,11 +159,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed.add_field(name="Image", value=draw_divider(result), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"""
-                R1 =  {result['r1']}Ω
-                R2 = __{result['r2']}Ω__
-                Vin = {result["vin"]}V
-                Vout = {result["vout"]}V
+                value=f"""R1 =  {result['r1']}Ω\nR2 = __{result['r2']}Ω__\nVin = {result["vin"]}V\nVout = {result["vout"]}V
                 """
             )
             embed.set_footer(text="Note: the underlined result is the output of the calculator (i.e the missing value)")
