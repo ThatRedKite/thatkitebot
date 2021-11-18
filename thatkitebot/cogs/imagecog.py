@@ -18,14 +18,142 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 import asyncio
+import re
 from concurrent.futures import ProcessPoolExecutor
 from io import BytesIO
-from os.path import join
 import discord
 import imageio
 from discord.ext import commands
-from thatkitebot.backend import util, magik
 from typing import Optional
+from os.path import join
+from PIL import ImageDraw, ImageFont, Image
+from wand.image import Image as WandImage
+from wand.color import Color
+
+
+def magik(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
+        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=2, rigidity=0)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def swirl(blob, format, fn, angle: int = -60):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.swirl(degree=angle)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def invert(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.negate()
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def implode(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.implode(0.6)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def opacify(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.alpha_channel = "remove"
+        a.background_color = Color("white")
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def explode(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.implode(-5.0)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def reduce(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.posterize(levels=4)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def caption(blob, format, fn, ct, path):
+    font = ImageFont.truetype(join(path, "DejaVuSans.ttf"), 47)  # load the font
+    with Image.fromarray(blob) as im:
+        outline_width = 3
+        W, H = im.size
+        w, h = font.getsize(ct)
+        # convert the image to RGBA to avoid some problems
+        im = im.convert("RGBA")
+        draw = ImageDraw.Draw(im)
+        # draw the outline
+        draw.text(((W - w) / 2 - outline_width, int((H - h) / 1.15) - outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 - outline_width, int((H - h) / 1.15) + outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 + outline_width, int((H - h) / 1.15) - outline_width), ct, fill="black", font=font)
+        draw.text(((W - w) / 2 + outline_width, int((H - h) / 1.15) + outline_width), ct, fill="black", font=font)
+        # draw the text itself
+        draw.text(((W - w) / 2, int((H - h) / 1.15)), ct, fill="white", font=font)
+        with BytesIO() as ob:
+            im.save(ob, format="png")
+            b = ob.getvalue()
+    return b, fn
+
+
+def wide(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.resize(width=int(a.width * 3.3), height=int(a.height / 1.8))
+        a.crop(left=int(a.width / 4), top=1, right=(a.width - (int(a.width / 4))), bottom=a.height)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def deepfry(blob, format, fn):
+    buf = BytesIO(blob)
+    buf.seek(0)
+    with WandImage(file=buf, format=format) as a:
+        buf.close()
+        a.modulate(saturation=600.00)
+        a.noise("gaussian", attenuate=0.1)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
 
 
 class ImageStuff(commands.Cog, name="image commands"):
@@ -37,6 +165,37 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.session = self.bot.aiohttp_session
         self.tt = self.bot.tenortoken
 
+    # this function is from iangecko's pyrobot, credits go to him
+    async def get_last_image(self, ctx):
+        # search past 30 messages for suitable media
+        attachment = None
+        url = None
+        blob = None
+        filename = "image"
+        async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
+            if msg.attachments:
+                blob = await msg.attachments[0].read()
+                filename = msg.attachments[0].filename
+                url = msg.attachments[0].url
+            else:
+                attachment = msg.embeds[0]
+                if attachment.type == "image":  # check if an embed is a link to an image
+                    url = attachment.url
+                elif attachment.type == "rich" and attachment.image:  # if not, get the image link from the embed
+                    url = attachment.image.url
+                else:  # skip embeds without an image
+                    continue
+                if url:
+                    filename = attachment.image.filename
+                    session = self.bot.aiohttp_session
+                    async with session.get(url=url) as r:
+                        blob = await r.read()
+            break
+        else:
+            return None
+        filetype = re.search("(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
+        return blob, filename, url, filetype
+
     async def cog_check(self, ctx):
         return self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
 
@@ -45,19 +204,11 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "magik")
-            await ctx.send(file=image_file)
-
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command()
-    async def widepfp(self, ctx: commands.Context, user: Optional[discord.User] = None):
-        """sends a horizontally stretched version of someonme's profile picture"""
-        if not user:
-            user = ctx.message.author
-
-        async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "wide")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, magik, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="magik.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
@@ -70,86 +221,103 @@ class ImageStuff(commands.Cog, name="image commands"):
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
-    async def pfpmagik(self, ctx, user: Optional[discord.User] = None):
-        """applies content aware scaling to someone's pfp"""
-        if not user:
-            user = ctx.message.author
-
-        async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, str(user.avatar_url), "magik")
-            await ctx.send(file=image_file)
-
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "deepfry")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, deepfry, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="deepfry.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "wide")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, wide, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="wide.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
         """remove the alpha channel and replace it with white"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "opacify")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, opacify, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="opacify.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inflate"])
     async def explode(self, ctx: commands.Context):
         """explode an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "explode")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, explode, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="explode.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["deflate"])
     async def implode(self, ctx: commands.Context):
         """implode an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "implode")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, implode, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="explode.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inverse", "anti"])
     async def invert(self, ctx: commands.Context):
         """implode an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "invert")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, invert, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="invert.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
         """reduce the amount of colors of an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "reduce")
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, reduce, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="explode.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "swirl", deg=degree)
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, swirl, blob, filetype, 1)
+            file = discord.File(BytesIO(b2), filename="explode.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
         async with ctx.channel.typing():
-            image_file = await magik.do_stuff(self.ll, self.session, ctx, "caption", text, self.dd)
-            await ctx.send(file=image_file)
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            newblob = imageio.imread(BytesIO(blob))
+            with ProcessPoolExecutor() as pool:
+                b2, fn = await self.ll.run_in_executor(pool, caption, newblob, filetype, 1, text, self.dd)
+            file = discord.File(BytesIO(b2), filename="explode.png")
+            await ctx.send(file=file)
 
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.command()
