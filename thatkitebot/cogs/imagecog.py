@@ -330,7 +330,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             blob, filename, url, filetype = await self.get_last_image(ctx)
             with ProcessPoolExecutor() as pool:
-                b2, fn = await self.ll.run_in_executor(pool, swirl, blob, filetype, 1)
+                b2, fn = await self.ll.run_in_executor(pool, swirl, blob, filetype, 1, degree)
             file = discord.File(BytesIO(b2), filename="explode.png")
             await ctx.send(file=file)
 
