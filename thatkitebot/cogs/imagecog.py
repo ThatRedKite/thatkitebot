@@ -29,9 +29,9 @@ from os.path import join
 from PIL import ImageDraw, ImageFont, Image
 from wand.image import Image as WandImage
 from wand.color import Color
+from numpy import array
 
-
-def magik(blob, format, fn):
+def magik(blob, format, fn, ra=False):
     buf = BytesIO(blob)
     buf.seek(0)
     with WandImage(file=buf, format=format) as a:
@@ -40,8 +40,10 @@ def magik(blob, format, fn):
         a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=2, rigidity=0)
         b = a.make_blob(format="png")
         a.destroy()
-    return b, fn
-
+    if not ra:
+        return b, fn
+    else:
+        return array(a), fn
 
 def swirl(blob, format, fn, angle: int = -60):
     buf = BytesIO(blob)
@@ -164,8 +166,9 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.ll = self.bot.loop
         self.session = self.bot.aiohttp_session
         self.tt = self.bot.tenortoken
+        self.tenor_pattern = re.compile("^https://tenor.com\S+-(\d+)$")
 
-    # this function is from iangecko's pyrobot, credits go to him
+    # this function is originally from iangecko's pyrobot, modifications were made for this bot
     async def get_last_image(self, ctx):
         # search past 30 messages for suitable media
         attachment = None
@@ -179,12 +182,35 @@ class ImageStuff(commands.Cog, name="image commands"):
                 url = msg.attachments[0].url
             else:
                 attachment = msg.embeds[0]
-                if attachment.type == "image":  # check if an embed is a link to an image
-                    url = attachment.url
-                elif attachment.type == "rich" and attachment.image:  # if not, get the image link from the embed
-                    url = attachment.image.url
-                else:  # skip embeds without an image
-                    continue
+                match attachment.type:
+                    case "image":
+                        url = attachment.url
+                    case "rich":
+                        if attachment.image:
+                            url = attachment.image.url
+                    case "gifv":
+                        tenor_id = int(self.tenor_pattern.match(attachment.url).group(1))
+                        if tenor_id:
+                            headers = {
+                                "User-Agent": f"ThatKiteBot/{self.bot.version}",
+                                "content-type": "application/json"
+                            }
+
+                            payload = {
+                                "key": self.tt,
+                                "ids": tenor_id,
+                                "media_filter": "minimal"
+                            }
+
+                            t_url = "https://api.tenor.com/v1/gifs"
+                            async with self.session.get(url=t_url, params=payload, headers=headers) as r:
+                                gifs = await r.json()
+                                url = gifs["results"][0]["media"][0]["gif"]["url"]
+
+                        else:
+                            continue
+                    case _:
+                        continue
                 if url:
                     filename = attachment.image.filename
                     session = self.bot.aiohttp_session
@@ -196,6 +222,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         filetype = re.search("(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
         return blob, filename, url, filetype
 
+    # TODO: check if user has image permissions
     async def cog_check(self, ctx):
         return self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
 
@@ -328,14 +355,19 @@ class ImageStuff(commands.Cog, name="image commands"):
         If no mode is supplied it defaults to `magik`
         Inspired by NotSoBot but with extra features and improvements
         """
+        await ctx.send("This command is currently broken and will be disabled until it works again.")
+        """
         dry = False
         ll = self.ll
         p = join(self.dd, "DejaVuSans.ttf")
 
         async with ctx.channel.typing():
             # download the image from the URL and send a message which indicates a successful download
-            io, fc = await magik.do_stuff(self.ll, self.session, ctx, mode, gif=True, tk=self.tt)
-            pmsg = await ctx.send(f"This GIF has {len(io)} frames. Too many frames make the file too big for discord.")
+            blob, filename, url, filetype = await self.get_last_image(ctx)
+            io = imageio.get_reader(blob)
+            frames = [(imageio.imsave("<bytes>", arr, format="png"), fn) for fn, arr in enumerate(io)]
+
+            pmsg = await ctx.send(f"This GIF has {len(frames)} frames. Too many frames make the file too big for discord.")
 
             # when we speed the GIF up, we don't need any processing to be done, just double the framerate
             if not mode.lower() == "speedup":
@@ -344,35 +376,35 @@ class ImageStuff(commands.Cog, name="image commands"):
                 # double the framerate and set the variable to bypass any processing
                 fps = (io.get_meta_data()["duration"]) * 2
                 dry = True
-
+            io.close()
         async with ctx.channel.typing():
             # only process the frames if the dry variable is False
             if not dry:
                 with ProcessPoolExecutor() as pool:
-                    if not mode.lower() == "caption": # get the right function for the set mode
+                    if not mode.lower() == "caption":  # get the right function for the set mode
                         # create a list of awaitable future objects and do stuff with asyncio.gather
-                        r = await asyncio.gather(*[ll.run_in_executor(pool, fc, fra, fn) for fn, fra in enumerate(io)])
+                        r = await asyncio.gather(*[ll.run_in_executor(pool, magik, fra, "png", fn, True) for fra, fn in frames])
                     else:
-                        r = await asyncio.gather(*[ll.run_in_executor(pool, magik.caption, fra, fn, ct, p) for fn, fra in enumerate(io)])
+                        r = await asyncio.gather(*[ll.run_in_executor(pool, magik.caption, fra, fn, ct, p) for fn, fra in frames])
 
                     # wait for the futures to finish and add them to the :io: list
                     # TODO: turn this into a list comprehension
-                    io = []
+                    processed_output = []
                     for x in r:
-                        io.append([x[1], x[0]])
+                        processed_output.append([x[1], x[0]])
 
-                io.sort(key=lambda fn: fn[0])  # this sorts the frame list by frame number :fn:
-                io = [frame[1] for frame in io]  # we don't need the frame numbers anymore, just keep the image data
+                processed_output.sort(key=lambda fn: fn[0])  # this sorts the frame list by frame number :fn:
+                clean_output_sorted = [frame[1] for frame in processed_output]  # we don't need the frame numbers anymore, just keep the image data
 
             with BytesIO() as image_buffer:
-                imageio.mimwrite(image_buffer, io, fps=fps, format="gif")  # this writes the images to the image buffer
+                imageio.mimwrite(image_buffer, clean_output_sorted, fps=fps, format="gif")
                 image_buffer.seek(0)  # "rewind" the buffer. Otherwise the discord.File object can't see any image file
                 # discord doesn't know what to do with an image_buffer object, that's why we need to convert it first
                 image_file = discord.File(image_buffer, filename="gmagik.gif")
 
         await ctx.send(file=image_file)  # send the result to the channel where the command was sent
         await pmsg.delete()  # delete the "download successful" message from earlier
-
+        """
 
 def setup(bot):
     bot.add_cog(ImageStuff(bot))
