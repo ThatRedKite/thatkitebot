@@ -105,6 +105,10 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
 
     @commands.group()
     async def divider(self, ctx, *, args=None):
+        """
+        Calculate values of an unloaded voltage divider. Run the command for more details.
+        Thank you dimin for the idea and the "art"
+        """
         if not args:
             random_divider = {
                 "r1": str(randint(1, 10000000)),
@@ -163,6 +167,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout"):
             await util.errormsg(ctx, "There is nothing to calculate. Please enter exactly 3 values")
+
 
 def setup(bot):
     bot.add_cog(ElectroCog(bot))
