@@ -97,6 +97,10 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.typing():
             await ctx.send(file=train)
 
+    @commands.cooldown(3, 1, commands.BucketType.user)
+    @commands.command(name="1984")
+    async def _1984(self, ctx):
+        await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
