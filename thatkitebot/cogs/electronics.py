@@ -55,7 +55,7 @@ def parse_input(s):
     return dict(zip(s[::2], s[1::2]))
 
 
-def calculate(mode, b):
+def calculate_divider(mode, b):
     match mode:
         case "r1":
             r2 = si_prefix.si_parse(b["r2"].replace("u", "µ"))
@@ -103,7 +103,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    @commands.group()
+    @commands.command()
     async def divider(self, ctx, *, args=None):
         """
         Calculate values of an unloaded voltage divider. Run the command for more details.
@@ -117,7 +117,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             }
 
             embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(calculate("vout", random_divider)), inline=False)
+            embed.add_field(name="Image", value=draw_divider(calculate_divider("vout", random_divider)), inline=False)
             embed.add_field(
                 name="How to use this?",
                 value=f"""With this command you can calculate different values of an unloaded voltage divider.
@@ -135,7 +135,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             args_parsed = parse_input(args)
 
         if args_parsed.get("r1") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r2"):
-            res = calculate("r2", args_parsed)
+            res = calculate_divider("r2", args_parsed)
             embed = discord.Embed(title="Unloaded voltage divider calculation")
             embed.add_field(name="Image", value=draw_divider(res), inline=False)
             embed.add_field(
@@ -145,7 +145,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r1"):
-            res = calculate("r1", args_parsed)
+            res = calculate_divider("r1", args_parsed)
             embed = discord.Embed(title="Unloaded voltage divider calculation")
             embed.add_field(name="Image", value=draw_divider(res), inline=False)
             embed.add_field(
@@ -156,7 +156,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and not args_parsed.get("vout"):
-            res = calculate("vout", args_parsed)
+            res = calculate_divider("vout", args_parsed)
             embed = discord.Embed(title="Unloaded voltage divider calculation")
             embed.add_field(name="Image", value=draw_divider(res), inline=False)
             embed.add_field(
@@ -167,6 +167,8 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout"):
             await util.errormsg(ctx, "There is nothing to calculate. Please enter exactly 3 values")
+
+
 
 
 def setup(bot):
