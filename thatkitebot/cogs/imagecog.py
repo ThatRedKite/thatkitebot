@@ -188,6 +188,8 @@ class ImageStuff(commands.Cog, name="image commands"):
                     case "rich":
                         if attachment.image:
                             url = attachment.image.url
+                        else:
+                            continue
                     case "gifv":
                         tenor_id = int(self.tenor_pattern.match(attachment.url).group(1))
                         if tenor_id:
