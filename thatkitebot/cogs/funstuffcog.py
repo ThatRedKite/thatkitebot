@@ -26,9 +26,10 @@ from discord.ext import commands
 import typing
 import glob
 from random import choice
-from thatkitebot.backend import url
+from thatkitebot.backend import url, util
 
 
+# TODO: this needs a fix as it does not work reliably
 async def markov(guild, chan, old=50, new=10, leng=5):
     messages = []
     for channel in guild.text_channels:
@@ -92,15 +93,19 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.command(name="train", aliases=["zug"])
     async def _train(self, ctx):
         """Sends a random image of a train."""
-        images = [image for image in glob.glob("/app/data/trains/*.jpg")]
-        train = discord.File(choice(images), "train.jpg")
-        async with ctx.typing():
-            await ctx.send(file=train)
+        if not (ctx.guild.id == 424394851170385921 and ctx.channel.id == 864194488797102091):
+            images = [image for image in glob.glob("/app/data/trains/*.jpg")]
+            train = discord.File(choice(images), "train.jpg")
+            async with ctx.typing():
+                await ctx.send(file=train)
+        else:
+            await util.errormsg(ctx,"No trainposting outside of <#864194488797102091> !")
 
     @commands.cooldown(3, 1, commands.BucketType.user)
     @commands.command(name="1984")
     async def _1984(self, ctx):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
+
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
