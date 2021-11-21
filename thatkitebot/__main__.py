@@ -61,7 +61,8 @@ enabled_ext = [
     "thatkitebot.cogs.settings",
     "thatkitebot.cogs.help",
     "thatkitebot.cogs.chemistry",
-    "thatkitebot.cogs.electronics"
+    "thatkitebot.cogs.electronics",
+    "thatkitebot.cogs.laser"
 ]
 
 
@@ -76,7 +77,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir = "/tmp/"
 
         # info
-        self.version = "3.1.1"
+        self.version = "3.2"
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
