@@ -148,10 +148,10 @@ def calculate_lm317(b):
         raise InputOutOfRangeError("Voltage out of Range")
     r1 = si_prefix.si_parse(b["r1"])
     r2 = si_prefix.si_parse(b["r2"])
-    vout = si_prefix.si_format(1.25 * (1 + (r2/r1)))
+    vout = 1.25 * (1 + (r2/r1))
     if vin - vout > 40 or vin - vout < 3:
         raise InputDifferenceError("In-Out difference out of Range") # Input-to-output differential voltage out of range
-    return dict(r1=r1, r2=r2, vin=vin, vout=vout)
+    return dict(r1=r1, r2=r2, vin=vin, vout=si_prefix.si_format(vout))
 
 
 class ElectroCog(commands.Cog, name="Electronics commands"):
