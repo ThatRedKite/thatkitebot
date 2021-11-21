@@ -47,17 +47,9 @@ async def markov(guild, chan, old=50, new=10, leng=5):
         except discord.Forbidden:
             continue
     # generate a model based on the messages in :messages:
-    print(messages)
     model = markovify.NewlineText("\n".join(messages))
 
-    generated_list = list()
-
-    for i in range(leng):
-        a = model.make_sentence()
-        print(a)
-        if a:
-            generated_list.append(a)
-
+    generated_list = [model.make_sentence() for i in range(leng)]
     return generated_list
 
 
