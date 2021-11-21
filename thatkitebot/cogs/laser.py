@@ -41,6 +41,8 @@ def wavelength_to_rgb(wavelength, gamma=0.98):
         R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
         G = 0.0
         B = (1.0 * attenuation) ** gamma
+        if 405 <= wavelength < 430:
+            R = R * (wavelength / 310)
     elif 440 <= wavelength <= 490:
         R = 0.0
         G = ((wavelength - 440) / (490 - 440)) ** gamma
@@ -55,7 +57,7 @@ def wavelength_to_rgb(wavelength, gamma=0.98):
         B = 0.0
     elif 580 <= wavelength <= 645:
         R = 1.0
-        G = (-(wavelength - 645) / (645 - 580)) ** gamma
+        G = ((-(wavelength - 645) / (645 - 580)) ** gamma) * 0.9
         B = 0.0
     elif 645 <= wavelength <= 750:
         attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
@@ -79,15 +81,15 @@ class LaserCog(commands.Cog, name="Laser commands"):
     @commands.command()
     async def visspectrum(self, ctx):
         embed = discord.Embed(title="Visible spectrum of light")
-        embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912038095241740419/kitespectrum_t1.png")
+        embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912041066218283068/kitespectrum_t1.pnghm")
         await ctx.send(embed=embed)
 
     @commands.group()
-    async def laser(self,ctx):
+    async def laser(self, ctx):
         pass
 
-    @laser.command()
-    async def goggles(self,ctx):
+    @laser.command(aliases=["glasses", "safety"])
+    async def goggles(self, ctx):
         embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
                               description="""5mW is the safety limit where your blink reflex should save you from any damage.
                                Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
