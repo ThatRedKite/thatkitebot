@@ -112,6 +112,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.command(name="1984")
     async def _1984(self, ctx):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)
     @commands.command(name="fakeperson")
     async def _tpdne(self, ctx):
