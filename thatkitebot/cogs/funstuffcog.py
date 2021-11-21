@@ -36,6 +36,12 @@ async def is_trainpost_channel(ctx):
         return True
 
 
+def can_send_image(ctx):
+    can_attach = ctx.channel.permissions_for(ctx.author).attach_files
+    can_embed = ctx.channel.permissions_for(ctx.author).embed_links
+    return can_attach and can_embed
+
+
 # TODO: this needs a fix as it does not work reliably
 async def markov(guild, chan, old=50, new=10, leng=5):
     messages = []
@@ -61,6 +67,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         # Variables for markov game
 
     @commands.command()
+    @commands.check(can_send_image)
     async def inspirobot(self, ctx):
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
@@ -84,6 +91,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             await ctx.send(embed=embed)
 
     @commands.command(hidden=True)
+    @commands.check(can_send_image)
     async def vision(self, ctx):
         """Ignore this."""
         await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
@@ -91,6 +99,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.command(name="train", aliases=["zug"])
     @commands.check(is_trainpost_channel)
+    @commands.check(can_send_image)
     async def _train(self, ctx):
         """Sends a random image of a train."""
         images = [image for image in glob.glob("/app/data/trains/*.jpg")]
@@ -98,7 +107,8 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.typing():
             await ctx.send(file=train)
 
-    @commands.cooldown(3, 1, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.check(can_send_image)
     @commands.command(name="1984")
     async def _1984(self, ctx):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
