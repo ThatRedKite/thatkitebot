@@ -37,8 +37,11 @@ def magik(blob, format, fn, ra=False):
     buf.seek(0)
     with WandImage(file=buf, format=format) as a:
         buf.close()
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
-        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=2, rigidity=0)
+        a.sample(width=int(a.width * 0.90), height=int(a.height * 0.90))
+        a.swirl(90)
+        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
+        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
+        a.swirl(-90)
         b = a.make_blob(format="png")
         a.destroy()
     if not ra:
@@ -233,7 +236,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
@@ -244,7 +247,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             file = discord.File(BytesIO(b2), filename="magik.png")
             await ctx.send(file=file)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.channel)
     @commands.command()
     async def pfp(self, ctx, user: Optional[discord.User] = None):
         """sends the pfp of someone"""
@@ -253,7 +256,7 @@ class ImageStuff(commands.Cog, name="image commands"):
 
         await ctx.send(user.avatar_url)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
@@ -264,7 +267,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             file = discord.File(BytesIO(b2), filename="deepfry.png")
             await ctx.send(file=file)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
