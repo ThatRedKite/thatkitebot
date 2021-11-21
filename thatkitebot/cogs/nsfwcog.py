@@ -33,7 +33,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
     def __init__(self, bot):
         self.bot = bot
         self.redis = bot.redis
-        self.bl = [] # guild blacklist
+        self.bl = [424394851170385921]  # guild blacklist
 
     async def cog_check(self, ctx):
         return self.redis.hget(ctx.guild.id, "NSFW") == "TRUE" and not ctx.guild.id in self.bl
