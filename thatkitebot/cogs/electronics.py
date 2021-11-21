@@ -59,21 +59,22 @@ def draw_lm317(indict):
     return f"""
     ```
     \n
-     Vin = {vin}V                                  
-           ┌──────────┐           
-     <─────┤IN     OUT├─────┬──────► Vout = {vout}V
-           │    ADJ   │    ┌┴┐
-           └────┬─────┘    │ │ R1 = {r1}Ω
-                │          └┬┘
-                ├───────────┘
-               ┌┴┐
-               │ │ R2 = {r2}Ω
-               └┬┘
-                │
-               ─┴─
-               GND
+Vin = {vin}V                         
+     ┌──────────┐           
+<────┤IN     OUT├─────┬──► Vout = {vout}V
+     │    ADJ   │    ┌┴┐
+     └────┬─────┘    │ │ R1 = {r1}Ω
+          │          └┬┘
+          ├───────────┘
+         ┌┴┐
+         │ │ R2 = {r2}Ω
+         └┬┘
+          │
+         ─┴─
+         GND
     ```
     """
+
 
 
 def parse_input(s):
@@ -137,6 +138,8 @@ def calculate_lm317(b):
     r1 = si_prefix.si_parse(b["r1"])
     r2 = si_prefix.si_parse(b["r2"])
     vout = si_prefix.si_format(1.25 * (1 + (r2/r1)))
+    if vin - vout > 40 or vin - vout < 3:
+        raise ValueError("In Out voltage out of Range") # Input-to-output differential voltage out of range
     return dict(r1=r1, r2=r2, vin=vin, vout=vout)
 
 
