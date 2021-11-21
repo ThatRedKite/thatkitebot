@@ -112,9 +112,15 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.command(name="1984")
     async def _1984(self, ctx):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
+    @commands.check(can_send_image)
+    @commands.command(name="fakeperson")
+    async def _tpdne(self, ctx):
+        """Send an image from thispersondoesnotexist.com"""
+        file, embed = await tpdne(self.bot.aiohttp_session)
+        async with ctx.typing():
+            await ctx.send(file=file, embed=embed)
 
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
     
-
