@@ -80,7 +80,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
 
     @commands.command()
     async def visspectrum(self, ctx):
-        embed = discord.Embed(title="Visible spectrum of light")
+        embed = discord.Embed(title="Visible light spectrum")
         embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912041066218283068/kitespectrum_t1.png")
         await ctx.send(embed=embed)
 
