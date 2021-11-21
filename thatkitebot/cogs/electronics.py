@@ -23,6 +23,12 @@ import si_prefix
 from random import randint
 from thatkitebot.backend import util
 
+class InputDifferenceError(Exception):
+    pass
+
+class InputOutOfRangeError(Exception):
+    pass
+
 
 def draw_divider(indict):
     vin = indict["vin"]
@@ -134,12 +140,12 @@ def calculate_divider(mode, b):
 def calculate_lm317(b):
     vin = si_prefix.si_parse(b["vin"])
     if not 3.0 <= vin <= 40.0:
-        raise ValueError("Voltage out of Range")
+        raise InputOutOfRangeError("Voltage out of Range")
     r1 = si_prefix.si_parse(b["r1"])
     r2 = si_prefix.si_parse(b["r2"])
     vout = si_prefix.si_format(1.25 * (1 + (r2/r1)))
     if vin - vout > 40 or vin - vout < 3:
-        raise ValueError("In Out voltage out of Range") # Input-to-output differential voltage out of range
+        raise InputDifferenceError("In-Out difference out of Range") # Input-to-output differential voltage out of range
     return dict(r1=r1, r2=r2, vin=vin, vout=vout)
 
 
@@ -235,8 +241,11 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 name="Values",
                 value=f"R1 = {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
             await ctx.send(embed=embed)
-        except ValueError:
+        except InputOutOfRangeError:
             await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
+            return
+        except InputDifferenceError:
+            await util.errormsg(ctx, "Difference between input and output voltage is outside of datasheet recommended values.")
             return
 
 
