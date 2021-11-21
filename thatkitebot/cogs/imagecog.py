@@ -31,6 +31,7 @@ from wand.image import Image as WandImage
 from wand.color import Color
 from numpy import array
 
+
 def magik(blob, format, fn, ra=False):
     buf = BytesIO(blob)
     buf.seek(0)
@@ -44,6 +45,7 @@ def magik(blob, format, fn, ra=False):
         return b, fn
     else:
         return array(a), fn
+
 
 def swirl(blob, format, fn, angle: int = -60):
     buf = BytesIO(blob)
@@ -226,7 +228,10 @@ class ImageStuff(commands.Cog, name="image commands"):
 
     # TODO: check if user has image permissions
     async def cog_check(self, ctx):
-        return self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
+        is_enabled = self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
+        can_attach = ctx.channel.permissions_for(ctx.author).attach_files
+        can_embed = ctx.channel.permissions_for(ctx.author).embed_links
+        return is_enabled and can_attach and can_embed
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["magic"])
