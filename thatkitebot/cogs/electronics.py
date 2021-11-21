@@ -23,11 +23,17 @@ import si_prefix
 from random import randint
 from thatkitebot.backend import util
 
+
 class InputDifferenceError(Exception):
     pass
 
+
 class InputOutOfRangeError(Exception):
     pass
+
+
+def columnize(indict):
+    """turns a dictionary of strings into columns"""
 
 
 def draw_divider(indict):
@@ -80,7 +86,6 @@ Vin = {vin}V
          GND
     ```
     """
-
 
 
 def parse_input(s):
