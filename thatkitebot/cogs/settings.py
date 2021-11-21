@@ -10,14 +10,20 @@ def pp(a):
         return a
 
 
+async def can_change_settings(ctx: commands.Context):
+    channel: discord.TextChannel = ctx.channel
+    isowner = await ctx.bot.is_owner(ctx.author)
+    isadmin = channel.permissions_for(ctx.author).administrator
+    return isowner or isadmin
+
+
 class SettingsCog(commands.Cog, name="settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.redis = self.bot.redis
 
-
     @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
-    @commands.has_permissions(administrator=True)
+    @commands.check(can_change_settings)
     async def settings(self, ctx):
         if not ctx.subcommand_passed:
             cmds = "\n".join([c.name for c in ctx.command.commands])
