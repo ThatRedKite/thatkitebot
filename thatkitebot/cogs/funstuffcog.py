@@ -29,6 +29,13 @@ from random import choice
 from thatkitebot.backend import url, util
 
 
+async def is_trainpost_channel(ctx):
+    if ctx.guild.id == 424394851170385921:
+        return ctx.channel.id == 909159696798220400
+    else:
+        return True
+
+
 # TODO: this needs a fix as it does not work reliably
 async def markov(guild, chan, old=50, new=10, leng=5):
     messages = []
@@ -91,15 +98,13 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 1, commands.BucketType.user)
     @commands.command(name="train", aliases=["zug"])
+    @commands.check(is_trainpost_channel)
     async def _train(self, ctx):
         """Sends a random image of a train."""
-        if not ctx.channel.id == 864194488797102091:
-            images = [image for image in glob.glob("/app/data/trains/*.jpg")]
-            train = discord.File(choice(images), "train.jpg")
-            async with ctx.typing():
-                await ctx.send(file=train)
-        else:
-            await util.errormsg(ctx,"No trainposting outside of <#864194488797102091> !")
+        images = [image for image in glob.glob("/app/data/trains/*.jpg")]
+        train = discord.File(choice(images), "train.jpg")
+        async with ctx.typing():
+            await ctx.send(file=train)
 
     @commands.cooldown(3, 1, commands.BucketType.user)
     @commands.command(name="1984")
