@@ -116,7 +116,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.command(name="fakeperson")
     async def _tpdne(self, ctx):
         """Send an image from thispersondoesnotexist.com"""
-        file, embed = await tpdne(self.bot.aiohttp_session)
+        file, embed = await url.tpdne(self.bot.aiohttp_session)
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
 
