@@ -24,7 +24,6 @@ from random import randint
 from thatkitebot.backend import util
 
 
-
 def draw_divider(indict):
     vin = indict["vin"]
     r1 = indict["r1"]
@@ -49,7 +48,6 @@ def draw_divider(indict):
     GND
     ```
     """
-
 
 
 def draw_lm317_cv(indict):
@@ -77,7 +75,6 @@ def draw_lm317_cv(indict):
     """
     
     
-    
 def draw_lm317_cc(indict):
     iout = indict["iout"]
     r = indict["r"]
@@ -96,7 +93,6 @@ def draw_lm317_cc(indict):
     """
     
     
-    
 def parse_input(s):
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
@@ -105,8 +101,7 @@ def parse_input(s):
         new = old.replace("v", "").replace("V", "").replace("u", "µ")
         s_dict.update({key:new})
     return s_dict
-    
-    
+       
     
 def calculate_divider(mode, b):
     match mode:
@@ -150,7 +145,6 @@ def calculate_divider(mode, b):
         case _:
             raise ValueError("Invalid mode, please use r1, r2 or vout as mode")
     return b    
-    
     
     
 def calculate_lm317(mode, b):
