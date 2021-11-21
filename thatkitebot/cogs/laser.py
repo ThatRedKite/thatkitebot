@@ -85,12 +85,12 @@ class LaserCog(commands.Cog, name="Laser commands"):
         embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912041066218283068/kitespectrum_t1.png")
         await ctx.send(embed=embed)
 
+    @commands.cooldown(1, 10, commands.BucketType.channel)
     @commands.group()
     async def laser(self, ctx):
         if not ctx.subcommand_passed:
             await self.goggles(ctx)
 
-    @commands.cooldown(1, 10, commands.BucketType.channel)
     @laser.command(aliases=["glasses", "safety"])
     async def goggles(self, ctx):
         embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
