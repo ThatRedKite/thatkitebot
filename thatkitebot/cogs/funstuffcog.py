@@ -93,7 +93,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.command(name="train", aliases=["zug"])
     async def _train(self, ctx):
         """Sends a random image of a train."""
-        if not (ctx.guild.id == 424394851170385921 and ctx.channel.id == 864194488797102091):
+        if not ctx.channel.id == 864194488797102091:
             images = [image for image in glob.glob("/app/data/trains/*.jpg")]
             train = discord.File(choice(images), "train.jpg")
             async with ctx.typing():
