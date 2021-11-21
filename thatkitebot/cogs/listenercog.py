@@ -34,15 +34,23 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
-        if isinstance(error, commands.CommandNotFound):
-            await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
-        elif isinstance(error, commands.CommandOnCooldown):
-            await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
-        elif isinstance(error, CommandInvokeError) and self.bot.debugmode:
-            await errormsg(ctx, repr(error))
-            raise error
-        else:
-            raise error
+        match type(error):
+            case commands.CommandNotFound:
+                await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
+            case commands.CommandOnCooldown:
+                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
+            case commands.CommandInvokeError:
+                if self.bot.debugmode:
+                    await errormsg(ctx, repr(error))
+                    raise error
+                else:
+                    raise error
+            case commands.CheckFailure:
+                await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
+            case commands.MissingPermissions:
+                await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+            case commands.NotOwner:
+                await errormsg(ctx, "Only the bot owner (ThatRedKite) can do this! Contact him if needed.")
 
     @tasks.loop(hours=1.0)
     async def reset_invoke_counter(self):
