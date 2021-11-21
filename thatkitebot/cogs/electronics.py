@@ -1,27 +1,9 @@
-# ------------------------------------------------------------------------------
-#  MIT License
-#
-#  Copyright (c) 2019-2021 ThatRedKite
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-#  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-#
-#  The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-#  the Software.
-#
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-#  THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-#  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#  SOFTWARE.
-# ------------------------------------------------------------------------------
 import discord
 from discord.ext import commands
 import si_prefix
 from random import randint
 from thatkitebot.backend import util
+
 
 
 def draw_divider(indict):
@@ -50,7 +32,8 @@ def draw_divider(indict):
     """
 
 
-def draw_lm317(indict):
+
+def draw_lm317_cv(indict):
     vin = indict["vin"]
     r1 = indict["r1"]
     r2 = indict["r2"]
@@ -58,8 +41,7 @@ def draw_lm317(indict):
 
     return f"""
     ```
-    \n
-     Vin = {vin}V                                  
+    \n                               
            ┌──────────┐           
      <─────┤IN     OUT├─────┬──────► Vout = {vout}V
            │    ADJ   │    ┌┴┐
@@ -74,8 +56,28 @@ def draw_lm317(indict):
                GND
     ```
     """
-
-
+    
+    
+    
+def draw_lm317_cc(indict):
+    iout = indict["iout"]
+    r = indict["r"]
+    
+    return f"""
+    ```
+    \n
+           ┌──────────┐           
+     <─────┤IN     OUT├─────┐
+           │    ADJ   │    ┌┴┐
+           └────┬─────┘    │ │ R = {r}Ω
+                │          └┬┘ W = {w}W
+                └───────────┴──────► 
+                      Iout = {iout}I
+    ```
+    """
+    
+    
+    
 def parse_input(s):
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
@@ -84,8 +86,9 @@ def parse_input(s):
         new = old.replace("v", "").replace("V", "").replace("u", "µ")
         s_dict.update({key:new})
     return s_dict
-
-
+    
+    
+    
 def calculate_divider(mode, b):
     match mode:
         case "r1":
@@ -127,18 +130,33 @@ def calculate_divider(mode, b):
 
         case _:
             raise ValueError("Invalid mode, please use r1, r2 or vout as mode")
-    return b
-
-
-def calculate_lm317(b):
-    vin = si_prefix.si_parse(b["vin"])
-    if not 3.0 <= vin <= 40.0:
-        raise ValueError("Voltage out of Range")
-    r1 = si_prefix.si_parse(b["r1"])
-    r2 = si_prefix.si_parse(b["r2"])
-    vout = si_prefix.si_format(1.25 * (1 + (r2/r1)))
-    return dict(r1=r1, r2=r2, vin=vin, vout=vout)
-
+    return b    
+    
+    
+    
+def calculate_lm317(mode, b):
+    match mode:
+        case "cv":
+            vin = si_prefix.si_parse(b["vin"])
+            if not 4.25 <= vin <= 40.0:
+                raise ValueError("Voltage out of Range")
+            r1 = 240 #recommended r1 value from datasheet
+            r2 = si_prefix.si_parse(b["r2"])
+            vout = si_prefix.si_format(1.25 * (1 + (r2/r1))
+            return dict(r1=r1, r2=r2, vin=vin, vout=vout)
+            
+        case "cc":
+            iout = si_prefix.si_parse(b["iout"])
+            if not 0 <= iout <= 1.5:
+                raise ValueError("Current cannot exceed max ratings!")
+            r = si_prefix.si_format(1.25 / iout)
+            w = si_prefix.si_format(iout*iout*r)
+            iout = si_prefix.si_parse(b["iout"])
+            return dict(r=r, w=w, iout=iout)
+        
+        case _:
+            raise ValueError("Invalid mode, please provide r1 and vin or iout")
+    
 
 class ElectroCog(commands.Cog, name="Electronics commands"):
     def __init__(self, bot):
@@ -223,17 +241,35 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
 
     @commands.command()
     async def lm317(self, ctx, *, args):
-        args_parsed = parse_input(args)
-        try:
-            res = calculate_lm317(args_parsed)
-            embed = discord.Embed()
-            embed.add_field(name="Image", value=draw_lm317(res), inline=False)
-            embed.add_field(
-                name="Values",
-                value=f"R1 = {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
-            await ctx.send(embed=embed)
-        except ValueError:
+        if not args:
+            #help command goes here
+        else
+            args_parsed = parse_input(args)
+            
+        if args_parsed.get("r"):
+            try:
+                res = calculate_lm317("cv", args_parsed)
+                embed = discord.Embed()
+                embed.add_field(name="Image", value=draw_lm317_cv(res), inline=False)
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVout = {res['vout']}V")
+                await ctx.send(embed=embed)
+            except ValueError:
             await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
+            return 
+            
+        elif args_parsed.get("iout"):
+            try:
+                res = calculate_lm317("cc", args_parsed)
+                embed = discord.Embed()
+                embed.add_field(name="Image", value=draw_lm317_cc(res), inline=False)
+                embed.add_field(
+                    name="Values",
+                    value=f"R = {res['r']}Ω\nW = __{res['w']}Ω__\nIout = {res['iout']}A")
+                await ctx.send(embed=embed)
+            except ValueError:
+            await util.errormsg(ctx, "Output current will fry the LM317!")
             return
 
 
