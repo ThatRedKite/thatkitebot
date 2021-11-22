@@ -78,15 +78,18 @@ class LaserCog(commands.Cog, name="Laser commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    @commands.command()
-    async def visspectrum(self, ctx):
-        embed = discord.Embed(title="Visible spectrum of light")
+    @commands.cooldown(5, 10, commands.BucketType.channel)
+    @commands.command(aliases=["autism"])
+    async def spectrum(self, ctx):
+        embed = discord.Embed(title="Visible Light Spectrum")
         embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912041066218283068/kitespectrum_t1.png")
         await ctx.send(embed=embed)
 
+    @commands.cooldown(1, 10, commands.BucketType.channel)
     @commands.group()
     async def laser(self, ctx):
-        pass
+        if not ctx.subcommand_passed:
+            await self.goggles(ctx)
 
     @laser.command(aliases=["glasses", "safety"])
     async def goggles(self, ctx):
@@ -117,7 +120,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
         embed.add_field(name="\nWhat is the wavelength or nm?",
                         value=f"""The wavelength in nanometers (nm) corresponds to the color.
                          If you are not sure the wavelength but you know the color,
-                         you can ask someone, do `{self.bot.command_prefix}laser color (color)` or refer to +visspectrum.""",
+                         you can ask someone, do `{self.bot.command_prefix}laser color (color)` or refer to `+spectrum`.""",
                         inline=True)
         embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety")
         await ctx.send(embed=embed)

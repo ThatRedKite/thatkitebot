@@ -30,6 +30,7 @@ from PIL import ImageDraw, ImageFont, Image
 from wand.image import Image as WandImage
 from wand.color import Color
 from numpy import array
+from thatkitebot.backend import util
 
 
 def magik(blob, format, fn, ra=False):
@@ -37,8 +38,15 @@ def magik(blob, format, fn, ra=False):
     buf.seek(0)
     with WandImage(file=buf, format=format) as a:
         buf.close()
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 2), delta_x=1, rigidity=0)
-        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 2), delta_x=2, rigidity=0)
+        if a.width > 3000 or a.height > 3000:
+            a.destroy()
+            return None, -1
+        a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
+        a.swirl(90)
+        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
+        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
+        a.swirl(-90)
+        a.sample(width=int(a.width * 2), height=int(a.height * 2))
         b = a.make_blob(format="png")
         a.destroy()
     if not ra:
@@ -141,6 +149,9 @@ def wide(blob, format, fn):
     buf.seek(0)
     with WandImage(file=buf, format=format) as a:
         buf.close()
+        if a.width > 3000 or a.height > 3000:
+            a.destroy()
+            return None, -1
         a.resize(width=int(a.width * 3.3), height=int(a.height / 1.8))
         a.crop(left=int(a.width / 4), top=1, right=(a.width - (int(a.width / 4))), bottom=a.height)
         b = a.make_blob(format="png")
@@ -233,7 +244,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
@@ -241,10 +252,13 @@ class ImageStuff(commands.Cog, name="image commands"):
             blob, filename, url, filetype = await self.get_last_image(ctx)
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, magik, blob, filetype, 1)
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
             file = discord.File(BytesIO(b2), filename="magik.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.channel)
     @commands.command()
     async def pfp(self, ctx, user: Optional[discord.User] = None):
         """sends the pfp of someone"""
@@ -253,7 +267,7 @@ class ImageStuff(commands.Cog, name="image commands"):
 
         await ctx.send(user.avatar_url)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
@@ -262,9 +276,9 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, deepfry, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="deepfry.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
@@ -272,8 +286,11 @@ class ImageStuff(commands.Cog, name="image commands"):
             blob, filename, url, filetype = await self.get_last_image(ctx)
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, wide, blob, filetype, 1)
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
             file = discord.File(BytesIO(b2), filename="wide.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["opacity"])
@@ -284,7 +301,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, opacify, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="opacify.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inflate"])
@@ -295,7 +312,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, explode, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="explode.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["deflate"])
@@ -306,7 +323,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, implode, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="explode.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inverse", "anti"])
@@ -317,7 +334,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, invert, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="invert.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
@@ -328,7 +345,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, reduce, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="explode.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
@@ -339,7 +356,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, swirl, blob, filetype, 1, degree)
             file = discord.File(BytesIO(b2), filename="explode.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
@@ -351,7 +368,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, caption, newblob, filetype, 1, text, self.dd)
             file = discord.File(BytesIO(b2), filename="explode.png")
-            await ctx.send(file=file)
+        await ctx.send(file=file)
 
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.command()
