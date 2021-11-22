@@ -176,7 +176,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.bot = bot
         self.td = bot.tempdir  # temp directory
         self.dd = bot.datadir  # data directory
-        self.ll = self.bot.loop
+        self.ll = asyncio.get_event_loop()
         self.session = self.bot.aiohttp_session
         self.tt = self.bot.tenortoken
         self.tenor_pattern = re.compile("^https://tenor.com\S+-(\d+)$")
@@ -229,10 +229,16 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, magik, blob, filetype, 1)
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
+                try:
+                    future = self.ll.run_in_executor(pool, magik, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                    if fn < 0:
+                        await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                        return
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="magik.png")
         await ctx.send(file=file)
 
@@ -251,7 +257,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, deepfry, blob, filetype, 1)
+                try:
+                    future = self.ll.run_in_executor(pool, explode, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="deepfry.png")
         await ctx.send(file=file)
 
@@ -262,10 +274,16 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, wide, blob, filetype, 1)
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
+                try:
+                    future = self.ll.run_in_executor(pool, implode, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                    if fn < 0:
+                        await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                        return
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="wide.png")
         await ctx.send(file=file)
 
@@ -276,7 +294,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, opacify, blob, filetype, 1)
+                try:
+                    future = self.ll.run_in_executor(pool, opacify, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
             file = discord.File(BytesIO(b2), filename="opacify.png")
         await ctx.send(file=file)
 
@@ -287,7 +311,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             blob, filename, url, filetype = await self.get_last_image(ctx)
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, explode, blob, filetype, 1)
+                try:
+                    future = self.ll.run_in_executor(pool, explode, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
@@ -298,7 +328,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, implode, blob, filetype, 1)
+                try:
+                    future = self.ll.run_in_executor(pool, implode, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
@@ -309,7 +345,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, invert, blob, filetype, 1)
+                try:
+                    future = self.ll.run_in_executor(pool, invert, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="invert.png")
         await ctx.send(file=file)
 
@@ -320,7 +362,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
-                b2, fn = await self.ll.run_in_executor(pool, reduce, blob, filetype, 1)
+                try:
+                    future = self.ll.run_in_executor(pool, reduce, blob, filetype, 1)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
@@ -330,9 +378,15 @@ class ImageStuff(commands.Cog, name="image commands"):
         """swirl an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor() as pool:
-                b2, fn = await self.ll.run_in_executor(pool, swirl, blob, filetype, 1, degree)
-        file = discord.File(BytesIO(b2), filename="explode.png")
+            with ProcessPoolExecutor(1) as pool:
+                try:
+                    future = self.ll.run_in_executor(pool, swirl, blob, filetype, 1, degree)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
+        file = discord.File(BytesIO(b2), filename="swirl.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
@@ -342,8 +396,14 @@ class ImageStuff(commands.Cog, name="image commands"):
         blob, filename, url, filetype = await self.get_last_image(ctx)
         newblob = imageio.imread(BytesIO(blob))
         async with ctx.channel.typing():
-            with ProcessPoolExecutor() as pool:
-                b2, fn = await self.ll.run_in_executor(pool, caption, newblob, filetype, 1, text, self.dd)
+            with ProcessPoolExecutor(1) as pool:
+                try:
+                    future = self.ll.run_in_executor(pool, caption, newblob, filetype, 1, text, self.dd)
+                    b2, fn = await asyncio.wait_for(future, 20)
+                except asyncio.TimeoutError:
+                    await util.errormsg("The function has timed out, please try again later!")
+                    pool.shutdown()
+                    return
         file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
