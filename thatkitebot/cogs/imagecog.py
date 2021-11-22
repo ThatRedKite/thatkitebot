@@ -275,7 +275,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             with ProcessPoolExecutor(1) as pool:
                 try:
-                    future = self.ll.run_in_executor(pool, implode, blob, filetype, 1)
+                    future = self.ll.run_in_executor(pool, wide, blob, filetype, 1)
                     b2, fn = await asyncio.wait_for(future, 20)
                     if fn < 0:
                         await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
