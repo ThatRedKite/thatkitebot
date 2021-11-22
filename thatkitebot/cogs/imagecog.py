@@ -203,27 +203,6 @@ class ImageStuff(commands.Cog, name="image commands"):
                             url = attachment.image.url
                         else:
                             continue
-                    case "gifv":
-                        tenor_id = int(self.tenor_pattern.match(attachment.url).group(1))
-                        if tenor_id:
-                            headers = {
-                                "User-Agent": f"ThatKiteBot/{self.bot.version}",
-                                "content-type": "application/json"
-                            }
-
-                            payload = {
-                                "key": self.tt,
-                                "ids": tenor_id,
-                                "media_filter": "minimal"
-                            }
-
-                            t_url = "https://api.tenor.com/v1/gifs"
-                            async with self.session.get(url=t_url, params=payload, headers=headers) as r:
-                                gifs = await r.json()
-                                url = gifs["results"][0]["media"][0]["gif"]["url"]
-
-                        else:
-                            continue
                     case _:
                         continue
                 if url:
@@ -237,7 +216,6 @@ class ImageStuff(commands.Cog, name="image commands"):
         filetype = re.search("(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
         return blob, filename, url, filetype
 
-    # TODO: check if user has image permissions
     async def cog_check(self, ctx):
         is_enabled = self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
@@ -248,14 +226,14 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, magik, blob, filetype, 1)
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
                 return
-            file = discord.File(BytesIO(b2), filename="magik.png")
+        file = discord.File(BytesIO(b2), filename="magik.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.channel)
@@ -264,41 +242,40 @@ class ImageStuff(commands.Cog, name="image commands"):
         """sends the pfp of someone"""
         if not user:
             user = ctx.message.author
-
         await ctx.send(user.avatar_url)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, deepfry, blob, filetype, 1)
-            file = discord.File(BytesIO(b2), filename="deepfry.png")
+        file = discord.File(BytesIO(b2), filename="deepfry.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, wide, blob, filetype, 1)
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
                 return
-            file = discord.File(BytesIO(b2), filename="wide.png")
+        file = discord.File(BytesIO(b2), filename="wide.png")
         await ctx.send(file=file)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
         """remove the alpha channel and replace it with white"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, opacify, blob, filetype, 1)
             file = discord.File(BytesIO(b2), filename="opacify.png")
         await ctx.send(file=file)
@@ -309,65 +286,65 @@ class ImageStuff(commands.Cog, name="image commands"):
         """explode an image"""
         async with ctx.channel.typing():
             blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, explode, blob, filetype, 1)
-            file = discord.File(BytesIO(b2), filename="explode.png")
+        file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["deflate"])
     async def implode(self, ctx: commands.Context):
         """implode an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, implode, blob, filetype, 1)
-            file = discord.File(BytesIO(b2), filename="explode.png")
+        file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inverse", "anti"])
     async def invert(self, ctx: commands.Context):
         """implode an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, invert, blob, filetype, 1)
-            file = discord.File(BytesIO(b2), filename="invert.png")
+        file = discord.File(BytesIO(b2), filename="invert.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
         """reduce the amount of colors of an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor() as pool:
+            with ProcessPoolExecutor(1) as pool:
                 b2, fn = await self.ll.run_in_executor(pool, reduce, blob, filetype, 1)
-            file = discord.File(BytesIO(b2), filename="explode.png")
+        file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, swirl, blob, filetype, 1, degree)
-            file = discord.File(BytesIO(b2), filename="explode.png")
+        file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
+        newblob = imageio.imread(BytesIO(blob))
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            newblob = imageio.imread(BytesIO(blob))
             with ProcessPoolExecutor() as pool:
                 b2, fn = await self.ll.run_in_executor(pool, caption, newblob, filetype, 1, text, self.dd)
-            file = discord.File(BytesIO(b2), filename="explode.png")
+        file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 20, commands.BucketType.user)
@@ -429,6 +406,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         await ctx.send(file=image_file)  # send the result to the channel where the command was sent
         await pmsg.delete()  # delete the "download successful" message from earlier
         """
+
 
 def setup(bot):
     bot.add_cog(ImageStuff(bot))
