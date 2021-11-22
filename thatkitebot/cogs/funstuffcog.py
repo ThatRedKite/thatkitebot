@@ -159,6 +159,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
 
+
 def setup(bot):
     bot.add_cog(FunStuff(bot))
     
