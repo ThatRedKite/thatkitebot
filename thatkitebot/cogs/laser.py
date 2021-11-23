@@ -133,7 +133,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
             b = colorimg.make_blob(format="jpeg")
         file = discord.File(BytesIO(b), filename="color.jpeg")
         embed = discord.Embed(title=f"Approximated color for {color}nm")
-        embed.set_image(url="attachment://color.png")
+        embed.set_image(url="attachment://color.jpeg")
         embed.set_footer(text="this is not 100% accurate\n since your monitor,"
                               "eyes and other factors play a role\n but"
                               "it is as close as it can get")
