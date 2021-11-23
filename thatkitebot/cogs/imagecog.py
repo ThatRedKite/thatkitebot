@@ -33,11 +33,8 @@ from numpy import array
 from thatkitebot.backend import util
 
 
-def magik(blob, format, fn, ra=False):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def magik(buf, fn):
+    with WandImage(file=buf) as a:
         if a.width > 3000 or a.height > 3000:
             a.destroy()
             return None, -1
@@ -49,50 +46,35 @@ def magik(blob, format, fn, ra=False):
         a.sample(width=int(a.width * 2), height=int(a.height * 2))
         b = a.make_blob(format="png")
         a.destroy()
-    if not ra:
-        return b, fn
-    else:
-        return array(a), fn
+    return b, fn
 
 
-def swirl(blob, format, fn, angle: int = -60):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def swirl(buf, fn, angle: int = -60):
+    with WandImage(file=buf) as a:
         a.swirl(degree=angle)
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
 
 
-def invert(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def invert(buf, fn):
+    with WandImage(file=buf) as a:
         a.negate()
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
 
 
-def implode(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def implode(buf, fn):
+    with WandImage(file=buf) as a:
         a.implode(0.6)
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
 
 
-def opacify(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def opacify(buf, fn):
+    with WandImage(file=buf) as a:
         a.alpha_channel = "remove"
         a.background_color = Color("white")
         b = a.make_blob(format="png")
@@ -100,31 +82,25 @@ def opacify(blob, format, fn):
     return b, fn
 
 
-def explode(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
-        a.implode(-5.0)
+def explode(buf, fn):
+    with WandImage(file=buf) as a:
+        a.implode(-4.0)
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
 
 
-def reduce(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
-        a.posterize(levels=4)
+def reduce(buf, fn):
+    with WandImage(file=buf) as a:
+        a.posterize(levels=2)
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
 
 
-def caption(blob, format, fn, ct, path):
+def caption(blob, fn, ct, path):
     font = ImageFont.truetype(join(path, "DejaVuSans.ttf"), 47)  # load the font
-    with Image.fromarray(blob) as im:
+    with Image.open(blob) as im:
         outline_width = 3
         W, H = im.size
         w, h = font.getsize(ct)
@@ -144,11 +120,8 @@ def caption(blob, format, fn, ct, path):
     return b, fn
 
 
-def wide(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def wide(buf, fn):
+    with WandImage(file=buf) as a:
         if a.width > 3000 or a.height > 3000:
             a.destroy()
             return None, -1
@@ -159,11 +132,8 @@ def wide(blob, format, fn):
     return b, fn
 
 
-def deepfry(blob, format, fn):
-    buf = BytesIO(blob)
-    buf.seek(0)
-    with WandImage(file=buf, format=format) as a:
-        buf.close()
+def deepfry(buf, fn):
+    with WandImage(file=buf) as a:
         a.modulate(saturation=600.00)
         a.noise("gaussian", attenuate=0.1)
         b = a.make_blob(format="png")
@@ -174,6 +144,7 @@ def deepfry(blob, format, fn):
 class ImageStuff(commands.Cog, name="image commands"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.pp = ProcessPoolExecutor()
         self.td = bot.tempdir  # temp directory
         self.dd = bot.datadir  # data directory
         self.ll = asyncio.get_event_loop()
@@ -228,17 +199,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, magik, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                    if fn < 0:
-                        await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                        return
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn  = await self.ll.run_in_executor(self.pp, magik, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
         file = discord.File(BytesIO(b2), filename="magik.png")
         await ctx.send(file=file)
 
@@ -256,14 +223,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         """deepfry an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, explode, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, deepfry, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
         file = discord.File(BytesIO(b2), filename="deepfry.png")
         await ctx.send(file=file)
 
@@ -273,17 +239,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Horizonally stretch an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, wide, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                    if fn < 0:
-                        await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                        return
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, wide, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
         file = discord.File(BytesIO(b2), filename="wide.png")
         await ctx.send(file=file)
 
@@ -292,15 +254,14 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def opacify(self, ctx: commands.Context):
         """remove the alpha channel and replace it with white"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
-        async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, opacify, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+        async with ctx.typing():
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, opacify, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
             file = discord.File(BytesIO(b2), filename="opacify.png")
         await ctx.send(file=file)
 
@@ -308,17 +269,16 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["inflate"])
     async def explode(self, ctx: commands.Context):
         """explode an image"""
+        blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            blob, filename, url, filetype = await self.get_last_image(ctx)
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, explode, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
-        file = discord.File(BytesIO(b2), filename="explode.png")
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, explode, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
+            file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
@@ -327,15 +287,14 @@ class ImageStuff(commands.Cog, name="image commands"):
         """implode an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, implode, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
-        file = discord.File(BytesIO(b2), filename="explode.png")
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, implode, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
+        file = discord.File(BytesIO(b2), filename="implode.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
@@ -344,14 +303,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         """implode an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, invert, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, invert, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
         file = discord.File(BytesIO(b2), filename="invert.png")
         await ctx.send(file=file)
 
@@ -361,15 +319,14 @@ class ImageStuff(commands.Cog, name="image commands"):
         """reduce the amount of colors of an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, reduce, blob, filetype, 1)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
-        file = discord.File(BytesIO(b2), filename="explode.png")
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, reduce, buf, 1)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
+        file = discord.File(BytesIO(b2), filename="reduce.png")
         await ctx.send(file=file)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
@@ -378,14 +335,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         """swirl an image"""
         blob, filename, url, filetype = await self.get_last_image(ctx)
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, swirl, blob, filetype, 1, degree)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, swirl, buf, 1, degree)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
         file = discord.File(BytesIO(b2), filename="swirl.png")
         await ctx.send(file=file)
 
@@ -394,16 +350,14 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
         blob, filename, url, filetype = await self.get_last_image(ctx)
-        newblob = imageio.imread(BytesIO(blob))
         async with ctx.channel.typing():
-            with ProcessPoolExecutor(1) as pool:
-                try:
-                    future = self.ll.run_in_executor(pool, caption, newblob, filetype, 1, text, self.dd)
-                    b2, fn = await asyncio.wait_for(future, 20)
-                except asyncio.TimeoutError:
-                    await util.errormsg("The function has timed out, please try again later!")
-                    pool.shutdown()
-                    return
+            buf = BytesIO(blob)
+            buf.seek(0)
+            b2, fn = await self.ll.run_in_executor(self.pp, caption, buf, 1, text, self.dd)
+            buf.close()
+            if fn < 0:
+                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
+                return
         file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
