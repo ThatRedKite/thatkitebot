@@ -71,22 +71,40 @@ class FunStuff(commands.Cog, name="fun commands"):
                     messagelist.append(str(message.clean_content))
             except discord.Forbidden:
                 await util.errormsg(ctx, "It seems like I don't have access to that channel <:molvus:798286553553436702>")
+                return
             try:
-                 model = markovify.NewlineText("\n".join(messagelist))
+                 gen1 = markovify.NewlineText("\n".join(messagelist))
             except KeyError:
                 await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
+                return
             genlist = set()
-            for i in range(4):
+            for i in range(50):
 
-                    a = model.make_sentence(tries=30)
+                    a = gen1.make_sentence(tries=30)
                     if a:
                         genlist.add(a)
                     else:
-                        a = model.make_short_sentence(5)
+                        a = gen1.make_short_sentence(5)
                         genlist.add(a)
 
+            try:
+                 gen2 = markovify.Text('. '.join([a for a in genlist if a]))
+            except KeyError:
+                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
+                return
+
+            genlist2 = set()
+            for i in range(5):
+
+                    a = gen2.make_sentence(tries=30)
+                    if a:
+                        genlist2.add(a)
+                    else:
+                        a = gen2.make_short_sentence(5)
+                        genlist2.add(a)
+
             if len(genlist) > 0:
-                out = '. '.join([a for a in genlist if a])
+                out = "".join([a for a in genlist2 if a])
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
