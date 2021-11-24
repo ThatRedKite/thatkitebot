@@ -144,7 +144,7 @@ def deepfry(buf, fn):
 class ImageStuff(commands.Cog, name="image commands"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.pp = ProcessPoolExecutor()
+        self.pp = ProcessPoolExecutor(max_workers=4)
         self.td = bot.tempdir  # temp directory
         self.dd = bot.datadir  # data directory
         self.ll = asyncio.get_event_loop()
@@ -201,7 +201,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn  = await self.ll.run_in_executor(self.pp, magik, buf, 1)
+            future = self.ll.run_in_executor(self.pp, magik, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -225,7 +226,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, deepfry, buf, 1)
+            future = self.ll.run_in_executor(self.pp, deepfry, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -241,7 +243,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, wide, buf, 1)
+            future = self.ll.run_in_executor(self.pp, wide, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -257,7 +260,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, opacify, buf, 1)
+            future = self.ll.run_in_executor(self.pp, opacify, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -273,7 +277,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, explode, buf, 1)
+            future = self.ll.run_in_executor(self.pp, explode, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -289,7 +294,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, implode, buf, 1)
+            future = self.ll.run_in_executor(self.pp, implode, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -305,7 +311,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, invert, buf, 1)
+            future = self.ll.run_in_executor(self.pp, invert, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -321,7 +328,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, reduce, buf, 1)
+            future = self.ll.run_in_executor(self.pp, reduce, buf, 1)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -337,7 +345,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, swirl, buf, 1, degree)
+            future = self.ll.run_in_executor(self.pp, swirl, buf, 1, degree)
+            b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
@@ -353,11 +362,14 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             buf = BytesIO(blob)
             buf.seek(0)
-            b2, fn = await self.ll.run_in_executor(self.pp, caption, buf, 1, text, self.dd)
+            if self.ll.is_running():
+                future = self.ll.run_in_executor(self.pp, caption, buf, 1, text, self.dd)
+                b2, fn = await future
             buf.close()
             if fn < 0:
                 await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
                 return
+
         file = discord.File(BytesIO(b2), filename="explode.png")
         await ctx.send(file=file)
 
