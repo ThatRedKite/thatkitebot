@@ -82,7 +82,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
     @commands.command(aliases=["autism"])
     async def spectrum(self, ctx):
         embed = discord.Embed(title="Visible Light Spectrum")
-        embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912041066218283068/kitespectrum_t1.png")
+        embed.set_image(url="https://media.discordapp.net/attachments/910895468001767484/913348594269036584/unknown.png")
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 10, commands.BucketType.channel)
