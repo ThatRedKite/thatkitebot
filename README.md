@@ -3,7 +3,7 @@ A discord bot focused on science commands and fun stuff. No moderation for now.
 
 ## Installation and first run
 The following instructions will be for a debian server.
-
+(It is recommended that you [add yourself](https://docs.docker.com/engine/install/linux-postinstall/) to the docker user group to omit sudo for better security)
 ### Install docker:
 
 ```
@@ -41,12 +41,12 @@ After that is done hit `ctrl + x`, `y` and `enter`. The settings will be saved.
 ### Starting the bot 
 To start the bot from a stopped state (like we have right now).
 ```
-sudo docker-compose up -d
+sudo docker-compose up -d thatkitebot
 ```
 You will see it print:
 ```
 Starting redis ... done
-Starting thatkitebot_thatkitebot_1 ... done
+Starting thatkitebot ... done
 ```
 To check the status of the container do `sudo docker container ls` you will see 2 containers `redis:alpine` and `thatkitebot_thatkitebot` that means everything is running.
 Now go to the server that you added the bot to and do +help (or whatever command prefix you chose) to see if it's working.
