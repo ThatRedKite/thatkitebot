@@ -42,26 +42,9 @@ def can_send_image(ctx):
     return can_attach and can_embed
 
 
-# TODO: this needs a fix as it does not work reliably
-async def markov(guild, chan, old=50, new=10, leng=5):
-    messages = []
-    for channel in guild.text_channels:
-        # add :old: messages of the user :chan: to the list :messages: (from every channel of the guild)
-        try:
-            async for message in channel.history(limit=new).filter(lambda m: m.author == chan):
-                messages.append(str(message.clean_content))
-        except discord.Forbidden:
-            continue
-    # generate a model based on the messages in :messages:
-    model = markovify.NewlineText("\n".join(messages))
-
-    generated_list = [model.make_sentence() for i in range(leng)]
-    return generated_list
-
-
 class FunStuff(commands.Cog, name="fun commands"):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Client = bot
         self._last_member = None
         self.dirname = bot.dirname
         # Variables for markov game
@@ -73,15 +56,62 @@ class FunStuff(commands.Cog, name="fun commands"):
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, user: typing.Optional[discord.Member]):
+    async def _markov(self, ctx, channel: typing.Optional[discord.TextChannel], user: typing.Optional[discord.Member]):
         if not user:
             user = ctx.message.author
+        if not channel:
+            channel = ctx.channel
         async with ctx.channel.typing():
-            generated_list = await markov(ctx.guild, user)
-            embed = discord.Embed(title="**Markov Chain Output: **", description=f"*{'. '.join(generated_list)}*")
-            embed.color = 0x6E3513
-            embed.set_thumbnail(url=user.avatar_url)
-            await ctx.send(embed=embed)
+            try:
+                messagelist = [message.clean_content for message in self.bot.cached_messages if message.author is user and message.guild is ctx.guild and ctx.channel is channel]
+                async for message in channel.history(limit=1500).filter(lambda m: m.author is user):
+                    messagelist.append(str(message.clean_content))
+
+                async for message in channel.history(limit=1500, oldest_first=True).filter(lambda m: m.author is user):
+                    messagelist.append(str(message.clean_content))
+            except discord.Forbidden:
+                await util.errormsg(ctx, "It seems like I don't have access to that channel <:molvus:798286553553436702>")
+                return
+            try:
+                 gen1 = markovify.NewlineText("\n".join(messagelist))
+            except KeyError:
+                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
+                return
+            genlist = set()
+            for i in range(50):
+
+                    a = gen1.make_sentence(tries=30)
+                    if a:
+                        genlist.add(a)
+                    else:
+                        a = gen1.make_short_sentence(5)
+                        genlist.add(a)
+
+            try:
+                 gen2 = markovify.Text('. '.join([a for a in genlist if a]))
+            except KeyError:
+                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
+                return
+
+            genlist2 = set()
+            for i in range(5):
+
+                    a = gen2.make_sentence(tries=30)
+                    if a:
+                        genlist2.add(a)
+                    else:
+                        a = gen2.make_short_sentence(5)
+                        genlist2.add(a)
+
+            if len(genlist) > 0:
+                out = "".join([a for a in genlist2 if a])
+                embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
+                embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
+                embed.color = 0x6E3513
+                embed.set_thumbnail(url=user.avatar_url)
+                await ctx.send(embed=embed)
+            else:
+                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
 
     @commands.command()
     async def fakeword(self, ctx):

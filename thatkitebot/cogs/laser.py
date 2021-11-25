@@ -130,10 +130,10 @@ class LaserCog(commands.Cog, name="Laser commands"):
         color = int(color.lower().replace("nm", ""))
         new_color = wavelength_to_rgb(color)
         with WandImage(width=256, height=256, background=WandColor(f"rgb{new_color}")) as colorimg:
-            b = colorimg.make_blob(format="png")
-        file = discord.File(BytesIO(b), filename="color.png")
+            b = colorimg.make_blob(format="jpeg")
+        file = discord.File(BytesIO(b), filename="color.jpeg")
         embed = discord.Embed(title=f"Approximated color for {color}nm")
-        embed.set_image(url="attachment://color.png")
+        embed.set_image(url="attachment://color.jpeg")
         embed.set_footer(text="this is not 100% accurate\n since your monitor,"
                               "eyes and other factors play a role\n but"
                               "it is as close as it can get")
