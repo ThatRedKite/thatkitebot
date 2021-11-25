@@ -34,7 +34,7 @@ discord_token: ''
 prefix: ''
 tenor_token: ''
 ```
-The tenor token is optional. `discord_token` is the discord bot API token you can get from [discord](https://discord.com/developers/). `prefix` is what the bot will use as a command prefix for example `+` or `ex` or any other string or character.
+The tenor token is optional. `discord_token` is the discord bot API token you can get from [discord](https://discord.com/developers/). `prefix` is what the bot will use as a command prefix for example `+` or `ex` or any other string or character. Don't forger to turn on `Privileged Gateway Intents` in the discord bot panel (next to the bot API token).
 
 After that is done hit `ctrl + x`, `y` and `enter`. The settings will be saved.
 
