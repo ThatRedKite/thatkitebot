@@ -189,6 +189,16 @@ class FunStuff(commands.Cog, name="fun commands"):
             await ctx.send(file=file, embed=embed)
 
 
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.check(can_send_image)
+    @commands.command(name="fakevessel", aliases=["fakeceramic", "tvdne", "fakevase"])
+    async def _tvdne(self, ctx):
+        """Send an image from thisvesseldoesnotexist.com"""
+        file, embed = await url.tvdne(self.bot.aiohttp_session)
+        async with ctx.typing():
+            await ctx.send(file=file, embed=embed)
+
+
 def setup(bot):
     bot.add_cog(FunStuff(bot))
     
