@@ -21,6 +21,7 @@
 
 import discord
 import asyncio
+import traceback 
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from thatkitebot.backend.util import errormsg
@@ -65,7 +66,6 @@ class ListenerCog(commands.Cog):
     async def on_command_completion(self, ctx):
         self.bot.command_invokes_hour += 1
         self.bot.command_invokes_total += 1
-        gc.collect()
 
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx, ex):
