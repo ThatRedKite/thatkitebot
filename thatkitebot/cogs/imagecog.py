@@ -38,10 +38,8 @@ def magik(buf, fn):
             a.destroy()
             return None, -1
         a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
-        a.swirl(90)
         a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
         a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
-        a.swirl(-90)
         a.sample(width=int(a.width * 2), height=int(a.height * 2))
         b = a.make_blob(format="png")
         a.destroy()
