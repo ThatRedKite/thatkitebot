@@ -46,6 +46,22 @@ def magik(buf, fn):
     return b, fn
 
 
+def swirlmagik(buf, fn):
+    with WandImage(file=buf) as a:
+        if a.width > 3000 or a.height > 3000:
+            a.destroy()
+            return None, -1
+        a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
+        a.swirl(90)
+        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
+        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
+        a.swirl(-190)
+        a.sample(width=int(a.width * 2), height=int(a.height * 2))
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
 def swirl(buf, fn, angle: int = -60):
     with WandImage(file=buf) as a:
         a.swirl(degree=angle)
@@ -215,6 +231,19 @@ class ImageStuff(commands.Cog, name="image commands"):
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=1), "magik")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(3, 5, commands.BucketType.guild)
+    @commands.command(aliases=["swirlmagik", "smagic", "swirlmagic"])
+    async def smagik(self, ctx: commands.Context):
+        """
+        Applies some content aware and swirling scaling to an image.
+        When the image is a GIF, it takes the first frame
+        """
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(functools.partial(swirlmagik, buf=buf, fn=1), "swirlmagik")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
