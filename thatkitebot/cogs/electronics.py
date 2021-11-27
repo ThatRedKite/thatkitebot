@@ -32,6 +32,10 @@ class InputOutOfRangeError(Exception):
     pass
 
 
+class TooFewArgsError(Exception):
+    pass
+
+
 def columnize(indict):
     """turns a dictionary of strings into columns"""
 
@@ -143,14 +147,39 @@ def calculate_divider(mode, b):
 
 
 def calculate_lm317(b):
-    vin = si_prefix.si_parse(b["vin"])
-    if not 3.0 <= vin <= 40.0:
-        raise InputOutOfRangeError("Voltage out of Range")
-    r1 = si_prefix.si_parse(b["r1"])
-    r2 = si_prefix.si_parse(b["r2"])
-    vout = 1.25 * (1 + (r2/r1))
+    try:
+        vin = si_prefix.si_parse(b["vin"])
+        if not 3.0 <= vin <= 40.0:
+            raise InputOutOfRangeError("Voltage out of Range")
+        specificVin = True
+    except:
+        specificVin = False
+    try:
+        vout = si_prefix.si_parse(b["vout"])
+    except:
+        vout = None
+    try:
+        r1 = si_prefix.si_parse(b["r1"])
+    except:
+        r1 = 240
+    try:
+        r2 = si_prefix.si_parse(b["r2"])
+    except:
+        r2 = None
+
+    if vout is None and r2 is None:
+        raise TooFewArgsError("Too few arguments")    
+    if vout is None:
+        vout = 1.25 * (1 + (r2/r1))
+    if r2 is None:
+        r2 = ((vout / 1.25) - 1) * r1
+    if not specificVin:
+        vin = round(vout + 3, 1)
+        
     if vin - vout > 40 or vin - vout < 3:
         raise InputDifferenceError("In-Out difference out of Range") # Input-to-output differential voltage out of range
+    if not specificVin:
+        vin = str(vin) + "V to 40.0"
     return dict(r1=r1, r2=r2, vin=vin, vout=si_prefix.si_format(vout))
 
 
@@ -224,34 +253,77 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await util.errormsg(ctx, "There is nothing to calculate. Please enter exactly 3 values")
 
     @commands.command(name="cap_energy", aliases=["joule", "energy", "ce", "charge"])
-    async def capacitor_energy(self, ctx, *, args):
-        args_parsed = parse_input(args)
-        c = si_prefix.si_parse(args_parsed["c"])
-        v = si_prefix.si_parse(args_parsed["v"])
-        e = si_prefix.si_format((0.5 * c) * (v**2))
-        q = si_prefix.si_format(c * v)
-        embed = discord.Embed(title="Capacitor charge calculator")
-        embed.add_field(name="Energy", value=f"{e}J")
-        embed.add_field(name="Charge", value=f"{q}C")
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    async def lm317(self, ctx, *, args):
-        args_parsed = parse_input(args)
-        try:
-            res = calculate_lm317(args_parsed)
-            embed = discord.Embed()
-            embed.add_field(name="Image", value=draw_lm317(res), inline=False)
+    async def capacitor_energy(self, ctx, *, args = None):
+        """
+        Calculate the capacitor energy and charge in joules and coulomb using voltage and capacitance.
+        """
+        if not args:
+            embed = discord.Embed(title="Capacitor energy calculation")
             embed.add_field(
-                name="Values",
-                value=f"R1 = {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
+            name="How to use this?",
+                value=f"""With this command you can calculate capacitor energy and charge.
+                Example: `{self.bot.command_prefix}cap_energy v=10v c=47u`to find energy and charge.
+                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                Writing the "V" after the voltages is optional.
+                You can also use `{self.bot.command_prefix}joule`, `{self.bot.command_prefix}energy`, `{self.bot.command_prefix}ce` and `{self.bot.command_prefix}charge`.
+                """,
+                inline=True)
+                # TODO
+                # Add something to automatically grab the aliases and command name
             await ctx.send(embed=embed)
-        except InputOutOfRangeError:
-            await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
-            return
-        except InputDifferenceError:
-            await util.errormsg(ctx, "Difference between input and output voltage is outside of datasheet recommended values.")
-            return
+        else:
+            args_parsed = parse_input(args)
+            c = si_prefix.si_parse(args_parsed["c"])
+            v = si_prefix.si_parse(args_parsed["v"])
+            e = si_prefix.si_format((0.5 * c) * (v**2))
+            q = si_prefix.si_format(c * v)
+            embed = discord.Embed(title="Capacitor charge calculator")
+            embed.add_field(name="Energy", value=f"{e}J")
+            embed.add_field(name="Charge", value=f"{q}C")
+            await ctx.send(embed=embed)
+        
+    @commands.command(name="lm317", aliases=["317cv", "cv317", "LM317"])
+    async def lm317(self, ctx, *, args = None):
+        """
+        Calculate resistor values for an LM317 in CV mode for CC mode use `lm317cc`.
+        """
+        if not args:
+            embed = discord.Embed(title="LM317 Adjustable Regulator **CV**")
+            embed.add_field(name="Image", value=draw_lm317(calculate_lm317(parse_input('vin=10v r1=240 r2=1k'))), inline=False)
+            embed.add_field(
+            name="How to use this?",
+                value=f"""With this command you can calculate required resistor values for an LM317 in CV mode.
+                Example: `{self.bot.command_prefix}lm317 vout=10v r1=240`to find r2.
+                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
+                as it just confuses the bot (don't use R either).
+                You can also use `{self.bot.command_prefix}317cv`, `{self.bot.command_prefix}cv317` and `{self.bot.command_prefix}lm317cc`.
+                For CC use `lm317cc`.
+                """,
+                inline=True)
+                # TODO
+                # Add something to automatically grab the aliases and command name
+            await ctx.send(embed=embed)
+        else:
+            args_parsed = parse_input(args)
+            print(args_parsed)
+            try:
+                res = calculate_lm317(args_parsed)
+                embed = discord.Embed()
+                embed.add_field(name="Image", value=draw_lm317(res), inline=False)
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
+                await ctx.send(embed=embed)
+            except InputOutOfRangeError:
+                await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
+                return
+            except InputDifferenceError:
+                await util.errormsg(ctx, "Difference between input and output voltage is outside of datasheet recommended values.")
+                return
+            except TooFewArgsError:
+                await util.errormsg(ctx, "Not enough arguments to compute anything.")
+                return
 
 
 def setup(bot):
