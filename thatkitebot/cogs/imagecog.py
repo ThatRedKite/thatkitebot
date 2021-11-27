@@ -18,18 +18,17 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 import asyncio
+import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
 from io import BytesIO
 import discord
-import imageio
 from discord.ext import commands
 from typing import Optional
 from os.path import join
 from PIL import ImageDraw, ImageFont, Image
 from wand.image import Image as WandImage
 from wand.color import Color
-from numpy import array
 from thatkitebot.backend import util
 
 
@@ -144,6 +143,7 @@ def deepfry(buf, fn):
 class ImageStuff(commands.Cog, name="image commands"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.sep = asyncio.Semaphore(12)
         self.pp = ProcessPoolExecutor(max_workers=4)
         self.td = bot.tempdir  # temp directory
         self.dd = bot.datadir  # data directory
@@ -153,7 +153,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.tenor_pattern = re.compile("^https://tenor.com\S+-(\d+)$")
 
     # this function is originally from iangecko's pyrobot, modifications were made for this bot
-    async def get_last_image(self, ctx):
+    async def get_last_image(self, ctx, return_buffer=False):
         # search past 30 messages for suitable media
         attachment = None
         url = None
@@ -185,7 +185,12 @@ class ImageStuff(commands.Cog, name="image commands"):
         else:
             return None
         filetype = re.search("(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
-        return blob, filename, url, filetype
+        if not return_buffer:
+            return blob, filename, url, filetype
+        else:
+            buf = BytesIO(blob)
+            buf.seek(0)
+            return buf, filename, url, filetype
 
     async def cog_check(self, ctx):
         is_enabled = self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
@@ -193,26 +198,31 @@ class ImageStuff(commands.Cog, name="image commands"):
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed
 
+    async def image_worker(self, func, name):
+        async with self.sep:
+            b2, fn = await self.ll.run_in_executor(self.pp, func)
+            print(fn)
+            if fn < 0:
+                a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
+                return a, None
+        embed = discord.Embed(title="processed image")
+        embed.set_image(url=f"attachment://{name}.png")
+        file = discord.File(BytesIO(b2), filename=f"{name}.png")
+        return embed, file
+
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, magik, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=1), "magik")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="magik.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.channel)
     @commands.command()
-    async def pfp(self, ctx, user: Optional[discord.User] = None):
+    async def pfp(self, ctx, user: Optional[discord.Member] = None):
         """sends the pfp of someone"""
         if not user:
             user = ctx.message.author
@@ -222,156 +232,90 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, deepfry, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(deepfry, buf=buf, fn=1), "deepfry")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="deepfry.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, wide, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(wide, buf=buf, fn=1), "wide")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="wide.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
         """remove the alpha channel and replace it with white"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
-        async with ctx.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, opacify, buf, 1)
-            b2, fn = await future
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(functools.partial(opacify, buf=buf, fn=1), "opacify")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-            file = discord.File(BytesIO(b2), filename="opacify.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inflate"])
     async def explode(self, ctx: commands.Context):
-        """explode an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        """Explodes an image"""
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, explode, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(explode, buf=buf, fn=1), "explode")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-            file = discord.File(BytesIO(b2), filename="explode.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["deflate"])
     async def implode(self, ctx: commands.Context):
-        """implode an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        """Implodes an image"""
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, implode, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(implode, buf=buf, fn=1), "implode")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="implode.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inverse", "anti"])
     async def invert(self, ctx: commands.Context):
         """implode an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, invert, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(invert, buf=buf, fn=1), "inverted")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="invert.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
-        """reduce the amount of colors of an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, reduce, buf, 1)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(reduce, buf=buf, fn=1), "reduced")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="reduce.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(5, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            future = self.ll.run_in_executor(self.pp, swirl, buf, 1, degree)
-            b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(swirl, buf=buf, fn=1, angle=degree), "swirled")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-        file = discord.File(BytesIO(b2), filename="swirl.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """Adds a caption to an image."""
-        blob, filename, url, filetype = await self.get_last_image(ctx)
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            buf = BytesIO(blob)
-            buf.seek(0)
-            if self.ll.is_running():
-                future = self.ll.run_in_executor(self.pp, caption, buf, 1, text, self.dd)
-                b2, fn = await future
+            embed, file = await self.image_worker(functools.partial(caption, buf, 1, text, self.dd), "captioned")
             buf.close()
-            if fn < 0:
-                await util.errormsg(ctx, "Your image is too large! Image should be smaller than 3000x3000")
-                return
-
-        file = discord.File(BytesIO(b2), filename="explode.png")
-        await ctx.send(file=file)
+        await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 20, commands.BucketType.user)
     @commands.command()
