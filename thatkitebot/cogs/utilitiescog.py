@@ -89,7 +89,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
 
     @commands.cooldown(1, 100, commands.BucketType.user)
     @commands.command(pass_context=True)
-    async def eva(ctx, *, cmd):
+    async def eval(ctx, *, cmd):
         output = Popen(["python","-c", f'{cmd}'], stdout=PIPE).communicate()[0]
         await ctx.send(f"```{output}```")
 
