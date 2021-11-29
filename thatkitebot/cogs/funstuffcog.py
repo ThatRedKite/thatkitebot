@@ -183,7 +183,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.check(can_send_image)
     @commands.command(name="fakefur", hidden=True)
     async def _tfdne(self, ctx):
-        """Send an image from thisfursonadoesnotexist.com :amsmilies:"""
+        """Send an image from thisfursonadoesnotexist.com <:amsmiles:910537357613228072>"""
         file, embed = await url.tfdne(self.bot.aiohttp_session)
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
