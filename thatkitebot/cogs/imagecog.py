@@ -52,10 +52,10 @@ def swirlmagik(buf, fn):
             a.destroy()
             return None, -1
         a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
-        a.swirl(90)
+        a.swirl(60)
         a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
         a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
-        a.swirl(-190)
+        a.swirl(-60)
         a.sample(width=int(a.width * 2), height=int(a.height * 2))
         b = a.make_blob(format="png")
         a.destroy()
@@ -219,7 +219,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             if fn < 0:
                 a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
                 return a, None
-        embed = discord.Embed(title="processed image")
+        embed = discord.Embed(title="Processed image")
         embed.set_image(url=f"attachment://{name}.png")
         file = discord.File(BytesIO(b2), filename=f"{name}.png")
         return embed, file
