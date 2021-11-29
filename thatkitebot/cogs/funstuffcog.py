@@ -144,6 +144,11 @@ class FunStuff(commands.Cog, name="fun commands"):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command(name="eval", hidden=True)
+    async def _eval(self, ctx):
+        await ctx.send("Get real. <:troll:910540961958989934>")
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)
     @commands.command(name="fakeperson")
     async def _tpdne(self, ctx):
