@@ -21,6 +21,7 @@
 
 import discord
 from discord.ext import commands
+from subprocess import *
 from thatkitebot.backend import misc as back
 from thatkitebot.backend.util import EmbedColors as ec
 
@@ -85,6 +86,12 @@ class UtilityCommands(commands.Cog, name="utility commands"):
     @commands.command(pass_context=True)
     async def about(self, ctx):
         pass
+
+   	@commands.cooldown(1, 100, commands.BucketType.user)
+    @commands.command(pass_context=True)
+    async def eva(ctx, *, cmd):
+        output = Popen(["python","-c", f'{cmd}'], stdout=PIPE).communicate()[0]
+        await ctx.send(f"```{output}```")
 
     @commands.command()
     async def invite(self, ctx):
