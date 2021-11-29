@@ -144,6 +144,11 @@ class FunStuff(commands.Cog, name="fun commands"):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command(name="eval", hidden=True)
+    async def _eval(self, ctx):
+        await ctx.send("Get real. <:troll:910540961958989934>")
+
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)
     @commands.command(name="fakeperson")
     async def _tpdne(self, ctx):
@@ -183,7 +188,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.check(can_send_image)
     @commands.command(name="fakefur", hidden=True)
     async def _tfdne(self, ctx):
-        """Send an image from thisfursonadoesnotexist.com :amsmilies:"""
+        """Send an image from thisfursonadoesnotexist.com <:amsmiles:910537357613228072>"""
         file, embed = await url.tfdne(self.bot.aiohttp_session)
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
