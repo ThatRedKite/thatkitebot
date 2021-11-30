@@ -207,7 +207,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             return buf, filename, url, filetype
 
     async def cog_check(self, ctx):
-        is_enabled = self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
+        is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed

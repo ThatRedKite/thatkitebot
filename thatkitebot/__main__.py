@@ -27,6 +27,7 @@ import aiohttp
 import psutil
 import discord
 from discord.ext import commands
+import aioredis
 
 import thatkitebot.tkb_first_setup
 
@@ -42,7 +43,7 @@ intents.reactions = False
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 
-with redis.Redis(host="redis", db=0,charset="utf-8", decode_responses=True) as tr:
+with redis.Redis(host="redis", db=0, charset="utf-8", decode_responses=True) as tr:
     print("Loading tokens from redis")
     tokens = tr.mget(["DISCORDTOKEN", "TENORTOKEN", "PREFIX"])
     if None in tokens:
@@ -89,7 +90,7 @@ class ThatKiteBot(commands.Bot):
         self.tenortoken = tt
         # sessions
         self.loop.run_until_complete(self.aiohttp_start())
-        self.redis = redis.Redis(host="redis", db=1, charset="utf8", decode_responses=True)
+        self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
 
         # bot status info
         self.cpu_usage = 0
