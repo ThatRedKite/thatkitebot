@@ -121,13 +121,13 @@ def draw_lm317_cc(indict):
     ```
     \n
 Vin = {vin}V                         
-     ┌──────────┐     Iout = {iout}A    
->────┤IN     OUT├────┬──> 
+     ┌──────────┐         
+>────┤IN     OUT├────┐ 
      │   ADJ    │   ┌┴┐
      └────┬─────┘   │ │ R1 = {r1}Ω
           │         └┬┘
-          └──────────┘
-
+          └──────────┴──>
+                      Iout = {iout}A
     ```
     """
 
@@ -187,10 +187,14 @@ def calculate_divider(mode, b):
 
 
 def calculate_lm317(b):
+    if "iout" in b:
+        return(calculate_lm317_cc(b))
     try:
         vin = si_prefix.si_parse(b["vin"])
         if not 3.0 <= vin <= 40.0:
             raise InputOutOfRangeError("Voltage out of Range")
+        if vin < 0:
+            raise ImpossibleValueError("Negative voltage")
         specificVin = True
     except:
         specificVin = False
@@ -220,6 +224,8 @@ def calculate_lm317(b):
         raise InputDifferenceError("In-Out difference out of Range") # Input-to-output differential voltage out of range
     if not specificVin:
         vin = str(vin) + "V to 40.0"
+    if vout < 0 or r1 < 0 or r2 < 0:
+        raise ImpossibleValueError("Negative voltage")
     return dict(r1=r1, r2=round(r2,1), vin=vin, vout=si_prefix.si_format(vout), E24_r1=si_prefix.si_format(convert_E24(r1)), E24_r2=si_prefix.si_format(convert_E24(r2)))
 
 
@@ -374,6 +380,18 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             args_parsed = parse_input(args)
             try:
                 res = calculate_lm317(args_parsed)
+                if "iout" in res:
+                    res = calculate_lm317_cc(args_parsed)
+                    embed = discord.Embed()
+                    embed.add_field(name="Image", value=draw_lm317_cc(res), inline=False)
+                    embed.add_field(
+                    name="Values",
+                    value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
+                    embed.add_field(
+                    name="Closest E24 resistor values",
+                    value=f"R1 = __{res['r1']}Ω__")
+                    await ctx.send(embed=embed)
+                    return
                 embed = discord.Embed()
                 embed.add_field(name="Image", value=draw_lm317(res), inline=False)
                 embed.add_field(
@@ -391,6 +409,9 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 return
             except TooFewArgsError:
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
+                return
+            except ImpossibleValueError:
+                await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
                 return
 
     @commands.command(name="lm317cc", aliases=["317cc", "cc317", "LM317cc"])

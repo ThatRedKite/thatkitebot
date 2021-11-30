@@ -214,8 +214,11 @@ class ImageStuff(commands.Cog, name="image commands"):
 
     async def image_worker(self, func, name):
         async with self.sep:
-            b2, fn = await self.ll.run_in_executor(self.pp, func)
-            print(fn)
+            try:
+                b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
+            except asyncio.TimeoutError:
+                e = await util.errormsg("Processing timed out", embed_only=True)
+                return e, None
             if fn < 0:
                 a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
                 return a, None
@@ -230,7 +233,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=1), "magik")
+            embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=0), "magik")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -261,7 +264,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """deepfry an image"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(deepfry, buf=buf, fn=1), "deepfry")
+            embed, file = await self.image_worker(functools.partial(deepfry, buf=buf, fn=2), "deepfry")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -271,7 +274,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Horizonally stretch an image"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(wide, buf=buf, fn=1), "wide")
+            embed, file = await self.image_worker(functools.partial(wide, buf=buf, fn=3), "wide")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -281,7 +284,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """remove the alpha channel and replace it with white"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(opacify, buf=buf, fn=1), "opacify")
+            embed, file = await self.image_worker(functools.partial(opacify, buf=buf, fn=4), "opacify")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -291,7 +294,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Explodes an image"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(explode, buf=buf, fn=1), "explode")
+            embed, file = await self.image_worker(functools.partial(explode, buf=buf, fn=5), "explode")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -301,7 +304,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Implodes an image"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(implode, buf=buf, fn=1), "implode")
+            embed, file = await self.image_worker(functools.partial(implode, buf=buf, fn=6), "implode")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -311,7 +314,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """implode an image"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(invert, buf=buf, fn=1), "inverted")
+            embed, file = await self.image_worker(functools.partial(invert, buf=buf, fn=7), "inverted")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -320,7 +323,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def reduce(self, ctx: commands.Context):
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(reduce, buf=buf, fn=1), "reduced")
+            embed, file = await self.image_worker(functools.partial(reduce, buf=buf, fn=8), "reduced")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -330,7 +333,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """swirl an image"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(swirl, buf=buf, fn=1, angle=degree), "swirled")
+            embed, file = await self.image_worker(functools.partial(swirl, buf=buf, fn=9, angle=degree), "swirled")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -340,7 +343,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Adds a caption to an image."""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(caption, buf, 1, text, self.dd), "captioned")
+            embed, file = await self.image_worker(functools.partial(caption, buf, 10, text, self.dd), "captioned")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
