@@ -36,8 +36,6 @@ class ListenerCog(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
         match type(error):
-            case commands.CommandNotFound:
-                await errormsg(ctx, f"unknown command | do `{ctx.prefix}help` in order to see what i can do")
             case commands.CommandOnCooldown:
                 await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
             case commands.CommandInvokeError:
