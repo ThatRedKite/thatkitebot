@@ -84,7 +84,6 @@ async def imagedownloader(session: aiohttp.ClientSession, url: str):
 
 async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):
     urls = {}
-    outlist = list()
     headers = {"User-Agent": "ThatKiteBot/3.0", "content-type": "application/xml"}
     payload = {"page": "dapi", "tags": tags, "s": "post", "q": "index", "limit": 100}
     for x in range(0, 10):  # update the :updatevalue: from 0 to 10
@@ -96,8 +95,7 @@ async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, cou
                 urls.update({post.attrs.get("file_url"): int(post.attrs.get("score"))})
 
     so = sorted(urls.items(), key=lambda x: x[1], reverse=True)
-    for url, score in so:
-        outlist.append(url)
+    outlist = [discord.Embed(title="Here is an image from r34.xxx").set_image(url=url) for url, score in so]
     if islist and outlist:
         return choices(outlist, k=count)
     elif not islist and outlist:
