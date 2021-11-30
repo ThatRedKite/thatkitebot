@@ -40,7 +40,6 @@ class SettingsCog(commands.Cog, name="settings"):
             if m.channel == channel and m.author is author:
                 return m.content.lower() in yes_choices
 
-        self.redis.hset(ctx.guild.id, pp(name), pp(arg))
         await ctx.send(f"Add the setting `{name}` with the value `{arg}` to the settings? (y/n)")
         msg = await self.bot.wait_for("message", timeout=10, check=check)
         if msg.content in yes_choices:
