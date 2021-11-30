@@ -214,10 +214,12 @@ class ImageStuff(commands.Cog, name="image commands"):
 
     async def image_worker(self, func, name):
         async with self.sep:
-            b2, fn = await self.ll.run_in_executor(self.pp, func)
-            print(fn)
+            try:
+                b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
+            except asyncio.TimeoutError:
+                print('timeout1!')
             if fn < 0:
-                a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
+                a = await asyncio.wait_for(util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True), timeout=30.0)
                 return a, None
         embed = discord.Embed(title="Processed image")
         embed.set_image(url=f"attachment://{name}.png")
@@ -229,6 +231,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        #async with Promise.all([ctx.channel.typing(), timeout(1.5)]):
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=1), "magik")
             buf.close()
