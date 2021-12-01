@@ -19,4 +19,5 @@ RUN pip3 install -U .[speed]
 
 RUN pip3 install --upgrade pip && pip3 install -r requirements.txt
 
+WORKDIR /app/
 
