@@ -35,11 +35,11 @@ tempdir = "/tmp/tkb/"
 datadir = "/app/data"
 
 intents = discord.Intents.default()
-intents.typing = False
+intents.typing = True
 intents.members = True
 intents.invites = False
-intents.presences = False
-intents.reactions = False
+intents.presences = True
+intents.reactions = True
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 

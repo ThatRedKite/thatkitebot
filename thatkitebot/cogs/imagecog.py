@@ -256,7 +256,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """sends the pfp of someone"""
         if not user:
             user = ctx.message.author
-        await ctx.send(user.avatar_url)
+        await ctx.send(user.avatar.url)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command()
