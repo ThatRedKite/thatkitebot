@@ -133,6 +133,7 @@ Vin = {vin}V
 
 
 def parse_input(s):
+    s = s.lower()
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
     for key in s_dict.keys():
@@ -324,7 +325,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     @commands.command(name="cap_energy", aliases=["joule", "energy", "ce", "charge"])
     async def capacitor_energy(self, ctx, *, args = None):
         """
-        Calculate the capacitor energy and charge in joules and coulomb using voltage and capacitance.
+        Calculate the capacitor energy and charge in joules and coulomb using voltage and capacitance. Run the command for more details.
         """
         if not args:
             embed = discord.Embed(title="Capacitor energy calculation")
@@ -354,7 +355,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     @commands.command(name="lm317", aliases=["317cv", "cv317", "LM317", "lm317cv"])
     async def lm317(self, ctx, *, args = None):
         """
-        Calculate resistor values for an LM317 in CV mode for CC mode use `lm317cc`.
+        Calculate resistor values for an LM317 in CV mode for CC mode use `lm317cc`. Run the command for more details.
         """
         if not args:
             random_lm = {
@@ -417,7 +418,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     @commands.command(name="lm317cc", aliases=["317cc", "cc317", "LM317cc"])
     async def lm317cc(self, ctx, *, args = None):
         """
-        Calculate resistor values for an LM317 in CC mode for CV mode use `lm317cv`.
+        Calculate resistor values for an LM317 in CC mode for CV mode use `lm317cv`. Run the command for more details.
         """
         if not args:
             random_lm = {

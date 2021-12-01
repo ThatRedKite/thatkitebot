@@ -22,7 +22,11 @@ from discord.ext import commands
 from wand.image import Image as WandImage
 from wand.color import Color as WandColor
 import discord
+import si_prefix
+from math import sin, atan
 from io import BytesIO
+from thatkitebot.backend import util
+from thatkitebot.cogs.electronics import parse_input, TooFewArgsError
 
 
 def wavelength_to_rgb(wavelength, gamma=0.98):
@@ -74,6 +78,23 @@ def wavelength_to_rgb(wavelength, gamma=0.98):
     return int(R), int(G), int(B)
 
 
+def calculate_diffraction(p):
+    if "lmm" in p:
+        Lmm = si_prefix.si_parse(p["lmm"])
+    else:
+        raise TooFewArgsError()
+    if "l" in p:
+        L = si_prefix.si_parse(p["l"])
+    else:
+        raise TooFewArgsError()
+    if "d" in p:
+        D = si_prefix.si_parse(p["d"])
+    else:
+        raise TooFewArgsError()
+    res = 1/(Lmm)/1000*sin((atan((D)/(2*L))))
+    return dict(res=si_prefix.si_format(res), Lmm=Lmm, L=si_prefix.si_format(L), D=si_prefix.si_format(D))
+
+
 class LaserCog(commands.Cog, name="Laser commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -81,6 +102,9 @@ class LaserCog(commands.Cog, name="Laser commands"):
     @commands.cooldown(5, 10, commands.BucketType.channel)
     @commands.command(aliases=["autism"])
     async def spectrum(self, ctx):
+        """
+        Returns a picture of visible light spectrum.
+        """
         embed = discord.Embed(title="Visible Light Spectrum")
         embed.set_image(url="https://media.discordapp.net/attachments/910895468001767484/913348594269036584/unknown.png")
         await ctx.send(embed=embed)
@@ -88,11 +112,17 @@ class LaserCog(commands.Cog, name="Laser commands"):
     @commands.cooldown(1, 10, commands.BucketType.channel)
     @commands.group()
     async def laser(self, ctx):
+        """
+        General command for laser related things.
+        """
         if not ctx.subcommand_passed:
             await self.goggles(ctx)
 
     @laser.command(aliases=["glasses", "safety"])
     async def goggles(self, ctx):
+        """
+        Returns a laser safety information.
+        """
         embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
                               description="""5mW is the safety limit where your blink reflex should save you from any damage.
                                Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
@@ -127,6 +157,9 @@ class LaserCog(commands.Cog, name="Laser commands"):
 
     @laser.command()
     async def color(self, ctx, color: str):
+        """
+        Returns an approximation of light color given a wavelength.
+        """
         color = int(color.lower().replace("nm", ""))
         new_color = wavelength_to_rgb(color)
         with WandImage(width=256, height=256, background=WandColor(f"rgb{new_color}")) as colorimg:
@@ -138,6 +171,30 @@ class LaserCog(commands.Cog, name="Laser commands"):
                               "eyes and other factors play a role\n but"
                               "it is as close as it can get")
         await ctx.send(file=file, embed=embed)
+
+    @laser.command(aliases=["diff"])
+    async def diffraction(self, ctx, *, args = None):
+        """
+        Calculates the wavelength of a laser using a diffraction grating. Run command for more information.
+        """
+        if args == None:
+            embed=discord.Embed(title="Diffraction Grating Equation", description="This is to calculate the wavelength of a laser using a diffraction grating")
+            embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
+            embed.add_field(name="Measurements and information you need", value="The diffraction grating's slits per mm (L/mm) \n Distance from the diffraction grating to a wall (L) \n Distance between split beams (D) ", inline=False)
+            embed.add_field(name="Use the bot for calculations.", value="You can use this command to do the calculation, for example: `{}laser diffraction lmm=1000 D=14.3 L=11.3`".format(self.bot.command_prefix))
+            await ctx.send(embed=embed)
+        else:
+            try:
+                p = parse_input(args)
+                res = calculate_diffraction(p)
+                embed=discord.Embed(title="Diffraction Grating Equation")
+                embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
+                embed.add_field(name="Values:", value=f"L/mm = {res['Lmm']}\nL = {res['L']}m\nD = {res['D']}m")
+                embed.add_field(name="Wavelength value:", value="{}m".format(str(res["res"])))
+                await ctx.send(embed=embed)
+            except TooFewArgsError:
+                await util.errormsg(ctx, "Not enough arguments to compute anything.")
+                return
 
 
 def setup(bot):
