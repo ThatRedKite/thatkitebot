@@ -55,6 +55,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
+    @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(name="markov", aliases=["mark", "m"])
     async def _markov(self, ctx, user: typing.Optional[discord.Member],  channel: typing.Optional[discord.TextChannel]):
         """
