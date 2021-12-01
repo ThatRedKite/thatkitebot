@@ -55,7 +55,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 90, commands.BucketType.user)
     @commands.command(name="markov", aliases=["mark", "m"])
     async def _markov(self, ctx, user: typing.Optional[discord.Member],  channel: typing.Optional[discord.TextChannel]):
         """
@@ -69,11 +69,9 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.channel.typing():
             try:
                 messagelist = [message.clean_content for message in self.bot.cached_messages if message.author is user and message.guild is ctx.guild and ctx.channel is channel]
-                async for message in channel.history(limit=1500).filter(lambda m: m.author is user):
-                    messagelist.append(str(message.clean_content))
-
-                async for message in channel.history(limit=1500, oldest_first=True).filter(lambda m: m.author is user):
-                    messagelist.append(str(message.clean_content))
+                if not len(messagelist) > 150:
+                    async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
+                        messagelist.append(str(message.clean_content))
             except discord.Forbidden:
                 await util.errormsg(ctx, "It seems like I don't have access to that channel <:molvus:798286553553436702>")
                 return
