@@ -25,6 +25,7 @@ import discord
 import si_prefix
 from math import sin, atan
 from io import BytesIO
+from thatkitebot.backend import util
 from thatkitebot.cogs.electronics import parse_input, TooFewArgsError
 
 
@@ -168,13 +169,17 @@ class LaserCog(commands.Cog, name="Laser commands"):
             embed.set_footer(text="The formula is 1/(L/mm)/1000*sin((arctan((D)/(2*L))))")
             await ctx.send(embed=embed)
         else:
-            p = parse_input(args)
-            res = calculate_diffraction(p)
-            embed=discord.Embed(title="Diffraction Grating Equation")
-            embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
-            embed.add_field(name="Values:", value=f"L/mm = {res['Lmm']}\nL = {res['L']}m\nD = {res['D']}m")
-            embed.add_field(name="Wavelength value:", value="{}m".format(str(res["res"])))
-            await ctx.send(embed=embed)
+            try:
+                p = parse_input(args)
+                res = calculate_diffraction(p)
+                embed=discord.Embed(title="Diffraction Grating Equation")
+                embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
+                embed.add_field(name="Values:", value=f"L/mm = {res['Lmm']}\nL = {res['L']}m\nD = {res['D']}m")
+                embed.add_field(name="Wavelength value:", value="{}m".format(str(res["res"])))
+                await ctx.send(embed=embed)
+            except TooFewArgsError:
+                await util.errormsg(ctx, "Not enough arguments to compute anything.")
+                return
 
 
 def setup(bot):
