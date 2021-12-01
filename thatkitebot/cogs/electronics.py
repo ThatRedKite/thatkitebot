@@ -133,6 +133,7 @@ Vin = {vin}V
 
 
 def parse_input(s):
+    s = s.lower()
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
     for key in s_dict.keys():

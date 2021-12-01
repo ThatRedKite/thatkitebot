@@ -22,7 +22,10 @@ from discord.ext import commands
 from wand.image import Image as WandImage
 from wand.color import Color as WandColor
 import discord
+import si_prefix
+from math import sin, atan
 from io import BytesIO
+from thatkitebot.cogs.electronics import parse_input, TooFewArgsError
 
 
 def wavelength_to_rgb(wavelength, gamma=0.98):
@@ -72,6 +75,23 @@ def wavelength_to_rgb(wavelength, gamma=0.98):
     G *= 255
     B *= 255
     return int(R), int(G), int(B)
+
+
+def calculate_diffraction(p):
+    if "lmm" in p:
+        Lmm = si_prefix.si_parse(p["lmm"])
+    else:
+        raise TooFewArgsError()
+    if "l" in p:
+        L = si_prefix.si_parse(p["l"])
+    else:
+        raise TooFewArgsError()
+    if "d" in p:
+        D = si_prefix.si_parse(p["d"])
+    else:
+        raise TooFewArgsError()
+    res = 1/(Lmm)/1000*sin((atan((D)/(2*L))))
+    return dict(res=si_prefix.si_format(res), Lmm=Lmm, L=si_prefix.si_format(L), D=si_prefix.si_format(D))
 
 
 class LaserCog(commands.Cog, name="Laser commands"):
@@ -138,6 +158,23 @@ class LaserCog(commands.Cog, name="Laser commands"):
                               "eyes and other factors play a role\n but"
                               "it is as close as it can get")
         await ctx.send(file=file, embed=embed)
+
+    @laser.command(aliases=["diff"])
+    async def diffraction(self, ctx, *, args = None):
+        if args == None:
+            embed=discord.Embed(title="Diffraction Grating Equation", description="This is to calculate the wavelength of a laser using a diffraction grating")
+            embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
+            embed.add_field(name="Measurements and information you need", value="The diffraction grating's slits per mm (L/mm) \n Distance from the diffraction grating to a wall (L) \n Distance between split beams (D) ", inline=False)
+            embed.set_footer(text="The formula is 1/(L/mm)/1000*sin((arctan((D)/(2*L))))")
+            await ctx.send(embed=embed)
+        else:
+            p = parse_input(args)
+            res = calculate_diffraction(p)
+            embed=discord.Embed(title="Diffraction Grating Equation")
+            embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
+            embed.add_field(name="Values:", value=f"L/mm = {res['Lmm']}\nL = {res['L']}m\nD = {res['D']}m")
+            embed.add_field(name="Wavelength value:", value="{}m".format(str(res["res"])))
+            await ctx.send(embed=embed)
 
 
 def setup(bot):
