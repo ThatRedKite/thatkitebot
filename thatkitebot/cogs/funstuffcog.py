@@ -18,8 +18,6 @@
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
 
-import argparse
-import os
 import discord
 import markovify
 from discord.ext import commands
@@ -73,7 +71,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
                         messagelist.append(str(message.clean_content))
             except discord.Forbidden:
-                await util.errormsg(ctx, "It seems like I don't have access to that channel <:molvus:798286553553436702>")
+                await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
             try:
                  gen1 = markovify.NewlineText("\n".join(messagelist))
@@ -109,7 +107,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
-                embed.set_thumbnail(url=user.avatar_url)
+                embed.set_thumbnail(url=user.avatar.url)
                 await ctx.send(embed=embed)
             else:
                 await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
@@ -196,7 +194,6 @@ class FunStuff(commands.Cog, name="fun commands"):
         file, embed = await url.tfdne(self.bot.aiohttp_session)
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
-
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)
