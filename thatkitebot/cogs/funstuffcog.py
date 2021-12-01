@@ -144,6 +144,9 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.check(can_send_image)
     @commands.command(name="1984")
     async def _1984(self, ctx):
+        """
+        Literally 1984
+        """
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
