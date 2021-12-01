@@ -100,7 +100,7 @@ class BetterHelpCommand(commands.HelpCommand):
         e.add_field(name='Name', value=(command.qualified_name or command.name), inline=False)
         e.add_field(name='Signature', value=(self.signature(command)), inline=False)
         e.add_field(name='Help', value=(command.help or '[no help]'), inline=False)
-        e.add_field(name='Synonyms', value=('`'+"`,`".join(command.aliases)+'`' or '[no help]'), inline=False)
+        e.add_field(name='Synonyms', value=('`'+"`, `".join(command.aliases)+'`' or '[no help]'), inline=False)
         await self.send_embed(e)
 
 

@@ -102,6 +102,9 @@ class LaserCog(commands.Cog, name="Laser commands"):
     @commands.cooldown(5, 10, commands.BucketType.channel)
     @commands.command(aliases=["autism"])
     async def spectrum(self, ctx):
+        """
+        Returns a picture of visible light spectrum.
+        """
         embed = discord.Embed(title="Visible Light Spectrum")
         embed.set_image(url="https://media.discordapp.net/attachments/910895468001767484/913348594269036584/unknown.png")
         await ctx.send(embed=embed)
@@ -109,11 +112,17 @@ class LaserCog(commands.Cog, name="Laser commands"):
     @commands.cooldown(1, 10, commands.BucketType.channel)
     @commands.group()
     async def laser(self, ctx):
+        """
+        General command for laser related things.
+        """
         if not ctx.subcommand_passed:
             await self.goggles(ctx)
 
     @laser.command(aliases=["glasses", "safety"])
     async def goggles(self, ctx):
+        """
+        Returns a laser safety information.
+        """
         embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
                               description="""5mW is the safety limit where your blink reflex should save you from any damage.
                                Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
@@ -148,6 +157,9 @@ class LaserCog(commands.Cog, name="Laser commands"):
 
     @laser.command()
     async def color(self, ctx, color: str):
+        """
+        Returns an approximation of light color given a wavelength.
+        """
         color = int(color.lower().replace("nm", ""))
         new_color = wavelength_to_rgb(color)
         with WandImage(width=256, height=256, background=WandColor(f"rgb{new_color}")) as colorimg:
@@ -162,6 +174,9 @@ class LaserCog(commands.Cog, name="Laser commands"):
 
     @laser.command(aliases=["diff"])
     async def diffraction(self, ctx, *, args = None):
+        """
+        Calculates the wavelength of a laser using a diffraction grating. Run command for more information.
+        """
         if args == None:
             embed=discord.Embed(title="Diffraction Grating Equation", description="This is to calculate the wavelength of a laser using a diffraction grating")
             embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
