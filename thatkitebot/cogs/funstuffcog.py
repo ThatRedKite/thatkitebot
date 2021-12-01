@@ -56,7 +56,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, channel: typing.Optional[discord.TextChannel], user: typing.Optional[discord.Member]):
+    async def _markov(self, ctx, user: typing.Optional[discord.Member],  channel: typing.Optional[discord.TextChannel]):
         if not user:
             user = ctx.message.author
         if not channel:
@@ -78,8 +78,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                 await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
                 return
             genlist = set()
-            for i in range(50):
-
+            for i in range(30):
                     a = gen1.make_sentence(tries=30)
                     if a:
                         genlist.add(a)
@@ -88,23 +87,22 @@ class FunStuff(commands.Cog, name="fun commands"):
                         genlist.add(a)
 
             try:
-                 gen2 = markovify.Text('. '.join([a for a in genlist if a]))
+                 gen2 = markovify.NewlineText('\n'.join([a for a in genlist if a]))
             except KeyError:
                 await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
                 return
 
             genlist2 = set()
-            for i in range(5):
-
-                    a = gen2.make_sentence(tries=30)
-                    if a:
-                        genlist2.add(a)
+            for i in range(3):
+                    b = gen2.make_sentence(tries=20)
+                    if b:
+                        genlist2.add(b)
                     else:
-                        a = gen2.make_short_sentence(5)
-                        genlist2.add(a)
+                        b = gen2.make_short_sentence(10)
+                        genlist2.add(b)
 
             if len(genlist) > 0:
-                out = "".join([a for a in genlist2 if a])
+                out = ". ".join([a for a in genlist2 if a])
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
