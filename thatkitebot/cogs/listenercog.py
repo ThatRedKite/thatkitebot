@@ -20,12 +20,9 @@
 
 
 import discord
-import asyncio
-import traceback 
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from thatkitebot.backend.util import errormsg
-import gc
 
 
 class ListenerCog(commands.Cog):
@@ -59,6 +56,10 @@ class ListenerCog(commands.Cog):
     async def on_ready(self):
         print("\nbot successfully started!")
         self.reset_invoke_counter.start()
+        await self.bot.change_presence(
+            activity=discord.Activity(name="a battle against itself", type=5),
+            status=discord.Status.online,
+        )
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
