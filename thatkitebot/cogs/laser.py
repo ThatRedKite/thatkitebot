@@ -181,7 +181,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
             embed=discord.Embed(title="Diffraction Grating Equation", description="This is to calculate the wavelength of a laser using a diffraction grating")
             embed.set_image(url="https://cdn.discordapp.com/attachments/909159696798220400/912064371205738566/kitething5fff.png")
             embed.add_field(name="Measurements and information you need", value="The diffraction grating's slits per mm (L/mm) \n Distance from the diffraction grating to a wall (L) \n Distance between split beams (D) ", inline=False)
-            embed.set_footer(text="The formula is 1/(L/mm)/1000*sin((arctan((D)/(2*L))))")
+            embed.add_field(name="Use the bot for calculations.", value="You can use this command to do the calculation, for example: `{}laser diffraction lmm=1000 D=14.3 L=11.3`".format(self.bot.command_prefix))
             await ctx.send(embed=embed)
         else:
             try:
