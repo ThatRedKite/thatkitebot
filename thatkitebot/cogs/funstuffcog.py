@@ -57,6 +57,10 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.command(name="markov", aliases=["mark", "m"])
     async def _markov(self, ctx, user: typing.Optional[discord.Member],  channel: typing.Optional[discord.TextChannel]):
+        """
+        This command generates a bunch of nonsense text by feeding your messages to a markov chain.
+        Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
+        """
         if not user:
             user = ctx.message.author
         if not channel:
