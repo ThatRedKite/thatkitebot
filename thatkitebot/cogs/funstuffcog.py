@@ -157,7 +157,10 @@ class FunStuff(commands.Cog, name="fun commands"):
             "was it worth it?", "Thanks I hate it.", "actually stop", "not funny",
             "furry <:troll:910540961958989934>", "you wish", "pff", "DO\nNOT\nDISTURB",
             "busy", "sucks so bad", "soon", "no?", "👀", "in your dreams", "smh",
-            "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳",
+            "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳"
+            "mm", "ehhh", "uhh", "<:zycosmoke:821821351576338534>", "🥵",
+            "\<:buraq:761567855095054367>", "hot", "Kite sounds", "uh huh", "no idea",
+            "almost nice", "scary", "negative", "mm?", "has a good ring",
         ]
         user = ctx.message.author.id
         if user == 454210418592841740 and args.lower() == "my ass":
