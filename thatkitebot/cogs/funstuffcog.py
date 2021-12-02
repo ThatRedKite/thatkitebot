@@ -156,7 +156,9 @@ class FunStuff(commands.Cog, name="fun commands"):
             ":star:", "sucks", "stop", "whatever", "I am a bot I don't have opinions, all of this is just RNG...",
             "was it worth it?", "Thanks I hate it.", "actually stop", "not funny",
             "furry <:troll:910540961958989934>", "you wish", "pff", "DO\nNOT\nDISTURB",
-            "busy",]
+            "busy", "sucks so bad", "soon", "no?", "👀", "in your dreams", "smh",
+            "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳",
+        ]
         user = ctx.message.author.id
         if user == 454210418592841740 and args.lower() == "my ass":
             await ctx.send("🍑")
