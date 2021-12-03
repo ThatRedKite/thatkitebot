@@ -23,7 +23,7 @@ import markovify
 from discord.ext import commands
 import typing
 import glob
-from random import choice, Random
+from random import choice
 from thatkitebot.backend import url, util
 
 
@@ -145,35 +145,10 @@ class FunStuff(commands.Cog, name="fun commands"):
         """
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(name="eval", aliases=["evaluate", "8ball", "opinion"])
-    async def _eval(self, ctx, *, args = None):
-        resp_list = [
-            "Get real. <:troll:910540961958989934>", "Nice", "Based", "Cringe",
-            "<:schmuck:900445607888551947>", "Ok, and?", "yeah...", "perhaps",
-            "cry about it", "unfunny", "funny", ":eggplant:", "NO!", "flawless",
-            "amazing", "splendid", "don't...", "gecko is fuming", "ok", "lol",
-            ":star:", "sucks", "stop", "whatever", "I am a bot I don't have opinions, all of this is just RNG...",
-            "was it worth it?", "Thanks I hate it.", "actually stop", "not funny",
-            "furry <:troll:910540961958989934>", "you wish", "pff", "DO\nNOT\nDISTURB",
-            "busy", "sucks so bad", "soon", "no?", "👀", "in your dreams", "smh",
-            "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳"
-            "mm", "ehhh", "uhh", "<:zycosmoke:821821351576338534>", "🥵",
-            "\<:buraq:761567855095054367>", "hot", "Kite sounds", "uh huh", "no idea",
-            "almost nice", "scary", "negative", "mm?", "has a good ring",
-        ]
-        user = ctx.message.author.id
-        if user == 454210418592841740 and args.lower() == "my ass":
-            await ctx.send("🍑")
-            return
-        if ctx.message.reference is not None:
-            str_seed = ctx.message.reference.message_id
-        else:
-            str_seed = abs(hash(str(user) + str(args))) % (10 ** 8)
-        eval_random = Random()
-        eval_random.seed(str_seed)
-        result = resp_list[eval_random.randint(0, len(resp_list) - 1 )]
-        await ctx.send(result)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command(name="eval", hidden=True)
+    async def _eval(self, ctx):
+        await ctx.send("Get real. <:troll:910540961958989934>")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)

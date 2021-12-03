@@ -148,20 +148,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="eval", aliases=["evaluate", "8ball", "opinion"])
     async def _eval(self, ctx, *, args = None):
-        resp_list = [
-            "Get real. <:troll:910540961958989934>", "Nice", "Based", "Cringe",
-            "<:schmuck:900445607888551947>", "Ok, and?", "yeah...", "perhaps",
-            "cry about it", "unfunny", "funny", ":eggplant:", "NO!", "flawless",
-            "amazing", "splendid", "don't...", "gecko is fuming", "ok", "lol",
-            ":star:", "sucks", "stop", "whatever", "I am a bot I don't have opinions, all of this is just RNG...",
-            "was it worth it?", "Thanks I hate it.", "actually stop", "not funny",
-            "furry <:troll:910540961958989934>", "you wish", "pff", "DO\nNOT\nDISTURB",
-            "busy", "sucks so bad", "soon", "no?", "👀", "in your dreams", "smh",
-            "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳"
-            "mm", "ehhh", "uhh", "<:zycosmoke:821821351576338534>", "🥵",
-            "\<:buraq:761567855095054367>", "hot", "Kite sounds", "uh huh", "no idea",
-            "almost nice", "scary", "negative", "mm?", "has a good ring",
-        ]
+        resp_list = ["Get real. <:troll:910540961958989934>", "Nice", "Based", "Cringe", "<:schmuck:900445607888551947>", "Ok, and?", "yeah...", "perhaps", "cry about it", "unfunny", "funny", ":eggplant:", "NO!", "flawless", "amazing", "splendid", "don't...", "gecko is fuming", "ok", "lol", ":star:", "sucks", "stop", "whatever", "I am a bot I don't have opinions, all of this is just RNG...", "was it worth it?", "Thanks I hate it.", "actually stop", "not funny", "furry <:troll:910540961958989934>", "you wish"]
         user = ctx.message.author.id
         if user == 454210418592841740 and args.lower() == "my ass":
             await ctx.send("🍑")
