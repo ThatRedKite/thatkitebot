@@ -160,7 +160,13 @@ class FunStuff(commands.Cog, name="fun commands"):
             "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳"
             "mm", "ehhh", "uhh", "<:zycosmoke:821821351576338534>", "🥵",
             "\<:buraq:761567855095054367>", "hot", "Kite sounds", "uh huh", "no idea",
-            "almost nice", "scary", "negative", "mm?", "has a good ring",
+            "almost nice", "scary", "negative", "mm?", "has a good ring", "why?", "iconic",
+            "epic", "rad", "neat", "accaptable", "superb", "awful", "not good", "sad", "beastly",
+            "wild", "meh...", "I am fuming", "What is that supposed to mean?", "are you trying to cancel me?",
+            "cool", "not cool", "try harder", "idk", "exceptional", "big", "massive", "I am not sure",
+            "why not?", "my ass", "worthy", "hahaha", "good one", "not great not, terrible", "is it legal?",
+            "can't", "top notch", "eval the yourself", "sounds interesting",
+            "baller", "chad", "I don't think so"
         ]
         user = ctx.message.author.id
         if user == 454210418592841740 and args.lower() == "my ass":
