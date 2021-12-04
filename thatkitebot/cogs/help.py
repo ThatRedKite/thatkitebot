@@ -42,7 +42,7 @@ class BetterHelpCommand(commands.HelpCommand):
         params = command.clean_params or {}
         for name, param in params.items():
             # slightly copied from discord.py
-            greedy = isinstance(param.annotation, commands.converter._Greedy)
+            greedy = isinstance(param.annotation, commands.converter.Greedy)
             if param.default is not param.empty:
                 should_print = param.default if isinstance(param.default, str) else param.default is not None
                 if should_print:

@@ -14,3 +14,4 @@ lxml
 scipy
 hiredis
 aioredis
+matplotlib
