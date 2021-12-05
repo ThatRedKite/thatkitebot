@@ -17,6 +17,9 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
+from math import log10, sqrt
+import matplotlib.pyplot as plt
+from io import BytesIO
 import discord
 from discord.ext import commands
 import si_prefix
@@ -131,9 +134,28 @@ Vin = {vin}V
     ```
     """
 
+def drawRC(indict):
+    fcut = indict["fcut"]
+    r1 = indict["r1"]
+    c1 = indict["c1"]
+
+    return f"""
+    ```
+    \n   
+    R1 = {r1}Ω     Fcut = {fcut}Hz
+         ┌────────┐ 
+IN ──────┤        ├─────┬────── OUT
+         └────────┘     │ C1 = {c1}F
+                     ───┴───                                      
+                     ───┬───        
+                        │   
+  ──────────────────────┴──────
+                        
+    ```
+    """
+
 
 def parse_input(s):
-    s = s.lower()
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
     for key in s_dict.keys():
@@ -251,6 +273,65 @@ def calculate_lm317_cc(b):
         raise TooFewArgsError()
     vin = "4.25V to 40.0"   
     return dict(r1=si_prefix.si_format(r1), iout=si_prefix.si_format(iout), E24_r1=si_prefix.si_format(convert_E24(r1)), vin=vin)
+
+
+def calculate_rc(b):
+    if "fcut" in b:
+        fcut = si_prefix.si_parse(b["fcut"])
+    else:
+        fcut = None
+    if "r1" in b:
+        r1 = si_prefix.si_parse(b["r1"])
+    else:
+        r1 = None
+    if "c1" in b:
+        c1 = si_prefix.si_parse(b["c1"])
+    else:
+        c1 = None
+    if not fcut and r1 is not None and c1 is not None:
+        fcut = 1 / (2 * 3.14159265359 * r1 * c1)
+    elif not r1 and fcut is not None and c1 is not None:
+        r1  = 1 / (2 * 3.14159265359 * fcut * c1)
+    elif not c1 and fcut is not None and r1 is not None:
+        c1  = 1 / (2 * 3.14159265359 * fcut * r1)
+    else:
+        raise TooFewArgsError()
+    return dict(r1=si_prefix.si_format(r1), fcut=si_prefix.si_format(fcut), E24_r1=si_prefix.si_format(convert_E24(r1)), c1=si_prefix.si_format(c1))
+
+
+def plot_rc(b):
+    d = calculate_rc(b)
+    fcut = si_prefix.si_parse(d["fcut"])
+    cap = si_prefix.si_parse(d["c1"])
+    res = si_prefix.si_parse(d["r1"])
+    fmin = 0.001
+    fmax = fcut * 1000
+    freqlist = []
+    gainlist = []
+    f = fmin
+    while(f < fmax):
+        freqlist.append(f)
+        x = 1/(2 * 3.14159265359 * f * cap)
+        vout = 10 * (x/sqrt((res ** 2)+(x ** 2)))
+        gain = 20 * log10(vout/10)
+        gainlist.append(gain)
+        #print(str(f) + "HZ - " + str(gain) + "dB")
+        f = f * 1.1
+    plt.plot(freqlist, gainlist, color="b")
+    plt.grid()
+    plt.xlabel('Frequency Hz')
+    plt.ylabel('Gain dB')
+    plt.xscale('log')
+    plt.ylim([min(gainlist),10])
+    plt.xlim([min(freqlist), max(freqlist)])
+    plt.vlines(x=fcut, ymin=-60, ymax=gainlist[freqlist.index(min(freqlist, key=lambda x:abs(x-fcut)))], color="orange", label="Cutoff frequency: {}Hz".format(d["fcut"]))
+    plt.legend()
+    fig = plt.gcf()
+    imgdata = BytesIO()
+    fig.savefig(imgdata, format='png')
+    imgdata.seek(0)  # rewind the data
+    plt.clf()
+    return imgdata
 
 
 class ElectroCog(commands.Cog, name="Electronics commands"):
@@ -390,7 +471,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                     value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
                     embed.add_field(
                     name="Closest E24 resistor values",
-                    value=f"R1 = __{res['r1']}Ω__")
+                    value=f"R1 = {res['E24_r1']}Ω\nR2 = __{res['E24_r2']}Ω__")
                     await ctx.send(embed=embed)
                     return
                 embed = discord.Embed()
@@ -465,6 +546,64 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             except ImpossibleValueError:
                 await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
                 return
+    @commands.command(name="rc", aliases=["rcfilter", "filter", "lowpass"])
+    async def rc(self, ctx, *, args = None):
+        """
+        Calculate different aspects of an RC filter. Run the command for more details.
+        """
+        if not args:
+            random_rc = {
+                "fcut": str(uniform(0.1, 10 ** 5)),
+                "r1": str(uniform(100, 100000))
+            }
+            embed = discord.Embed(title="RC filter")
+            embed.add_field(name="Image", value=drawRC(calculate_rc(random_rc)), inline=False)
+            embed.add_field(
+            name="How to use this?",
+                value=f"""With this command you can calculate required resistor or capacitor value for a specific RC filter.
+                Example: `{self.bot.command_prefix}rc fcut=1k r1=100` to find c1.
+                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                Don't try writing out the `Ω` in Ohms 
+                as it just confuses the bot (don't use R either).
+                You can also use `{self.bot.command_prefix}rcfilter`, `{self.bot.command_prefix}filter` and `{self.bot.command_prefix}lowpass`.
+                """,
+                inline=True)
+                # TODO
+                # Add something to automatically grab the aliases and command name
+        else:
+            args_parsed = parse_input(args)
+            try:
+                if args.endswith("plot"):
+                    res = calculate_rc(args_parsed)
+                    imgdata = plot_rc(args_parsed)
+                    img = imgdata.read()
+                    file = discord.File(BytesIO(img), filename="rc.png")
+                    embed = discord.Embed(title=f"Frequency response plot of the entered rc filter.")
+                    embed.add_field(name="Image", value=drawRC(res), inline=False)
+                    embed.add_field(
+                        name="Values",
+                        value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
+                    embed.add_field(
+                        name="Closest E24 resistor value",
+                        value=f"R1 = __{res['E24_r1']}Ω__")
+                    embed.set_image(url="attachment://rc.png")
+                    await ctx.send(file=file, embed=embed)
+                else:
+                    res = calculate_rc(args_parsed)
+                    embed = discord.Embed()
+                    embed.add_field(name="Image", value=drawRC(res), inline=False)
+                    embed.add_field(
+                        name="Values",
+                        value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
+                    embed.add_field(
+                        name="Closest E24 resistor value",
+                        value=f"R1 = __{res['E24_r1']}Ω__")
+                    await ctx.send(embed=embed)
+            except TooFewArgsError:
+                await util.errormsg(ctx, "Not enough arguments to compute anything.")
+                return
+                
+        
 
 
 def setup(bot):
