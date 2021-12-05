@@ -17,6 +17,7 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
+import math
 from math import log10, sqrt
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -211,7 +212,7 @@ def calculate_divider(mode, b):
 
 def calculate_lm317(b):
     if "iout" in b:
-        return(calculate_lm317_cc(b))
+        return calculate_lm317_cc(b)
     try:
         vin = si_prefix.si_parse(b["vin"])
         if not 3.0 <= vin <= 40.0:
@@ -289,14 +290,19 @@ def calculate_rc(b):
     else:
         c1 = None
     if not fcut and r1 is not None and c1 is not None:
-        fcut = 1 / (2 * 3.14159265359 * r1 * c1)
+        fcut = 1 / (2 * math.pi * r1 * c1)
     elif not r1 and fcut is not None and c1 is not None:
-        r1  = 1 / (2 * 3.14159265359 * fcut * c1)
+        r1 = 1 / (2 * math.pi * fcut * c1)
     elif not c1 and fcut is not None and r1 is not None:
-        c1  = 1 / (2 * 3.14159265359 * fcut * r1)
+        c1 = 1 / (2 * math.pi * fcut * r1)
     else:
         raise TooFewArgsError()
-    return dict(r1=si_prefix.si_format(r1), fcut=si_prefix.si_format(fcut), E24_r1=si_prefix.si_format(convert_E24(r1)), c1=si_prefix.si_format(c1))
+    return dict(
+        r1=si_prefix.si_format(r1),
+        fcut=si_prefix.si_format(fcut),
+        E24_r1=si_prefix.si_format(convert_E24(r1)),
+        c1=si_prefix.si_format(c1)
+    )
 
 
 def plot_rc(b):
