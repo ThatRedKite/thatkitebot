@@ -44,24 +44,24 @@ class TooFewArgsError(Exception):
 class ImpossibleValueError(Exception):
     pass
 
-def convert_E24(input):
-    E24_list = [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0,	2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1]
+
+def convert_e24(input):
+    e24_list = [
+        1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0,
+        3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1,
+    ]
     buff = input
     power = 0
-    while(buff>10):
+    while buff > 10:
         power += 1
         buff = buff/10
     nearest = 0
     neatest_diff = 100
-    for n in E24_list:
-        if(abs(n - buff) < neatest_diff):
+    for n in e24_list:
+        if abs(n - buff) < neatest_diff:
             nearest = n
             neatest_diff = abs(n - buff)
-    return(nearest * 10 ** power)
-
-
-def columnize(indict):
-    """turns a dictionary of strings into columns"""
+    return nearest * 10 ** power
 
 
 def draw_divider(indict):
@@ -135,7 +135,8 @@ Vin = {vin}V
     ```
     """
 
-def drawRC(indict):
+
+def draw_rc(indict):
     fcut = indict["fcut"]
     r1 = indict["r1"]
     c1 = indict["c1"]
@@ -250,7 +251,7 @@ def calculate_lm317(b):
         vin = str(vin) + "V to 40.0"
     if vout < 0 or r1 < 0 or r2 < 0:
         raise ImpossibleValueError("Negative voltage")
-    return dict(r1=r1, r2=round(r2,1), vin=vin, vout=si_prefix.si_format(vout), E24_r1=si_prefix.si_format(convert_E24(r1)), E24_r2=si_prefix.si_format(convert_E24(r2)))
+    return dict(r1=r1, r2=round(r2,1), vin=vin, vout=si_prefix.si_format(vout), E24_r1=si_prefix.si_format(convert_e24(r1)), E24_r2=si_prefix.si_format(convert_e24(r2)))
 
 
 def calculate_lm317_cc(b):
@@ -273,7 +274,12 @@ def calculate_lm317_cc(b):
     else:
         raise TooFewArgsError()
     vin = "4.25V to 40.0"   
-    return dict(r1=si_prefix.si_format(r1), iout=si_prefix.si_format(iout), E24_r1=si_prefix.si_format(convert_E24(r1)), vin=vin)
+    return dict(
+        r1=si_prefix.si_format(r1),
+        iout=si_prefix.si_format(iout),
+        E24_r1=si_prefix.si_format(convert_e24(r1)),
+        vin=vin
+    )
 
 
 def calculate_rc(b):
@@ -300,7 +306,7 @@ def calculate_rc(b):
     return dict(
         r1=si_prefix.si_format(r1),
         fcut=si_prefix.si_format(fcut),
-        E24_r1=si_prefix.si_format(convert_E24(r1)),
+        E24_r1=si_prefix.si_format(convert_e24(r1)),
         c1=si_prefix.si_format(c1)
     )
 
@@ -315,22 +321,26 @@ def plot_rc(b):
     freqlist = []
     gainlist = []
     f = fmin
-    while(f < fmax):
+    while f < fmax:
         freqlist.append(f)
-        x = 1/(2 * 3.14159265359 * f * cap)
+        x = 1/(2 * math.pi * f * cap)
         vout = 10 * (x/sqrt((res ** 2)+(x ** 2)))
         gain = 20 * log10(vout/10)
         gainlist.append(gain)
-        #print(str(f) + "HZ - " + str(gain) + "dB")
         f = f * 1.1
     plt.plot(freqlist, gainlist, color="b")
     plt.grid()
-    plt.xlabel('Frequency Hz')
-    plt.ylabel('Gain dB')
+    plt.xlabel('Frequency in Hz')
+    plt.ylabel('Gain in dB')
     plt.xscale('log')
     plt.ylim([min(gainlist),10])
     plt.xlim([min(freqlist), max(freqlist)])
-    plt.vlines(x=fcut, ymin=-60, ymax=gainlist[freqlist.index(min(freqlist, key=lambda x:abs(x-fcut)))], color="orange", label="Cutoff frequency: {}Hz".format(d["fcut"]))
+    plt.vlines(x=fcut,
+               ymin=-60,
+               ymax=gainlist[freqlist.index(min(freqlist, key=lambda x:abs(x-fcut)))],
+               color="orange",
+               label="Cutoff frequency: {}Hz".format(d["fcut"])
+               )
     plt.legend()
     fig = plt.gcf()
     imgdata = BytesIO()
@@ -451,7 +461,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed = discord.Embed(title="LM317 Adjustable Regulator **CV**")
             embed.add_field(name="Image", value=draw_lm317(calculate_lm317(random_lm)), inline=False)
             embed.add_field(
-            name="How to use this?",
+                name="How to use this?",
                 value=f"""With this command you can calculate required resistor values for an LM317 in CV mode.
                 Example: `{self.bot.command_prefix}lm317 vout=10v r1=240` to find r2.
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
@@ -552,30 +562,31 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             except ImpossibleValueError:
                 await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
                 return
+
     @commands.command(name="rc", aliases=["rcfilter", "filter", "lowpass"])
-    async def rc(self, ctx, *, args = None):
+    async def rc(self, ctx, *, args=None):
         """
         Calculate different aspects of an RC filter. Run the command for more details.
         """
+        print(args)
         if not args:
             random_rc = {
                 "fcut": str(uniform(0.1, 10 ** 5)),
                 "r1": str(uniform(100, 100000))
             }
             embed = discord.Embed(title="RC filter")
-            embed.add_field(name="Image", value=drawRC(calculate_rc(random_rc)), inline=False)
+            embed.add_field(name="Image", value=draw_rc(calculate_rc(random_rc)), inline=False)
             embed.add_field(
-            name="How to use this?",
-                value=f"""With this command you can calculate required resistor or capacitor value for a specific RC filter.
+                name="How to use this?",
+                value=f"""
+                With this command you can calculate required resistor or capacitor value for a specific RC filter.
                 Example: `{self.bot.command_prefix}rc fcut=1k r1=100` to find c1.
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                 Don't try writing out the `Ω` in Ohms 
                 as it just confuses the bot (don't use R either).
-                You can also use `{self.bot.command_prefix}rcfilter`, `{self.bot.command_prefix}filter` and `{self.bot.command_prefix}lowpass`.
+                You can also use `{self.rc.name}`{f" ,{self.bot.command_prefix}".join(self.rc.aliases)}.
                 """,
                 inline=True)
-                # TODO
-                # Add something to automatically grab the aliases and command name
         else:
             args_parsed = parse_input(args)
             try:
@@ -585,7 +596,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                     img = imgdata.read()
                     file = discord.File(BytesIO(img), filename="rc.png")
                     embed = discord.Embed(title=f"Frequency response plot of the entered rc filter.")
-                    embed.add_field(name="Image", value=drawRC(res), inline=False)
+                    embed.add_field(name="Image", value=draw_rc(res), inline=False)
                     embed.add_field(
                         name="Values",
                         value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
@@ -597,7 +608,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 else:
                     res = calculate_rc(args_parsed)
                     embed = discord.Embed()
-                    embed.add_field(name="Image", value=drawRC(res), inline=False)
+                    embed.add_field(name="Image", value=draw_rc(res), inline=False)
                     embed.add_field(
                         name="Values",
                         value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
@@ -609,8 +620,6 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
                 return
                 
-        
-
 
 def setup(bot):
     bot.add_cog(ElectroCog(bot))
