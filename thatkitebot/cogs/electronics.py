@@ -50,17 +50,12 @@ def convert_e24(input):
         1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0,
         3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1,
     ]
-    buff = input
+    mantissa = input
     power = 0
-    while buff > 10:
+    while mantissa >= 10:
         power += 1
-        buff = buff / 10
-    nearest = 0
-    neatest_diff = 100
-    for n in e24_list:
-        if abs(n - buff) < neatest_diff:
-            nearest = n
-            neatest_diff = abs(n - buff)
+        mantissa = mantissa / 10
+    nearest = min(e24_list, key=lambda x: abs(x - mantissa))
     return nearest * 10 ** power
 
 
@@ -92,8 +87,8 @@ def draw_divider(indict):
 
 def draw_lm317(indict):
     vin = indict["vin"]
-    r1 = indict["r1"]
-    r2 = indict["r2"]
+    r1 = si_prefix.si_format(indict["r1"])
+    r2 = si_prefix.si_format(indict["r2"])
     vout = indict["vout"]
 
     return f"""
@@ -214,34 +209,36 @@ def calculate_divider(mode, b):
 def calculate_lm317(b):
     if "iout" in b:
         return calculate_lm317_cc(b)
-    try:
+    if "vin" in b:
         vin = si_prefix.si_parse(b["vin"])
         if not 3.0 <= vin <= 40.0:
             raise InputOutOfRangeError("Voltage out of Range")
         if vin < 0:
             raise ImpossibleValueError("Negative voltage")
         specificVin = True
-    except:
+    else:
         specificVin = False
-    try:
+    if "vout" in b:
         vout = si_prefix.si_parse(b["vout"])
-    except:
+    else:
         vout = None
-    try:
+    if "r1" in b:
         r1 = si_prefix.si_parse(b["r1"])
-    except:
+    else:
         r1 = 240
-    try:
+    if "r2" in b:
         r2 = si_prefix.si_parse(b["r2"])
-    except:
+    else:
         r2 = None
 
     if vout is None and r2 is None:
         raise TooFewArgsError("Too few arguments")
-    if vout is None:
+    if vout is None and r2 is not None:
         vout = 1.25 * (1 + (r2 / r1))
     if r2 is None:
         r2 = ((vout / 1.25) - 1) * r1
+    if vout is not None and r2 is not None:
+        r1 = r2 / ((vout / 1.25) - 1)
     if not specificVin:
         vin = round(vout + 3, 1)
 
@@ -499,7 +496,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 embed.add_field(name="Image", value=draw_lm317(res), inline=False)
                 embed.add_field(
                     name="Values",
-                    value=f"R1 = {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
+                    value=f"R1 = {si_prefix.si_format(res['r1'])}Ω\nR2 = __{si_prefix.si_format(res['r2'])}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
                 embed.add_field(
                     name="Closest E24 resistor values",
                     value=f"R1 = {res['E24_r1']}Ω\nR2 = __{res['E24_r2']}Ω__")
