@@ -54,7 +54,7 @@ def convert_e24(input):
     power = 0
     while buff > 10:
         power += 1
-        buff = buff/10
+        buff = buff / 10
     nearest = 0
     neatest_diff = 100
     for n in e24_list:
@@ -163,7 +163,7 @@ def parse_input(s):
     for key in s_dict.keys():
         old = s_dict[key]
         new = old.replace("v", "").replace("V", "").replace("u", "µ")
-        s_dict.update({key:new})
+        s_dict.update({key: new})
     return s_dict
 
 
@@ -179,7 +179,7 @@ def calculate_divider(mode, b):
                 "r2": si_prefix.si_format(r2),
                 "vin": si_prefix.si_format(vin),
                 "vout": si_prefix.si_format(vout),
-                }
+            }
             )
 
         case "r2":
@@ -191,7 +191,7 @@ def calculate_divider(mode, b):
                 "r2": si_prefix.si_format(vout * r1 / (vin - vout)),
                 "vin": si_prefix.si_format(vin),
                 "vout": si_prefix.si_format(vout),
-                }
+            }
             )
 
         case "vout":
@@ -203,7 +203,7 @@ def calculate_divider(mode, b):
                 "r2": si_prefix.si_format(r2),
                 "vin": si_prefix.si_format(vin),
                 "vout": si_prefix.si_format(vin * r2 / (r1 + r2)),
-                }
+            }
             )
 
         case _:
@@ -237,21 +237,23 @@ def calculate_lm317(b):
         r2 = None
 
     if vout is None and r2 is None:
-        raise TooFewArgsError("Too few arguments")    
+        raise TooFewArgsError("Too few arguments")
     if vout is None:
-        vout = 1.25 * (1 + (r2/r1))
+        vout = 1.25 * (1 + (r2 / r1))
     if r2 is None:
         r2 = ((vout / 1.25) - 1) * r1
     if not specificVin:
         vin = round(vout + 3, 1)
-        
+
     if vin - vout > 40 or vin - vout < 3:
-        raise InputDifferenceError("In-Out difference out of Range") # Input-to-output differential voltage out of range
+        raise InputDifferenceError(
+            "In-Out difference out of Range")  # Input-to-output differential voltage out of range
     if not specificVin:
         vin = str(vin) + "V to 40.0"
     if vout < 0 or r1 < 0 or r2 < 0:
         raise ImpossibleValueError("Negative voltage")
-    return dict(r1=r1, r2=round(r2,1), vin=vin, vout=si_prefix.si_format(vout), E24_r1=si_prefix.si_format(convert_e24(r1)), E24_r2=si_prefix.si_format(convert_e24(r2)))
+    return dict(r1=r1, r2=round(r2, 1), vin=vin, vout=si_prefix.si_format(vout),
+                E24_r1=si_prefix.si_format(convert_e24(r1)), E24_r2=si_prefix.si_format(convert_e24(r2)))
 
 
 def calculate_lm317_cc(b):
@@ -263,17 +265,17 @@ def calculate_lm317_cc(b):
             raise ImpossibleValueError("Get real")
         elif iout > 1.5:
             raise InputOutOfRangeError("Your LM317 will explode")
-        r1=1.25/iout
+        r1 = 1.25 / iout
     elif "r1" in b:
         r1 = si_prefix.si_parse(b["r1"])
-        iout = 1.25/r1
+        iout = 1.25 / r1
         if iout < 0:
             raise ImpossibleValueError("Get real")
         elif iout > 1.5:
             raise InputOutOfRangeError("Your LM317 will explode")
     else:
         raise TooFewArgsError()
-    vin = "4.25V to 40.0"   
+    vin = "4.25V to 40.0"
     return dict(
         r1=si_prefix.si_format(r1),
         iout=si_prefix.si_format(iout),
@@ -323,9 +325,9 @@ def plot_rc(b):
     f = fmin
     while f < fmax:
         freqlist.append(f)
-        x = 1/(2 * math.pi * f * cap)
-        vout = 10 * (x/sqrt((res ** 2)+(x ** 2)))
-        gain = 20 * log10(vout/10)
+        x = 1 / (2 * math.pi * f * cap)
+        vout = 10 * (x / sqrt((res ** 2) + (x ** 2)))
+        gain = 20 * log10(vout / 10)
         gainlist.append(gain)
         f = f * 1.1
     plt.plot(freqlist, gainlist, color="b")
@@ -333,11 +335,11 @@ def plot_rc(b):
     plt.xlabel('Frequency in Hz')
     plt.ylabel('Gain in dB')
     plt.xscale('log')
-    plt.ylim([min(gainlist),10])
+    plt.ylim([min(gainlist), 10])
     plt.xlim([min(freqlist), max(freqlist)])
     plt.vlines(x=fcut,
                ymin=-60,
-               ymax=gainlist[freqlist.index(min(freqlist, key=lambda x:abs(x-fcut)))],
+               ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
                color="orange",
                label="Cutoff frequency: {}Hz".format(d["fcut"])
                )
@@ -353,6 +355,12 @@ def plot_rc(b):
 class ElectroCog(commands.Cog, name="Electronics commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+
+    def get_aliases(self, ctx: commands.Context):
+        command = ctx.command
+        prefix = ctx.prefix
+        alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
+        return ", ".join(alist)
 
     @commands.command()
     async def divider(self, ctx, *, args=None):
@@ -420,37 +428,35 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await util.errormsg(ctx, "There is nothing to calculate. Please enter exactly 3 values")
 
     @commands.command(name="cap_energy", aliases=["joule", "energy", "ce", "charge"])
-    async def capacitor_energy(self, ctx, *, args = None):
+    async def capacitor_energy(self, ctx, *, args=None):
         """
         Calculate the capacitor energy and charge in joules and coulomb using voltage and capacitance. Run the command for more details.
         """
         if not args:
             embed = discord.Embed(title="Capacitor energy calculation")
             embed.add_field(
-            name="How to use this?",
+                name="How to use this?",
                 value=f"""With this command you can calculate capacitor energy and charge.
                 Example: `{self.bot.command_prefix}cap_energy v=10v c=47u`to find energy and charge.
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                 Writing the "V" after the voltages is optional.
-                You can also use `{self.bot.command_prefix}joule`, `{self.bot.command_prefix}energy`, `{self.bot.command_prefix}ce` and `{self.bot.command_prefix}charge`.
+                You can also use {self.get_aliases(ctx)}.
                 """,
                 inline=True)
-                # TODO
-                # Add something to automatically grab the aliases and command name
             await ctx.send(embed=embed)
         else:
             args_parsed = parse_input(args)
             c = si_prefix.si_parse(args_parsed["c"])
             v = si_prefix.si_parse(args_parsed["v"])
-            e = si_prefix.si_format((0.5 * c) * (v**2))
+            e = si_prefix.si_format((0.5 * c) * (v ** 2))
             q = si_prefix.si_format(c * v)
             embed = discord.Embed(title="Capacitor charge calculator")
             embed.add_field(name="Energy", value=f"{e}J")
             embed.add_field(name="Charge", value=f"{q}C")
             await ctx.send(embed=embed)
-        
+
     @commands.command(name="lm317", aliases=["317cv", "cv317", "LM317", "lm317cv"])
-    async def lm317(self, ctx, *, args = None):
+    async def lm317(self, ctx, *, args=None):
         """
         Calculate resistor values for an LM317 in CV mode for CC mode use `lm317cc`. Run the command for more details.
         """
@@ -467,12 +473,11 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                 Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
                 as it just confuses the bot (don't use R either).
-                You can also use `{self.bot.command_prefix}317cv`, `{self.bot.command_prefix}cv317` and `{self.bot.command_prefix}lm317cv`.
+                You can also use {self.get_aliases(ctx)}.
                 For CC use `{self.bot.command_prefix}lm317cc`.
                 """,
                 inline=True)
-                # TODO
-                # Add something to automatically grab the aliases and command name
+
             await ctx.send(embed=embed)
         else:
             args_parsed = parse_input(args)
@@ -483,11 +488,11 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                     embed = discord.Embed()
                     embed.add_field(name="Image", value=draw_lm317_cc(res), inline=False)
                     embed.add_field(
-                    name="Values",
-                    value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
+                        name="Values",
+                        value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
                     embed.add_field(
-                    name="Closest E24 resistor values",
-                    value=f"R1 = {res['E24_r1']}Ω\nR2 = __{res['E24_r2']}Ω__")
+                        name="Closest E24 resistor values",
+                        value=f"R1 = {res['E24_r1']}Ω\nR2 = __{res['E24_r2']}Ω__")
                     await ctx.send(embed=embed)
                     return
                 embed = discord.Embed()
@@ -503,7 +508,8 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
                 return
             except InputDifferenceError:
-                await util.errormsg(ctx, "Difference between input and output voltage is outside of datasheet recommended values.")
+                await util.errormsg(ctx,
+                                    "Difference between input and output voltage is outside of datasheet recommended values.")
                 return
             except TooFewArgsError:
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
@@ -513,7 +519,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 return
 
     @commands.command(name="lm317cc", aliases=["317cc", "cc317", "LM317cc"])
-    async def lm317cc(self, ctx, *, args = None):
+    async def lm317cc(self, ctx, *, args=None):
         """
         Calculate resistor values for an LM317 in CC mode for CV mode use `lm317cv`. Run the command for more details.
         """
@@ -524,18 +530,16 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed = discord.Embed(title="LM317 Adjustable Regulator **CC**")
             embed.add_field(name="Image", value=draw_lm317_cc(calculate_lm317_cc(random_lm)), inline=False)
             embed.add_field(
-            name="How to use this?",
+                name="How to use this?",
                 value=f"""With this command you can calculate required resistor values for an LM317 in CC mode.
                 Example: `{self.bot.command_prefix}lm317cc iout=1.3` to find r1.
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                 Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
                 as it just confuses the bot (don't use R either).
-                You can also use `{self.bot.command_prefix}317cc`, `{self.bot.command_prefix}cc317` and `{self.bot.command_prefix}lm317cc`.
+                You can also use {self.get_aliases(ctx)}.
                 For CV use `{self.bot.command_prefix}lm317cv`.
                 """,
                 inline=True)
-                # TODO
-                # Add something to automatically grab the aliases and command name
             await ctx.send(embed=embed)
         else:
             args_parsed = parse_input(args)
@@ -554,7 +558,8 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
                 return
             except InputDifferenceError:
-                await util.errormsg(ctx, "Difference between input and output voltage is outside of datasheet recommended values.")
+                await util.errormsg(ctx,
+                                    "Difference between input and output voltage is outside of datasheet recommended values.")
                 return
             except TooFewArgsError:
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
@@ -568,7 +573,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         """
         Calculate different aspects of an RC filter. Run the command for more details.
         """
-        print(args)
+        self.get_aliases(ctx)
         if not args:
             random_rc = {
                 "fcut": str(uniform(0.1, 10 ** 5)),
@@ -584,9 +589,10 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                 Don't try writing out the `Ω` in Ohms 
                 as it just confuses the bot (don't use R either).
-                You can also use `{self.rc.name}`{f" ,{self.bot.command_prefix}".join(self.rc.aliases)}.
+                You can also use {self.get_aliases(ctx)}.
                 """,
                 inline=True)
+            await ctx.send(embed=embed)
         else:
             args_parsed = parse_input(args)
             try:
@@ -619,7 +625,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             except TooFewArgsError:
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
                 return
-                
+
 
 def setup(bot):
     bot.add_cog(ElectroCog(bot))
