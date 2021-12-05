@@ -159,7 +159,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             "busy", "sucks so bad", "soon", "no?", "👀", "in your dreams", "smh",
             "well DO IT", "oh?", "of course not 😎", "🙄", "🥺", "never\nunless...? 😳"
             "mm", "ehhh", "uhh", "<:zycosmoke:821821351576338534>", "🥵",
-            "\<:buraq:761567855095054367>", "hot", "Kite sounds", "uh huh", "no idea",
+            "hot", "Kite sounds", "uh huh", "no idea",
             "almost nice", "scary", "negative", "mm?", "has a good ring", "why?", "iconic",
             "epic", "rad", "neat", "accaptable", "superb", "awful", "not good", "sad", "beastly",
             "wild", "meh...", "I am fuming", "What is that supposed to mean?", "are you trying to cancel me?",
