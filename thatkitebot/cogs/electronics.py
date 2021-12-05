@@ -330,6 +330,12 @@ def plot_rc(b):
         gain = 20 * log10(vout / 10)
         gainlist.append(gain)
         f = f * 1.1
+    plt.vlines(x=fcut,
+               ymin=-60,
+               ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
+               color="orange",
+               label="Cutoff frequency: {}Hz".format(d["fcut"])
+               )
     plt.plot(freqlist, gainlist, color="b")
     plt.grid()
     plt.xlabel('Frequency in Hz')
@@ -337,12 +343,6 @@ def plot_rc(b):
     plt.xscale('log')
     plt.ylim([min(gainlist), 10])
     plt.xlim([min(freqlist), max(freqlist)])
-    plt.vlines(x=fcut,
-               ymin=-60,
-               ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
-               color="orange",
-               label="Cutoff frequency: {}Hz".format(d["fcut"])
-               )
     plt.legend()
     fig = plt.gcf()
     imgdata = BytesIO()
