@@ -25,6 +25,7 @@ import typing
 import glob
 from random import choice, Random
 from thatkitebot.backend import url, util
+from datetime import datetime
 
 
 async def is_trainpost_channel(ctx):
@@ -165,7 +166,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             "wild", "meh...", "I am fuming", "What is that supposed to mean?", "are you trying to cancel me?",
             "cool", "not cool", "try harder", "idk", "exceptional", "big", "massive", "I am not sure",
             "why not?", "my ass", "worthy", "hahaha", "good one", "not great not, terrible", "is it legal?",
-            "can't", "top notch", "eval the yourself", "sounds interesting",
+            "can't", "top notch", "eval that yourself", "sounds interesting",
             "baller", "chad", "I don't think so"
         ]
         user = ctx.message.author.id
@@ -175,7 +176,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         if ctx.message.reference is not None:
             str_seed = ctx.message.reference.message_id
         else:
-            str_seed = abs(hash(str(user) + str(args))) % (10 ** 8)
+            str_seed = abs(hash(str(user) + str(args) + str(datetime.today().strftime('%Y-%m-%d')))) % (10 ** 8)
         eval_random = Random()
         eval_random.seed(str_seed)
         result = resp_list[eval_random.randint(0, len(resp_list) - 1 )]
