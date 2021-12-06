@@ -17,8 +17,7 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
-
-
+import asyncio
 import glob
 import os
 import random
@@ -39,11 +38,12 @@ class EmbedColors:
 
 async def errormsg(ctx=None, msg: str="", exc="", embed_only=False):
     if not embed_only:
-        with ctx.channel.typing():
-            embed = discord.Embed(title="**ERROR!**", description=msg)
-            embed.color = EmbedColors.traffic_red
-            embed.set_footer(text=exc)
-        await ctx.send(embed=embed)
+        embed = discord.Embed(title="**ERROR!**", description=msg)
+        embed.color = EmbedColors.traffic_red
+        embed.set_footer(text=exc)
+        await ctx.send(embed=embed, delete_after=5.0)
+        await asyncio.sleep(5.0)
+        await ctx.message.delete()
     else:
         embed = discord.Embed(title="**ERROR!**", description=msg)
         embed.color = EmbedColors.traffic_red

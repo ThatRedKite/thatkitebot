@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 from thatkitebot.backend import util
@@ -51,8 +53,10 @@ class SettingsCog(commands.Cog, name="settings"):
 
         if not pp(name) in self.possible_settings:
             await util.errormsg(
-                f"This seems to be an invalid setting! Execute {self.bot.command_prefix}settings help to see all availible settings")
-        await ctx.send(f"Add the setting `{name}` with the value `{arg}` to the settings? (y/n)")
+                ctx,
+                f"This seems to be an invalid setting! Execute {ctx.prefix}settings help to see all availible settings")
+            return
+        await ctx.send(f"Add the setting `{pp(name)}` with the value `{pp(arg)}` to the settings? (y/n)")
         msg = await self.bot.wait_for("message", timeout=10, check=check)
         if msg.content in yes_choices:
             await self.redis.hset(ctx.guild.id, pp(name), pp(arg))
@@ -80,32 +84,34 @@ class SettingsCog(commands.Cog, name="settings"):
         e.add_field(
             name="NSFW",
             value="""
-            Enable or disable NSFW commands for the server (does not affect blacklisted servers)
-            Possible values: `TRUE`, `FALSE` (or any other string)
+            Enable or disable NSFW commands for the server (does not affect blacklisted servers)\n
+            Possible values: `TRUE`, `FALSE`\n
             Standard value: `FALSE`
             """
         )
         e.add_field(
-            "IMAGE",
+            name="IMAGE",
             value="""
-             Enable or disable image manipulation commands for the server.
-             Possible values: `TRUE`, `FALSE` (or any other string)
-             Standard value: ``TRUE`
+             Enable or disable image manipulation commands for the server.\n
+             Possible values: `TRUE`, `FALSE`\n
+             Standard value: `TRUE`
              """
         )
-        await ctx.send(embed=e)
+        await ctx.send(embed=e, delete_after=10)
+        await asyncio.sleep(10)
+        await ctx.message.delete()
 
     @commands.Cog.listener()
-    async def on_server_join(self, ctx):
+    async def on_guild_join(self, guild):
         # this initializes the settings for the guild the bot joins
         initdict = {
             "NSFW": "FALSE",
             "IMAGE": "TRUE"
         }
         # check if there already are settings for the guild present
-        if not await self.redis.hexists(ctx.guild.id):
+        if not await self.redis.hexists(guild.id, "IMAGE"):
             # set the settings that were defined in initdict
-            await self.redis.hmset(ctx.guild.id, initdict)
+            await self.redis.hmset(guild.id, initdict)
 
 
 def setup(bot):
