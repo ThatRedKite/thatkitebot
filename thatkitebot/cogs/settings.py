@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+from thatkitebot.backend import util
+import aioredis
 
 
 def pp(a):
@@ -19,18 +21,26 @@ async def can_change_settings(ctx: commands.Context):
 class SettingsCog(commands.Cog, name="settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
-        self.redis = self.bot.redis
+        self.redis: aioredis.Redis = self.bot.redis
+        self.possible_settings = ["NSFW", "IMAGE"]
 
     @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
     @commands.check(can_change_settings)
     async def settings(self, ctx):
+        """
+        This is a command group used to change some bot settings.
+        You have to be an Administrator or the bot owner to change use this command group.
+        You should use one of the following subcommands: add, list, help.
+        """
         if not ctx.subcommand_passed:
-            cmds = "\n".join([c.name for c in ctx.command.commands])
-            await ctx.send(f"This command cannot be used alone. Please use one of the following subcommands:\n**{cmds}**")
+            await self._help(ctx)
 
     @settings.command(name="add", aliases=["update"], hidden=True)
     @commands.cooldown(3, 10, commands.BucketType.user)
-    async def _add(self, ctx, name: str, arg):
+    async def _add(self, ctx: commands.Context, name: str, arg):
+        """
+        This command changes the value of a setting.
+        """
         channel = ctx.channel
         author = ctx.message.author
         yes_choices = ["y", "yes", "ja", "j"]
@@ -39,27 +49,63 @@ class SettingsCog(commands.Cog, name="settings"):
             if m.channel == channel and m.author is author:
                 return m.content.lower() in yes_choices
 
+        if not pp(name) in self.possible_settings:
+            await util.errormsg(
+                f"This seems to be an invalid setting! Execute {self.bot.command_prefix}settings help to see all availible settings")
         await ctx.send(f"Add the setting `{name}` with the value `{arg}` to the settings? (y/n)")
         msg = await self.bot.wait_for("message", timeout=10, check=check)
         if msg.content in yes_choices:
             await self.redis.hset(ctx.guild.id, pp(name), pp(arg))
-            await ctx.send("Okay, done.")
+            await ctx.send("Okay, done.", delete_after=5.0)
         else:
-            await ctx.send("Cancelled.")
+            await ctx.send("Cancelled.", delete_after=5.0)
 
     @settings.command(name="list", aliases=["ls"])
     async def _list(self, ctx):
+        """
+        Lists all the settings for the current guild.
+        """
         settings = await self.redis.hgetall(ctx.guild.id)
-        if self.bot.debugmode:
-            print(settings)
         embed = discord.Embed(title=f"settings for **guild {str(ctx.guild)}**")
         for setting in settings:
-            if self.bot.debugmode:
-                print(setting)
             embed.add_field(name=setting, value=settings.get(setting))
-        if self.bot.debugmode:
-            print(embed.to_dict())
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=10.0)
+
+    @settings.command(name="help")
+    async def _help(self, ctx):
+        """
+        This command lists all availible settings and their possible values.
+        """
+        e = discord.Embed(title="Possible bot settings")
+        e.add_field(
+            name="NSFW",
+            value="""
+            Enable or disable NSFW commands for the server (does not affect blacklisted servers)
+            Possible values: `TRUE`, `FALSE` (or any other string)
+            Standard value: `FALSE`
+            """
+        )
+        e.add_field(
+            "IMAGE",
+            value="""
+             Enable or disable image manipulation commands for the server.
+             Possible values: `TRUE`, `FALSE` (or any other string)
+             Standard value: ``TRUE`
+             """
+        )
+        await ctx.send(embed=e)
+
+    @commands.Cog.listener()
+    async def on_server_join(self, ctx):
+        # this initializes the settings for the guild the bot joins
+        initdict = {
+            "NSFW": "FALSE",
+            "IMAGE": "TRUE"
+        }
+        # check if there already are settings for the guild present
+        if not await self.redis.hexists(ctx.guild.id):
+            # set the settings that were defined in initdict
+            await self.redis.hmset(ctx.guild.id, initdict)
 
 
 def setup(bot):
