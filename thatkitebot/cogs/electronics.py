@@ -406,7 +406,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed.add_field(
                 name="Values",
                 value=f"R1 =  {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
-            embed.set_footer(text="Note: the underlined res is the output of the calculator (i.e the missing value)")
+            embed.set_footer(text="Note: the underlined value is the output of the calculator (i.e the missing value)")
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r1"):
@@ -417,7 +417,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 name="Values",
                 value=f"R1 = __{res['r1']}__Ω\nR2 = {res['r2']}Ω\nVin = {res['vin']}V\nVout = {res['vout']}V"
             )
-            embed.set_footer(text="Note: the underlined res is the output of the calculator (i.e the missing value)")
+            embed.set_footer(text="Note: the underlined value is the output of the calculator (i.e the missing value)")
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and not args_parsed.get("vout"):
@@ -427,7 +427,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             embed.add_field(
                 name="Values",
                 value=f"R1 = {res['r1']}Ω\nR2 = {res['r2']}Ω\nVin = {res['vin']}V\nVout = __{res['vout']}V__")
-            embed.set_footer(text="Note: the underlined res is the output of the calculator (i.e the missing value)")
+            embed.set_footer(text="Note: the underlined value is the output of the calculator (i.e the missing value)")
             await ctx.send(embed=embed)
 
         elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout"):
@@ -558,7 +558,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                     value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
                 embed.add_field(
                     name="Closest E24 resistor values",
-                    value=f"R1 = __{res['r1']}Ω__")
+                    value=f"R1 = __{res['E24_r1']}Ω__")
                 await ctx.send(embed=embed)
             except InputOutOfRangeError:
                 await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
