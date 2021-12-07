@@ -22,6 +22,7 @@ from math import log10, sqrt
 import matplotlib.pyplot as plt
 from io import BytesIO
 import discord
+import discord.commands as scmd
 from discord.ext import commands
 import si_prefix
 from random import randint
@@ -162,6 +163,10 @@ def parse_input(s):
     return s_dict
 
 
+def slash_preprocessor(a: str):
+    return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
+
+
 def calculate_divider(mode, b):
     match mode:
         case "r1":
@@ -282,18 +287,19 @@ def calculate_lm317_cc(b):
 
 
 def calculate_rc(b):
-    if "fcut" in b:
+    if b.get("fcut"):
         fcut = si_prefix.si_parse(b["fcut"])
     else:
         fcut = None
-    if "r1" in b:
+    if b.get("r1"):
         r1 = si_prefix.si_parse(b["r1"])
     else:
         r1 = None
-    if "c1" in b:
+    if b.get("c1"):
         c1 = si_prefix.si_parse(b["c1"])
     else:
         c1 = None
+
     if not fcut and r1 is not None and c1 is not None:
         fcut = 1 / (2 * math.pi * r1 * c1)
     elif not r1 and fcut is not None and c1 is not None:
@@ -353,9 +359,12 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    def get_aliases(self, ctx: commands.Context):
+    def get_aliases(self, ctx):
         command = ctx.command
-        prefix = ctx.prefix
+        if isinstance(ctx, scmd.ApplicationContext):
+            prefix = "/"
+        else:
+            prefix = ctx.prefix
         alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
         return ", ".join(alist)
 
@@ -570,7 +579,6 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         """
         Calculate different aspects of an RC filter. Run the command for more details.
         """
-        self.get_aliases(ctx)
         if not args:
             random_rc = {
                 "fcut": str(uniform(0.1, 10 ** 5)),
@@ -622,6 +630,76 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             except TooFewArgsError:
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
                 return
+
+    @scmd.slash_command(guild_ids=[759419755253465188], name="rc")
+    async def _rc(
+            self,
+            ctx: discord.ApplicationContext,
+            c1: scmd.Option(str, "Value for C1:", required=False, default=None),
+            r1: scmd.Option(str, "Value for R1", required=False, default=None),
+            fcut: scmd.Option(str, "cutoff frequency:", required=False, default=None),
+            draw_plot: scmd.Option(bool, "Display plot", required=False, default=False)
+    ):
+        """
+         Calculate different aspects of an RC filter.
+        Run the command for more details.
+        """
+        if not c1 and not r1 and not fcut:
+            random_rc = {
+                "fcut": str(uniform(0.1, 10 ** 5)),
+                "r1": str(uniform(100, 100000))
+            }
+            embed = discord.Embed(title="RC filter")
+            embed.add_field(name="Image", value=draw_rc(calculate_rc(random_rc)), inline=False)
+            embed.add_field(
+                name="How to use this?",
+                value=f"""
+                With this command you can calculate required resistor or capacitor value for a specific RC filter.
+                Example: `{self.bot.command_prefix}rc fcut=1k r1=100` to find c1.
+                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                Don't try writing out the `Ω` in Ohms 
+                as it just confuses the bot (don't use R either).
+                """,
+                inline=True)
+            await ctx.respond(embed=embed)
+            return
+
+        args_parsed = dict(
+            c1=slash_preprocessor(c1),
+            r1=slash_preprocessor(r1),
+            fcut=slash_preprocessor(fcut)
+        )
+        try:
+            res = calculate_rc(args_parsed)
+            embed = discord.Embed()
+            if draw_plot:
+                imgdata = plot_rc(args_parsed)
+                img = imgdata.read()
+                file = discord.File(BytesIO(img), filename="rc.png")
+                embed.title = "Frequency response plot of the entered rc filter."
+                embed.add_field(name="Image", value=draw_rc(res), inline=False)
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
+                embed.add_field(
+                    name="Closest E24 resistor value",
+                    value=f"R1 = __{res['E24_r1']}Ω__")
+                embed.set_image(url="attachment://rc.png")
+                await ctx.respond(file=file, embed=embed)
+            else:
+                embed.add_field(name="Image", value=draw_rc(res), inline=False)
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
+                embed.add_field(
+                    name="Closest E24 resistor value",
+                    value=f"R1 = __{res['E24_r1']}Ω__")
+                await ctx.respond(embed=embed)
+
+        except TooFewArgsError:
+            a = await util.errormsg(ctx, "Not enough arguments to compute anything.", embed_only=True)
+            await ctx.respond(embed=a)
+            return
 
 
 def setup(bot):
