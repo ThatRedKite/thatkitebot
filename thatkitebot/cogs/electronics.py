@@ -132,27 +132,6 @@ Vin = {vin}V
     """
 
 
-def draw_rc(indict):
-    fcut = indict["fcut"]
-    r1 = indict["r1"]
-    c1 = indict["c1"]
-
-    return f"""
-    ```
-    \n   
-    R1 = {r1}Ω     Fcut = {fcut}Hz
-         ┌────────┐ 
-IN ──────┤        ├─────┬────── OUT
-         └────────┘     │ C1 = {c1}F
-                     ───┴───                                      
-                     ───┬───        
-                        │   
-  ──────────────────────┴──────
-                        
-    ```
-    """
-
-
 def parse_input(s):
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
@@ -286,75 +265,6 @@ def calculate_lm317_cc(b):
     )
 
 
-def calculate_rc(b):
-    if b.get("fcut"):
-        fcut = si_prefix.si_parse(b["fcut"])
-    else:
-        fcut = None
-    if b.get("r1"):
-        r1 = si_prefix.si_parse(b["r1"])
-    else:
-        r1 = None
-    if b.get("c1"):
-        c1 = si_prefix.si_parse(b["c1"])
-    else:
-        c1 = None
-
-    if not fcut and r1 is not None and c1 is not None:
-        fcut = 1 / (2 * math.pi * r1 * c1)
-    elif not r1 and fcut is not None and c1 is not None:
-        r1 = 1 / (2 * math.pi * fcut * c1)
-    elif not c1 and fcut is not None and r1 is not None:
-        c1 = 1 / (2 * math.pi * fcut * r1)
-    else:
-        raise TooFewArgsError()
-    return dict(
-        r1=si_prefix.si_format(r1),
-        fcut=si_prefix.si_format(fcut),
-        E24_r1=si_prefix.si_format(convert_e24(r1)),
-        c1=si_prefix.si_format(c1)
-    )
-
-
-def plot_rc(b):
-    d = calculate_rc(b)
-    fcut = si_prefix.si_parse(d["fcut"])
-    cap = si_prefix.si_parse(d["c1"])
-    res = si_prefix.si_parse(d["r1"])
-    fmin = 0.001
-    fmax = fcut * 1000
-    freqlist = []
-    gainlist = []
-    f = fmin
-    while f < fmax:
-        freqlist.append(f)
-        x = 1 / (2 * math.pi * f * cap)
-        vout = 10 * (x / sqrt((res ** 2) + (x ** 2)))
-        gain = 20 * log10(vout / 10)
-        gainlist.append(gain)
-        f = f * 1.1
-    plt.vlines(x=fcut,
-               ymin=-60,
-               ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
-               color="orange",
-               label="Cutoff frequency: {}Hz".format(d["fcut"])
-               )
-    plt.plot(freqlist, gainlist, color="b")
-    plt.grid()
-    plt.xlabel('Frequency in Hz')
-    plt.ylabel('Gain in dB')
-    plt.xscale('log')
-    plt.ylim([min(gainlist), 10])
-    plt.xlim([min(freqlist), max(freqlist)])
-    plt.legend()
-    fig = plt.gcf()
-    imgdata = BytesIO()
-    fig.savefig(imgdata, format='png')
-    imgdata.seek(0)  # rewind the data
-    plt.clf()
-    return imgdata
-
-
 class ElectroCog(commands.Cog, name="Electronics commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -367,6 +277,122 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             prefix = ctx.prefix
         alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
         return ", ".join(alist)
+
+    class rc:
+        def __init__(self, d: dict, plot=False):
+            self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
+            self.c1 = si_prefix.si_parse(d.get("c1")) if d.get("c1") else None
+            self.fcut = si_prefix.si_parse(d.get("fcut")) if d.get("fcut") else None
+            self.doPlot = plot
+
+        def calculate(self):
+            if not self.fcut and self.r1 is not None and self.c1 is not None:
+                self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
+            elif not self.r1 and self.fcut is not None and self.c1 is not None:
+                self.r1 = 1 / (2 * math.pi * self.fcut * self.c1)
+            elif not self.c1 and self.fcut is not None and self.r1 is not None:
+                self.c1 = 1 / (2 * math.pi * self.fcut * self.r1)
+            else:
+                raise TooFewArgsError()
+        
+        def draw(self):
+            return f"""
+            ```
+            \n   
+            R1 = {si_prefix.si_format(self.r1)}Ω     Fcut = {si_prefix.si_format(self.fcut)}Hz
+                ┌────────┐ 
+       IN ──────┤        ├─────┬────── OUT
+                └────────┘     │ C1 = {si_prefix.si_format(self.c1)}F
+                            ───┴───                                      
+                            ───┬───        
+                               │   
+         ──────────────────────┴──────
+                                
+            ```
+            """
+
+        def randomize(self):
+            self.r1 = randint(1,1000000)
+            self.c1 = randint(0, 1000000) / 10 ** 6
+
+        def plot(self):
+            fcut = self.fcut
+            cap = self.c1
+            res = self.r1
+            fmin = fcut / 1000
+            fmax = fcut * 1000
+            freqlist = []
+            gainlist = []
+            f = fmin
+            while f < fmax:
+                freqlist.append(f)
+                x = 1 / (2 * math.pi * f * cap)
+                vout = 10 * (x / sqrt((res ** 2) + (x ** 2)))
+                gain = 20 * log10(vout / 10)
+                gainlist.append(gain)
+                f = f * 1.1
+            plt.vlines(x=fcut,
+                    ymin=-60,
+                    ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
+                    color="orange",
+                    label="Cutoff frequency: {}Hz".format(si_prefix.si_format(self.fcut))
+                    )
+            plt.plot(freqlist, gainlist, color="b")
+            plt.grid()
+            plt.xlabel('Frequency in Hz')
+            plt.ylabel('Gain in dB')
+            plt.xscale('log')
+            plt.ylim([min(gainlist), 10])
+            plt.xlim([min(freqlist), max(freqlist)])
+            plt.legend()
+            fig = plt.gcf()
+            imgdata = BytesIO()
+            fig.savefig(imgdata, format='png')
+            imgdata.seek(0)  # rewind the data
+            plt.clf()
+            return imgdata
+
+        def gen_embed(self):
+            embed = discord.Embed(title="RC filter")
+            try:
+                self.calculate()
+                self.mode = 1
+            except TooFewArgsError:
+                self.randomize()
+                self.calculate()
+                self.mode = None
+            embed.add_field(name="Schematic", value=self.draw(), inline=False)
+            if not self.mode:
+                embed.add_field(
+                    name="How to use this?",
+                    value=f"""
+                With this command you can calculate required resistor or capacitor value for a specific RC filter.
+                Example: `rc fcut=1k r1=100` to find c1. You can add `plot` to the end of the command if you would like a bode plot.
+                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                Don't try writing out the `Ω` in Ohms 
+                as it just confuses the bot (don't use R either).
+                You can also use `rcfilter`, `filter`, `lowpass`.
+                """,
+                    inline=True)
+                embed.set_footer(text="Note: the above RC filter is randomly generated")
+                if self.doPlot:
+                    embed.set_image(url="attachment://rc.png")
+                return embed
+            if embed:
+                embed.add_field(
+                        name="Values",
+                        value=f"R1 = __{si_prefix.si_format(self.r1)}Ω__\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
+                embed.add_field(
+                        name="Closest E24 resistor value",
+                        value=f"R1 = __{si_prefix.si_format(convert_e24(self.r1))}Ω__")
+                if self.doPlot:
+                    embed.set_image(url="attachment://rc.png")
+                return embed
+
+        def gen_file(self):
+            imgdata = self.plot()
+            file = discord.File(BytesIO(imgdata.read()), filename="rc.png")
+            return file
 
     @commands.command()
     async def divider(self, ctx, *, args=None):
@@ -575,61 +601,21 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 return
 
     @commands.command(name="rc", aliases=["rcfilter", "filter", "lowpass"])
-    async def rc(self, ctx, *, args=None):
+    async def rc_filter(self, ctx, *, args=""):
         """
         Calculate different aspects of an RC filter. Run the command for more details.
         """
-        if not args:
-            random_rc = {
-                "fcut": str(uniform(0.1, 10 ** 5)),
-                "r1": str(uniform(100, 100000))
-            }
-            embed = discord.Embed(title="RC filter")
-            embed.add_field(name="Image", value=draw_rc(calculate_rc(random_rc)), inline=False)
-            embed.add_field(
-                name="How to use this?",
-                value=f"""
-                With this command you can calculate required resistor or capacitor value for a specific RC filter.
-                Example: `{self.bot.command_prefix}rc fcut=1k r1=100` to find c1.
-                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-                Don't try writing out the `Ω` in Ohms 
-                as it just confuses the bot (don't use R either).
-                You can also use {self.get_aliases(ctx)}.
-                """,
-                inline=True)
-            await ctx.send(embed=embed)
-        else:
-            args_parsed = parse_input(args)
-            try:
-                if args.endswith("plot"):
-                    res = calculate_rc(args_parsed)
-                    imgdata = plot_rc(args_parsed)
-                    img = imgdata.read()
-                    file = discord.File(BytesIO(img), filename="rc.png")
-                    embed = discord.Embed(title=f"Frequency response plot of the entered rc filter.")
-                    embed.add_field(name="Image", value=draw_rc(res), inline=False)
-                    embed.add_field(
-                        name="Values",
-                        value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
-                    embed.add_field(
-                        name="Closest E24 resistor value",
-                        value=f"R1 = __{res['E24_r1']}Ω__")
-                    embed.set_image(url="attachment://rc.png")
-                    await ctx.send(file=file, embed=embed)
-                else:
-                    res = calculate_rc(args_parsed)
-                    embed = discord.Embed()
-                    embed.add_field(name="Image", value=draw_rc(res), inline=False)
-                    embed.add_field(
-                        name="Values",
-                        value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
-                    embed.add_field(
-                        name="Closest E24 resistor value",
-                        value=f"R1 = __{res['E24_r1']}Ω__")
-                    await ctx.send(embed=embed)
-            except TooFewArgsError:
-                await util.errormsg(ctx, "Not enough arguments to compute anything.")
-                return
+        args_parsed = parse_input(args)
+        try:
+            if args.endswith("plot"):
+                rc = self.rc(d=args_parsed, plot=True)
+                await ctx.send(embed=rc.gen_embed(), file=rc.gen_file())
+            else:
+                rc = self.rc(d=args_parsed)
+                await ctx.send(embed=rc.gen_embed())
+        except TooFewArgsError:
+            await util.errormsg(ctx, "Not enough arguments to compute anything.")
+            return
 
     @scmd.slash_command(guild_ids=[759419755253465188], name="rc")
     async def _rc(
