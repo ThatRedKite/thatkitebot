@@ -84,53 +84,7 @@ def draw_divider(indict):
     GND
     ```
     """
-
-
-def draw_lm317(indict):
-    vin = indict["vin"]
-    r1 = si_prefix.si_format(indict["r1"])
-    r2 = si_prefix.si_format(indict["r2"])
-    vout = indict["vout"]
-
-    return f"""
-    ```
-    \n
-Vin = {vin}V                         
-     ┌──────────┐     Vout = {vout}V    
->────┤IN     OUT├────┬──> 
-     │   ADJ    │   ┌┴┐
-     └────┬─────┘   │ │ R1 = {r1}Ω
-          │         └┬┘
-          ├──────────┘
-         ┌┴┐
-         │ │ R2 = {r2}Ω
-         └┬┘
-          │
-         ─┴─
-         GND
-    ```
-    """
-
-
-def draw_lm317_cc(indict):
-    vin = indict["vin"]
-    r1 = indict["r1"]
-    iout = indict["iout"]
-
-    return f"""
-    ```
-    \n
-Vin = {vin}V                         
-     ┌──────────┐         
->────┤IN     OUT├────┐ 
-     │   ADJ    │   ┌┴┐
-     └────┬─────┘   │ │ R1 = {r1}Ω
-          │         └┬┘
-          └──────────┴──>
-                      Iout = {iout}A
-    ```
-    """
-
+    
 
 def parse_input(s):
     s = s.replace("=", " ").split(" ")
@@ -190,79 +144,250 @@ def calculate_divider(mode, b):
     return b
 
 
-def calculate_lm317(b):
-    if "iout" in b:
-        return calculate_lm317_cc(b)
-    if "vin" in b:
-        vin = si_prefix.si_parse(b["vin"])
-        if not 3.0 <= vin <= 40.0:
-            raise InputOutOfRangeError("Voltage out of Range")
-        if vin < 0:
+class lm317:
+    def __init__(self, d: dict):
+        self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
+        self.r2 = si_prefix.si_parse(d.get("r2")) if d.get("r2") else None
+        self.vout = si_prefix.si_parse(d.get("vout")) if d.get("vout") else None
+        self.vin = si_prefix.si_parse(d.get("vin")) if d.get("vin") else None
+        self.iout = si_prefix.si_parse(d.get("iout")) if d.get("iout") else None
+    
+    def calculate(self):
+        if self.iout is not None:
+            if self.iout is not None:
+                if self.iout < 0:
+                    raise ImpossibleValueError("Get real")
+                elif self.iout > 1.5:
+                    raise InputOutOfRangeError("Your LM317 will explode")
+                self.r1 = 1.25 / self.iout
+            elif self.r1 is not None:
+                self.iout = 1.25 / self.r1
+                if self.iout < 0:
+                    raise ImpossibleValueError("Get real")
+                elif self.iout > 1.5:
+                    raise InputOutOfRangeError("Your LM317 will explode")
+            else:
+                raise TooFewArgsError()
+            self.vin = "4.25V to 40.0"
+            return
+        if self.vin is not None and type(self.vin) is not type(""):
+            if not 3.0 <= self.vin <= 40.0:
+                raise InputOutOfRangeError("Voltage out of Range")
+            if self.vin < 0:
+                raise ImpossibleValueError("Negative voltage")
+            specificVin = True
+        else:
+            specificVin = False
+        if self.r1 is None:
+            self.r1 = 240
+        if self.vout is None and self.r2 is None:
+            raise TooFewArgsError("Too few arguments")
+        if self.vout is None and self.r2 is not None:
+            self.vout = 1.25 * (1 + (self.r2 / self.r1))
+        if self.r2 is None:
+            self.r2 = ((self.vout / 1.25) - 1) * self.r1
+        if self.vout is not None and self.r2 is not None:
+            self.r1 = self.r2 / ((self.vout / 1.25) - 1)
+        if not specificVin:
+            self.vin = round(self.vout + 3, 1)
+        if self.vin - self.vout > 40 or self.vin - self.vout < 3:
+            raise InputDifferenceError(
+                "In-Out difference out of Range")  # Input-to-output differential voltage out of range
+        if not specificVin:
+            self.vin = str(self.vin) + "V to 40.0"
+        if self.vout < 0 or self.r1 < 0 or self.r2 < 0:
             raise ImpossibleValueError("Negative voltage")
-        specificVin = True
-    else:
-        specificVin = False
-    if "vout" in b:
-        vout = si_prefix.si_parse(b["vout"])
-    else:
-        vout = None
-    if "r1" in b:
-        r1 = si_prefix.si_parse(b["r1"])
-    else:
-        r1 = 240
-    if "r2" in b:
-        r2 = si_prefix.si_parse(b["r2"])
-    else:
-        r2 = None
+        
+    def draw(self):
+        if self.iout is not None:
+            return f"""
+            ```
+            \n
+        Vin = {self.vin}V                         
+            ┌──────────┐         
+       >────┤IN     OUT├────┐ 
+            │   ADJ    │   ┌┴┐
+            └────┬─────┘   │ │ R1 = {si_prefix.si_format(self.r1)}Ω
+                 │         └┬┘
+                 └──────────┴──>
+                            Iout = {self.iout}A
+            ```
+            """
+        else:
+            return f"""
+            ```
+            \n
+        Vin = {self.vin}V                         
+            ┌──────────┐     Vout = {self.vout}V    
+       >────┤IN     OUT├────┬──> 
+            │   ADJ    │   ┌┴┐
+            └────┬─────┘   │ │ R1 = {si_prefix.si_format(self.r1)}Ω
+                 │         └┬┘
+                 ├──────────┘
+                ┌┴┐
+                │ │ R2 = {si_prefix.si_format(self.r2)}Ω
+                └┬┘
+                 │
+                ─┴─
+                GND
+            ```
+            """
+            
+    def gen_embed(self):
+        try:
+            self.calculate()
+            self.args = True
+        except TooFewArgsError:
+            self.args = False
+        if not self.args:
+            self.vout = randint(1, 37)
+            self.calculate()
+            embed = discord.Embed(title="LM317 Adjustable Regulator **CV**")
+            embed.add_field(name="Schematic", value=self.draw(), inline=False)
+            embed.add_field(
+                name="How to use this?",
+                value=f"""With this command you can calculate required resistor values for an LM317 in CV mode (or CC if you provide an `iout`).
+                Example: `lm317 vout=10v r1=240` to find r2.
+                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
+                as it just confuses the bot (don't use R either).
+                For CC use `lm317 iout=1`.
+                """,
+                inline=True)
+            return embed
+        else:
+            self.calculate()
+            embed = discord.Embed()
+            if self.iout is not None:
+                
+                embed.add_field(name="Schematic", value=self.draw(), inline=False)
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = __{si_prefix.si_format(self.r1)}Ω__\nVin = {self.vin}V\nIout = {self.iout}A")
+                embed.add_field(
+                    name="Closest E24 resistor values",
+                    value=f"R1 = __{si_prefix.si_format(convert_e24(self.r1))}__Ω\n")
+                return embed
+            embed.add_field(name="Schematic", value=self.draw(), inline=False)
+            embed.add_field(
+                name="Values",
+                value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nR2 = __{si_prefix.si_format(self.r2)}Ω__\nVin = {self.vin}V\nVout = {self.vout}V")
+            embed.add_field(
+                name="Closest E24 resistor values",
+                value=f"R1 = {si_prefix.si_format(convert_e24(self.r1))}Ω\nR2 = __{si_prefix.si_format(convert_e24(self.r2))}Ω__")
+            return embed
 
-    if vout is None and r2 is None:
-        raise TooFewArgsError("Too few arguments")
-    if vout is None and r2 is not None:
-        vout = 1.25 * (1 + (r2 / r1))
-    if r2 is None:
-        r2 = ((vout / 1.25) - 1) * r1
-    if vout is not None and r2 is not None:
-        r1 = r2 / ((vout / 1.25) - 1)
-    if not specificVin:
-        vin = round(vout + 3, 1)
 
-    if vin - vout > 40 or vin - vout < 3:
-        raise InputDifferenceError(
-            "In-Out difference out of Range")  # Input-to-output differential voltage out of range
-    if not specificVin:
-        vin = str(vin) + "V to 40.0"
-    if vout < 0 or r1 < 0 or r2 < 0:
-        raise ImpossibleValueError("Negative voltage")
-    return dict(r1=r1, r2=round(r2, 1), vin=vin, vout=si_prefix.si_format(vout),
-                E24_r1=si_prefix.si_format(convert_e24(r1)), E24_r2=si_prefix.si_format(convert_e24(r2)))
-
-
-def calculate_lm317_cc(b):
-    r1 = 0
-    iout = 0
-    if "iout" in b:
-        iout = si_prefix.si_parse(b["iout"])
-        if iout < 0:
-            raise ImpossibleValueError("Get real")
-        elif iout > 1.5:
-            raise InputOutOfRangeError("Your LM317 will explode")
-        r1 = 1.25 / iout
-    elif "r1" in b:
-        r1 = si_prefix.si_parse(b["r1"])
-        iout = 1.25 / r1
-        if iout < 0:
-            raise ImpossibleValueError("Get real")
-        elif iout > 1.5:
-            raise InputOutOfRangeError("Your LM317 will explode")
-    else:
-        raise TooFewArgsError()
-    vin = "4.25V to 40.0"
-    return dict(
-        r1=si_prefix.si_format(r1),
-        iout=si_prefix.si_format(iout),
-        E24_r1=si_prefix.si_format(convert_e24(r1)),
-        vin=vin
-    )
+class rcFilter:
+    def __init__(self, d: dict, plot=False):
+        self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
+        self.c1 = si_prefix.si_parse(d.get("c1")) if d.get("c1") else None
+        self.fcut = si_prefix.si_parse(d.get("fcut")) if d.get("fcut") else None
+        self.doPlot = plot
+    def calculate(self):
+        if not self.fcut and self.r1 is not None and self.c1 is not None:
+            self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
+        elif not self.r1 and self.fcut is not None and self.c1 is not None:
+            self.r1 = 1 / (2 * math.pi * self.fcut * self.c1)
+        elif not self.c1 and self.fcut is not None and self.r1 is not None:
+            self.c1 = 1 / (2 * math.pi * self.fcut * self.r1)
+        else:
+            raise TooFewArgsError()
+    
+    def draw(self):
+        return f"""
+        ```
+        \n   
+        R1 = {si_prefix.si_format(self.r1)}Ω     Fcut = {si_prefix.si_format(self.fcut)}Hz
+        ┌───────┐ 
+   IN ──┤       ├─────┬── OUT
+        └───────┘     │ C1 = {si_prefix.si_format(self.c1)}F
+                   ───┴───                                      
+                   ───┬───        
+                      │   
+     ─────────────────┴──────
+                            
+        ```
+        """
+    def randomize(self):
+        self.r1 = randint(1,1000000)
+        self.c1 = randint(0, 1000000) / 10 ** 6
+    def plot(self):
+        fcut = self.fcut
+        cap = self.c1
+        res = self.r1
+        fmin = fcut / 1000
+        fmax = fcut * 1000
+        freqlist = []
+        gainlist = []
+        f = fmin
+        while f < fmax:
+            freqlist.append(f)
+            x = 1 / (2 * math.pi * f * cap)
+            vout = 10 * (x / sqrt((res ** 2) + (x ** 2)))
+            gain = 20 * log10(vout / 10)
+            gainlist.append(gain)
+            f = f * 1.1
+        plt.vlines(x=fcut,
+                ymin=-60,
+                ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
+                color="orange",
+                label="Cutoff frequency: {}Hz".format(si_prefix.si_format(self.fcut))
+                )
+        plt.plot(freqlist, gainlist, color="b")
+        plt.grid()
+        plt.xlabel('Frequency in Hz')
+        plt.ylabel('Gain in dB')
+        plt.xscale('log')
+        plt.ylim([min(gainlist), 10])
+        plt.xlim([min(freqlist), max(freqlist)])
+        plt.legend()
+        fig = plt.gcf()
+        imgdata = BytesIO()
+        fig.savefig(imgdata, format='png')
+        imgdata.seek(0)  # rewind the data
+        plt.clf()
+        return imgdata
+    def gen_embed(self):
+        embed = discord.Embed(title="RC filter")
+        try:
+            self.calculate()
+            self.mode = 1
+        except TooFewArgsError:
+            self.randomize()
+            self.calculate()
+            self.mode = None
+        embed.add_field(name="Schematic", value=self.draw(), inline=False)
+        if not self.mode:
+            embed.add_field(
+                name="How to use this?",
+                value=f"""
+            With this command you can calculate required resistor or capacitor value for a specific RC filter.
+            Example: `rc fcut=1k r1=100` to find c1. You can add `plot` to the end of the command if you would like a bode plot.
+            This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+            Don't try writing out the `Ω` in Ohms 
+            as it just confuses the bot (don't use R either).
+            You can also use `rcfilter`, `filter`, `lowpass`.
+            """,
+                inline=True)
+            embed.set_footer(text="Note: the above RC filter is randomly generated")
+            if self.doPlot:
+                embed.set_image(url="attachment://rc.png")
+            return embed
+        if embed:
+            embed.add_field(
+                    name="Values",
+                    value=f"R1 = __{si_prefix.si_format(self.r1)}Ω__\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
+            embed.add_field(
+                    name="Closest E24 resistor value",
+                    value=f"R1 = __{si_prefix.si_format(convert_e24(self.r1))}Ω__")
+            if self.doPlot:
+                embed.set_image(url="attachment://rc.png")
+            return embed
+    def gen_file(self):
+        imgdata = self.plot()
+        file = discord.File(BytesIO(imgdata.read()), filename="rc.png")
+        return file
 
 
 class ElectroCog(commands.Cog, name="Electronics commands"):
@@ -277,122 +402,6 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             prefix = ctx.prefix
         alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
         return ", ".join(alist)
-
-    class rc:
-        def __init__(self, d: dict, plot=False):
-            self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
-            self.c1 = si_prefix.si_parse(d.get("c1")) if d.get("c1") else None
-            self.fcut = si_prefix.si_parse(d.get("fcut")) if d.get("fcut") else None
-            self.doPlot = plot
-
-        def calculate(self):
-            if not self.fcut and self.r1 is not None and self.c1 is not None:
-                self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
-            elif not self.r1 and self.fcut is not None and self.c1 is not None:
-                self.r1 = 1 / (2 * math.pi * self.fcut * self.c1)
-            elif not self.c1 and self.fcut is not None and self.r1 is not None:
-                self.c1 = 1 / (2 * math.pi * self.fcut * self.r1)
-            else:
-                raise TooFewArgsError()
-        
-        def draw(self):
-            return f"""
-            ```
-            \n   
-            R1 = {si_prefix.si_format(self.r1)}Ω     Fcut = {si_prefix.si_format(self.fcut)}Hz
-                ┌────────┐ 
-       IN ──────┤        ├─────┬────── OUT
-                └────────┘     │ C1 = {si_prefix.si_format(self.c1)}F
-                            ───┴───                                      
-                            ───┬───        
-                               │   
-         ──────────────────────┴──────
-                                
-            ```
-            """
-
-        def randomize(self):
-            self.r1 = randint(1,1000000)
-            self.c1 = randint(0, 1000000) / 10 ** 6
-
-        def plot(self):
-            fcut = self.fcut
-            cap = self.c1
-            res = self.r1
-            fmin = fcut / 1000
-            fmax = fcut * 1000
-            freqlist = []
-            gainlist = []
-            f = fmin
-            while f < fmax:
-                freqlist.append(f)
-                x = 1 / (2 * math.pi * f * cap)
-                vout = 10 * (x / sqrt((res ** 2) + (x ** 2)))
-                gain = 20 * log10(vout / 10)
-                gainlist.append(gain)
-                f = f * 1.1
-            plt.vlines(x=fcut,
-                    ymin=-60,
-                    ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
-                    color="orange",
-                    label="Cutoff frequency: {}Hz".format(si_prefix.si_format(self.fcut))
-                    )
-            plt.plot(freqlist, gainlist, color="b")
-            plt.grid()
-            plt.xlabel('Frequency in Hz')
-            plt.ylabel('Gain in dB')
-            plt.xscale('log')
-            plt.ylim([min(gainlist), 10])
-            plt.xlim([min(freqlist), max(freqlist)])
-            plt.legend()
-            fig = plt.gcf()
-            imgdata = BytesIO()
-            fig.savefig(imgdata, format='png')
-            imgdata.seek(0)  # rewind the data
-            plt.clf()
-            return imgdata
-
-        def gen_embed(self):
-            embed = discord.Embed(title="RC filter")
-            try:
-                self.calculate()
-                self.mode = 1
-            except TooFewArgsError:
-                self.randomize()
-                self.calculate()
-                self.mode = None
-            embed.add_field(name="Schematic", value=self.draw(), inline=False)
-            if not self.mode:
-                embed.add_field(
-                    name="How to use this?",
-                    value=f"""
-                With this command you can calculate required resistor or capacitor value for a specific RC filter.
-                Example: `rc fcut=1k r1=100` to find c1. You can add `plot` to the end of the command if you would like a bode plot.
-                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-                Don't try writing out the `Ω` in Ohms 
-                as it just confuses the bot (don't use R either).
-                You can also use `rcfilter`, `filter`, `lowpass`.
-                """,
-                    inline=True)
-                embed.set_footer(text="Note: the above RC filter is randomly generated")
-                if self.doPlot:
-                    embed.set_image(url="attachment://rc.png")
-                return embed
-            if embed:
-                embed.add_field(
-                        name="Values",
-                        value=f"R1 = __{si_prefix.si_format(self.r1)}Ω__\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
-                embed.add_field(
-                        name="Closest E24 resistor value",
-                        value=f"R1 = __{si_prefix.si_format(convert_e24(self.r1))}Ω__")
-                if self.doPlot:
-                    embed.set_image(url="attachment://rc.png")
-                return embed
-
-        def gen_file(self):
-            imgdata = self.plot()
-            file = discord.File(BytesIO(imgdata.read()), filename="rc.png")
-            return file
 
     @commands.command()
     async def divider(self, ctx, *, args=None):
@@ -488,117 +497,26 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await ctx.send(embed=embed)
 
     @commands.command(name="lm317", aliases=["317cv", "cv317", "LM317", "lm317cv"])
-    async def lm317(self, ctx, *, args=None):
+    async def lm317(self, ctx, *, args=""):
         """
-        Calculate resistor values for an LM317 in CV mode for CC mode use `lm317cc`. Run the command for more details.
-        """
-        if not args:
-            random_lm = {
-                "vout": str(randint(1, 37))
-            }
-            embed = discord.Embed(title="LM317 Adjustable Regulator **CV**")
-            embed.add_field(name="Image", value=draw_lm317(calculate_lm317(random_lm)), inline=False)
-            embed.add_field(
-                name="How to use this?",
-                value=f"""With this command you can calculate required resistor values for an LM317 in CV mode.
-                Example: `{self.bot.command_prefix}lm317 vout=10v r1=240` to find r2.
-                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-                Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
-                as it just confuses the bot (don't use R either).
-                You can also use {self.get_aliases(ctx)}.
-                For CC use `{self.bot.command_prefix}lm317cc`.
-                """,
-                inline=True)
-
-            await ctx.send(embed=embed)
-        else:
-            args_parsed = parse_input(args)
-            try:
-                res = calculate_lm317(args_parsed)
-                if "iout" in res:
-                    res = calculate_lm317_cc(args_parsed)
-                    embed = discord.Embed()
-                    embed.add_field(name="Image", value=draw_lm317_cc(res), inline=False)
-                    embed.add_field(
-                        name="Values",
-                        value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
-                    embed.add_field(
-                        name="Closest E24 resistor values",
-                        value=f"R1 = {res['E24_r1']}Ω\nR2 = __{res['E24_r2']}Ω__")
-                    await ctx.send(embed=embed)
-                    return
-                embed = discord.Embed()
-                embed.add_field(name="Image", value=draw_lm317(res), inline=False)
-                embed.add_field(
-                    name="Values",
-                    value=f"R1 = {si_prefix.si_format(res['r1'])}Ω\nR2 = __{si_prefix.si_format(res['r2'])}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
-                embed.add_field(
-                    name="Closest E24 resistor values",
-                    value=f"R1 = {res['E24_r1']}Ω\nR2 = __{res['E24_r2']}Ω__")
-                await ctx.send(embed=embed)
-            except InputOutOfRangeError:
-                await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
-                return
-            except InputDifferenceError:
-                await util.errormsg(ctx,
-                                    "Difference between input and output voltage is outside of datasheet recommended values.")
-                return
-            except TooFewArgsError:
-                await util.errormsg(ctx, "Not enough arguments to compute anything.")
-                return
-            except ImpossibleValueError:
-                await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
-                return
-
-    @commands.command(name="lm317cc", aliases=["317cc", "cc317", "LM317cc"])
-    async def lm317cc(self, ctx, *, args=None):
-        """
-        Calculate resistor values for an LM317 in CC mode for CV mode use `lm317cv`. Run the command for more details.
-        """
-        if not args:
-            random_lm = {
-                "iout": str(uniform(0.1, 1.5))
-            }
-            embed = discord.Embed(title="LM317 Adjustable Regulator **CC**")
-            embed.add_field(name="Image", value=draw_lm317_cc(calculate_lm317_cc(random_lm)), inline=False)
-            embed.add_field(
-                name="How to use this?",
-                value=f"""With this command you can calculate required resistor values for an LM317 in CC mode.
-                Example: `{self.bot.command_prefix}lm317cc iout=1.3` to find r1.
-                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-                Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
-                as it just confuses the bot (don't use R either).
-                You can also use {self.get_aliases(ctx)}.
-                For CV use `{self.bot.command_prefix}lm317cv`.
-                """,
-                inline=True)
-            await ctx.send(embed=embed)
-        else:
-            args_parsed = parse_input(args)
-            try:
-                res = calculate_lm317_cc(args_parsed)
-                embed = discord.Embed()
-                embed.add_field(name="Image", value=draw_lm317_cc(res), inline=False)
-                embed.add_field(
-                    name="Values",
-                    value=f"R1 = __{res['r1']}Ω__\nVin = {res['vin']}V\nIout = {res['iout']}A")
-                embed.add_field(
-                    name="Closest E24 resistor values",
-                    value=f"R1 = __{res['E24_r1']}Ω__")
-                await ctx.send(embed=embed)
-            except InputOutOfRangeError:
-                await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
-                return
-            except InputDifferenceError:
-                await util.errormsg(ctx,
-                                    "Difference between input and output voltage is outside of datasheet recommended values.")
-                return
-            except TooFewArgsError:
-                await util.errormsg(ctx, "Not enough arguments to compute anything.")
-                return
-            except ImpossibleValueError:
-                await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
-                return
+        Calculate resistor values for an LM317 in CV and CC mode. Run the command for more details.
+        """    
+        args_parsed = parse_input(args)
+        try:
+            lm = lm317(d=args_parsed)
+            await ctx.send(embed=lm.gen_embed())
+        except InputOutOfRangeError:
+            await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
+            return
+        except InputDifferenceError:
+            await util.errormsg(ctx,"Difference between input and output voltage is outside of datasheet recommended values.")
+            return
+        except TooFewArgsError:
+            await util.errormsg(ctx, "Not enough arguments to compute anything.")
+            return
+        except ImpossibleValueError:
+            await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
+            return
 
     @commands.command(name="rc", aliases=["rcfilter", "filter", "lowpass"])
     async def rc_filter(self, ctx, *, args=""):
@@ -608,10 +526,10 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         args_parsed = parse_input(args)
         try:
             if args.endswith("plot"):
-                rc = self.rc(d=args_parsed, plot=True)
+                rc = rcFilter(d=args_parsed, plot=True)
                 await ctx.send(embed=rc.gen_embed(), file=rc.gen_file())
             else:
-                rc = self.rc(d=args_parsed)
+                rc = rcFilter(d=args_parsed)
                 await ctx.send(embed=rc.gen_embed())
         except TooFewArgsError:
             await util.errormsg(ctx, "Not enough arguments to compute anything.")
@@ -627,7 +545,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             draw_plot: scmd.Option(bool, "Display plot", required=False, default=False)
     ):
         """
-         Calculate different aspects of an RC filter.
+        Calculate different aspects of an RC filter.
         Run the command for more details.
         """
         if not c1 and not r1 and not fcut:
@@ -635,19 +553,9 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 "fcut": str(uniform(0.1, 10 ** 5)),
                 "r1": str(uniform(100, 100000))
             }
-            embed = discord.Embed(title="RC filter")
-            embed.add_field(name="Image", value=draw_rc(calculate_rc(random_rc)), inline=False)
-            embed.add_field(
-                name="How to use this?",
-                value=f"""
-                With this command you can calculate required resistor or capacitor value for a specific RC filter.
-                Example: `{self.bot.command_prefix}rc fcut=1k r1=100` to find c1.
-                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-                Don't try writing out the `Ω` in Ohms 
-                as it just confuses the bot (don't use R either).
-                """,
-                inline=True)
-            await ctx.respond(embed=embed)
+            args_parsed = parse_input(random_rc)
+            rc = rcFilter(d=args_parsed, plot=False)
+            await ctx.respond(embed=rc.gen_embed())
             return
 
         args_parsed = dict(
@@ -656,31 +564,12 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             fcut=slash_preprocessor(fcut)
         )
         try:
-            res = calculate_rc(args_parsed)
-            embed = discord.Embed()
             if draw_plot:
-                imgdata = plot_rc(args_parsed)
-                img = imgdata.read()
-                file = discord.File(BytesIO(img), filename="rc.png")
-                embed.title = "Frequency response plot of the entered rc filter."
-                embed.add_field(name="Image", value=draw_rc(res), inline=False)
-                embed.add_field(
-                    name="Values",
-                    value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
-                embed.add_field(
-                    name="Closest E24 resistor value",
-                    value=f"R1 = __{res['E24_r1']}Ω__")
-                embed.set_image(url="attachment://rc.png")
-                await ctx.respond(file=file, embed=embed)
+                rc = rcFilter(d=args_parsed, plot=True)
+                await ctx.respond(embed=rc.gen_embed(), file=rc.gen_file())
             else:
-                embed.add_field(name="Image", value=draw_rc(res), inline=False)
-                embed.add_field(
-                    name="Values",
-                    value=f"R1 = __{res['r1']}Ω__\nC1 = {res['c1']}F\nFcut = {res['fcut']}Hz")
-                embed.add_field(
-                    name="Closest E24 resistor value",
-                    value=f"R1 = __{res['E24_r1']}Ω__")
-                await ctx.respond(embed=embed)
+                rc = rcFilter(d=args_parsed, plot=False)
+                await ctx.respond(embed=rc.gen_embed())
 
         except TooFewArgsError:
             a = await util.errormsg(ctx, "Not enough arguments to compute anything.", embed_only=True)
