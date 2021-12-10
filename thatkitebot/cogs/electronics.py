@@ -121,6 +121,52 @@ class VoltageDivider:
         ```
         """
 
+    def gen_embed(self):
+        try:
+            self.calculate()
+        except TooFewArgsError:
+            self.randomize()
+            self.calculate()
+            self.mode = None
+
+        embed = discord.Embed(title="Unloaded voltage divider calculation")
+        embed.add_field(name="Schematic", value=self.draw(), inline=False)
+        embed.set_footer(text="Note: the above voltage divider is randomly generated")
+        match self.mode:
+            case None:
+                embed.add_field(
+                    name="How to use this?",
+                    value=f"""With this command you can calculate different values of an unloaded voltage divider.
+                    Example: `divider vin=10v r2=3k vout=3v`to find the value of R1.
+                    The bot will try to figure out what you are looking for based on the value you didn't enter.
+                    You can do the same for every value except Vin.
+                    This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                    Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
+                    as it just confuses the bot (don't use R either).
+                    """,
+                    inline=True)
+                embed.set_footer(text="Note: the above voltage divider is randomly generated")
+                return embed
+            case "r1":
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 =  __{self.r1}__Ω\nR2 = {self.r2}Ω\nVin = {self.vin}V\nVout = {self.vout}V")
+            case "r2":
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 =  {self.r1}Ω\nR2 = __{self.r2}__Ω\nVin = {self.vin}V\nVout = {self.vout}V")
+            case "vin":
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 =  {self.r1}Ω\nR2 = {self.r2}Ω\nVin = __{self.vin}__V\nVout = {self.vout}V")
+            case "vout":
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 =  {self.r1}Ω\nR2 = {self.r2}Ω\nVin = __{self.vin}__V\nVout = {self.vout}V")
+
+        if embed:
+            return embed
+
 
 class LM317:
     def __init__(self, d: dict):
@@ -392,64 +438,8 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         Calculate values of an unloaded voltage divider. Run the command for more details.
         Thank you dimin for the idea and the "art"
         """
-        if not args:
-            random_divider = {
-                "r1": str(randint(1, 10000000)),
-                "r2": str(randint(1, 10000000)),
-                "vin": str(randint(1, 1000))
-            }
-
-            embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(calculate_divider("vout", random_divider)), inline=False)
-            embed.add_field(
-                name="How to use this?",
-                value=f"""With this command you can calculate different values of an unloaded voltage divider.
-                Example: `{self.bot.command_prefix}divider vin=10v r2=3k vout=3v`to find the value of R1.
-                The bot will try to figure out what you are looking for based on the value you didn't enter.
-                You can do the same for every value except Vin.
-                This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-                Writing the "V" after the voltages is optional but don't try writing out the `Ω` in Ohms 
-                as it just confuses the bot (don't use R either).
-                """,
-                inline=True)
-            embed.set_footer(text="Note: the above voltage divider is randomly generated")
-            await ctx.send(embed=embed)
-        else:
-            args_parsed = parse_input(args)
-
-        if args_parsed.get("r1") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r2"):
-            res = calculate_divider("r2", args_parsed)
-            embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(res), inline=False)
-            embed.add_field(
-                name="Values",
-                value=f"R1 =  {res['r1']}Ω\nR2 = __{res['r2']}Ω__\nVin = {res['vin']}V\nVout = {res['vout']}V")
-            embed.set_footer(text="Note: the underlined value is the output of the calculator (i.e the missing value)")
-            await ctx.send(embed=embed)
-
-        elif args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout") and not args_parsed.get("r1"):
-            res = calculate_divider("r1", args_parsed)
-            embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(res), inline=False)
-            embed.add_field(
-                name="Values",
-                value=f"R1 = __{res['r1']}__Ω\nR2 = {res['r2']}Ω\nVin = {res['vin']}V\nVout = {res['vout']}V"
-            )
-            embed.set_footer(text="Note: the underlined value is the output of the calculator (i.e the missing value)")
-            await ctx.send(embed=embed)
-
-        elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and not args_parsed.get("vout"):
-            res = calculate_divider("vout", args_parsed)
-            embed = discord.Embed(title="Unloaded voltage divider calculation")
-            embed.add_field(name="Image", value=draw_divider(res), inline=False)
-            embed.add_field(
-                name="Values",
-                value=f"R1 = {res['r1']}Ω\nR2 = {res['r2']}Ω\nVin = {res['vin']}V\nVout = __{res['vout']}V__")
-            embed.set_footer(text="Note: the underlined value is the output of the calculator (i.e the missing value)")
-            await ctx.send(embed=embed)
-
-        elif args_parsed.get("r1") and args_parsed.get("r2") and args_parsed.get("vin") and args_parsed.get("vout"):
-            await util.errormsg(ctx, "There is nothing to calculate. Please enter exactly 3 values")
+        div = VoltageDivider(d=parse_input(args))
+        await ctx.send(div.gen_embed())
 
     @commands.command(name="cap_energy", aliases=["joule", "energy", "ce", "charge"])
     async def capacitor_energy(self, ctx, *, args=None):
@@ -558,6 +548,24 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             a = await util.errormsg(ctx, "Not enough arguments to compute anything.", embed_only=True)
             await ctx.respond(embed=a)
             return
+
+    @scmd.slash_command(guild_ids=[759419755253465188], name="divider")
+    async def _divider(
+            self,
+            ctx: discord.ApplicationContext,
+            vin: scmd.Option(str, "Input voltage", required=True, default=None),
+            r1: scmd.Option(str, "Value for R1", required=False, default=None),
+            r2: scmd.Option(str, "Value for R2", required=False, default=None),
+            vout: scmd.Option(str, "Output Voltage", required=False, default=False)
+    ):
+        args_parsed = dict(
+            r1=slash_preprocessor(r1),
+            r2=slash_preprocessor(r2),
+            vin=slash_preprocessor(vin),
+            vout=slash_preprocessor(vout)
+        )
+        div = VoltageDivider(d=args_parsed)
+        await ctx.respond(embed=div.gen_embed())
 
 
 def setup(bot):
