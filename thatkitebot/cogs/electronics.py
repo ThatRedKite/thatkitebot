@@ -74,51 +74,55 @@ def slash_preprocessor(a: str):
     return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
 
 
-def calculate_divider(mode, b):
-    match mode:
-        case "r1":
-            r2 = si_prefix.si_parse(b["r2"])
-            vin = si_prefix.si_parse(b["vin"])
-            vout = si_prefix.si_parse(b["vout"])
+class VoltageDivider:
+    def __init__(self, d: dict):
+        self.vin = si_prefix.si_parse(d.get("vin")) if d.get("vin") else None
+        self.vout = si_prefix.si_parse(d.get("vout")) if d.get("vout") else None
+        self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
+        self.r2 = si_prefix.si_parse(d.get("r2")) if d.get("r2") else None
+        self.mode = None
 
-            b.update({
-                "r1": si_prefix.si_format(r2 * (vin - vout) / vout),
-                "r2": si_prefix.si_format(r2),
-                "vin": si_prefix.si_format(vin),
-                "vout": si_prefix.si_format(vout),
-            }
-            )
+    def calculate(self):
+        if self.r1 and self.r2 and self.vin and not self.vout:
+            self.vout = self.vin * self.r2 / (self.r1 + self.r2)
+            self.mode = "vout"
 
-        case "r2":
-            r1 = si_prefix.si_parse(b["r1"])
-            vin = si_prefix.si_parse(b["vin"])
-            vout = si_prefix.si_parse(b["vout"])
-            b.update({
-                "r1": si_prefix.si_format(r1),
-                "r2": si_prefix.si_format(vout * r1 / (vin - vout)),
-                "vin": si_prefix.si_format(vin),
-                "vout": si_prefix.si_format(vout),
-            }
-            )
+        elif self.r2 and self.vin and self.vout and not self.r1:
+            self.r1 = self.vout * self.r1 / (self.vin - self.vout)
+            self.mode = "r1"
 
-        case "vout":
-            r1 = si_prefix.si_parse(b["r1"])
-            r2 = si_prefix.si_parse(b["r2"])
-            vin = si_prefix.si_parse(b["vin"])
-            b.update({
-                "r1": si_prefix.si_format(r1),
-                "r2": si_prefix.si_format(r2),
-                "vin": si_prefix.si_format(vin),
-                "vout": si_prefix.si_format(vin * r2 / (r1 + r2)),
-            }
-            )
+        elif self.r1 and self.vin and self.vout and not self.r2:
+            self.r2 = self.vout * self.r1 / (self.vin - self.vout)
+            self.mode = "r2"
 
-        case _:
-            raise ValueError("Invalid mode, please use r1, r2 or vout as mode")
-    return b
+        else:
+            raise TooFewArgsError()
+
+        self.format()
+
+    def draw(self):
+        return f"""
+        ```
+         Vin = {self.vin}V
+         ▲
+         │
+        ┌┴┐
+        │ │ R1 = {self.r1}Ω
+        │ │
+        └┬┘
+         ├───► Vout = {self.vout}V
+        ┌┴┐
+        │ │ R2 = {self.r2}Ω
+        │ │
+        └┬┘
+         │
+        ─┴─
+        GND
+        ```
+        """
 
 
-class lm317:
+class LM317:
     def __init__(self, d: dict):
         self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
         self.r2 = si_prefix.si_parse(d.get("r2")) if d.get("r2") else None
