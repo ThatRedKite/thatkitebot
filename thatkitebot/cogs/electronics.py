@@ -60,32 +60,6 @@ def convert_e24(input):
     return nearest * 10 ** power
 
 
-def draw_divider(indict):
-    vin = indict["vin"]
-    r1 = indict["r1"]
-    r2 = indict["r2"]
-    vout = indict["vout"]
-    return f"""
-    ```
-     Vin = {vin}V
-     ▲
-     │
-    ┌┴┐
-    │ │ R1 = {r1}Ω
-    │ │
-    └┬┘
-     ├───► Vout = {vout}V
-    ┌┴┐
-    │ │ R2 = {r2}Ω
-    │ │
-    └┬┘
-     │
-    ─┴─
-    GND
-    ```
-    """
-    
-
 def parse_input(s):
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
@@ -278,12 +252,13 @@ class lm317:
             return embed
 
 
-class rcFilter:
+class RCFilter:
     def __init__(self, d: dict, plot=False):
         self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
         self.c1 = si_prefix.si_parse(d.get("c1")) if d.get("c1") else None
         self.fcut = si_prefix.si_parse(d.get("fcut")) if d.get("fcut") else None
         self.doPlot = plot
+
     def calculate(self):
         if not self.fcut and self.r1 is not None and self.c1 is not None:
             self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
@@ -309,9 +284,11 @@ class rcFilter:
                             
         ```
         """
+
     def randomize(self):
         self.r1 = randint(1,1000000)
         self.c1 = randint(0, 1000000) / 10 ** 6
+
     def plot(self):
         fcut = self.fcut
         cap = self.c1
@@ -348,6 +325,7 @@ class rcFilter:
         imgdata.seek(0)  # rewind the data
         plt.clf()
         return imgdata
+
     def gen_embed(self):
         embed = discord.Embed(title="RC filter")
         try:
@@ -384,6 +362,7 @@ class rcFilter:
             if self.doPlot:
                 embed.set_image(url="attachment://rc.png")
             return embed
+
     def gen_file(self):
         imgdata = self.plot()
         file = discord.File(BytesIO(imgdata.read()), filename="rc.png")
@@ -503,7 +482,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         """    
         args_parsed = parse_input(args)
         try:
-            lm = lm317(d=args_parsed)
+            lm = LM317(d=args_parsed)
             await ctx.send(embed=lm.gen_embed())
         except InputOutOfRangeError:
             await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
@@ -526,10 +505,10 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         args_parsed = parse_input(args)
         try:
             if args.endswith("plot"):
-                rc = rcFilter(d=args_parsed, plot=True)
+                rc = RCFilter(d=args_parsed, plot=True)
                 await ctx.send(embed=rc.gen_embed(), file=rc.gen_file())
             else:
-                rc = rcFilter(d=args_parsed)
+                rc = RCFilter(d=args_parsed)
                 await ctx.send(embed=rc.gen_embed())
         except TooFewArgsError:
             await util.errormsg(ctx, "Not enough arguments to compute anything.")
@@ -554,7 +533,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 "r1": str(uniform(100, 100000))
             }
             args_parsed = parse_input(random_rc)
-            rc = rcFilter(d=args_parsed, plot=False)
+            rc = RCFilter(d=args_parsed, plot=False)
             await ctx.respond(embed=rc.gen_embed())
             return
 
@@ -565,10 +544,10 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         )
         try:
             if draw_plot:
-                rc = rcFilter(d=args_parsed, plot=True)
+                rc = RCFilter(d=args_parsed, plot=True)
                 await ctx.respond(embed=rc.gen_embed(), file=rc.gen_file())
             else:
-                rc = rcFilter(d=args_parsed, plot=False)
+                rc = RCFilter(d=args_parsed, plot=False)
                 await ctx.respond(embed=rc.gen_embed())
 
         except TooFewArgsError:
