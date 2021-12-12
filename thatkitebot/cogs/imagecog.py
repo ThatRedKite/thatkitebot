@@ -29,6 +29,8 @@ from os.path import join
 from PIL import ImageDraw, ImageFont, Image
 from wand.image import Image as WandImage
 from wand.color import Color
+from wand.drawing import Drawing
+from wand.font import Font
 from thatkitebot.backend import util
 
 
@@ -112,24 +114,26 @@ def reduce(buf, fn):
 
 
 def caption(blob, fn, ct, path):
-    font = ImageFont.truetype(join(path, "DejaVuSans.ttf"), 47)  # load the font
-    with Image.open(blob) as im:
-        outline_width = 3
-        W, H = im.size
-        w, h = font.getsize(ct)
-        # convert the image to RGBA to avoid some problems
-        im = im.convert("RGBA")
-        draw = ImageDraw.Draw(im)
-        # draw the outline
-        draw.text(((W - w) / 2 - outline_width, int((H - h) / 1.15) - outline_width), ct, fill="black", font=font)
-        draw.text(((W - w) / 2 - outline_width, int((H - h) / 1.15) + outline_width), ct, fill="black", font=font)
-        draw.text(((W - w) / 2 + outline_width, int((H - h) / 1.15) - outline_width), ct, fill="black", font=font)
-        draw.text(((W - w) / 2 + outline_width, int((H - h) / 1.15) + outline_width), ct, fill="black", font=font)
-        # draw the text itself
-        draw.text(((W - w) / 2, int((H - h) / 1.15)), ct, fill="white", font=font)
-        with BytesIO() as ob:
-            im.save(ob, format="png")
-            b = ob.getvalue()
+    in_str = str(ct)
+    x = re.findall(r"[<]:\w{2,}:\d{15,}[>]", in_str)
+    for n in x: in_str = in_str.replace(str(n), re.findall(r":\w{2,}:", n)[0])
+    with Drawing() as draw:
+        with WandImage(file=blob) as image:
+            # Calculate image parameters for the text to wrap and fit.
+            txt_top = int(0.75 * image.height)  # add text to the bottom 15% of the image
+            txt_left = int(0.10 * image.width)  # leave 10 % the image from the left
+            txt_width = image.width - (
+                        txt_left * 2)  # total width - 10% * 2 will leave 10% of with on the right side as well
+            txt_height = image.height - txt_top  # use the whole 15% for text
+            if len(in_str) >= 10:
+                stroke_width = 1
+            else:
+                stroke_width = 3
+            font = Font(path + "DejaVuSans.ttf", color="white", stroke_color="black", stroke_width=stroke_width)
+            image.caption(in_str, left=txt_left, top=txt_top, width=txt_width, height=txt_height, font=font,
+                          gravity='center')
+            image.format = 'png'
+            b = image.make_blob()
     return b, fn
 
 
