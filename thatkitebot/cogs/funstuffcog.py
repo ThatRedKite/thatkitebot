@@ -236,6 +236,17 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
 
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.check(can_send_image)
+    @commands.command(name="xkcd", aliases=["comic", "xkcdcomic"])
+    async def _xkcd(self, ctx, *, args=None):
+        """Send a random or specific xkcd comic"""
+        embed = await url._xkcd(args)
+        if embed is None:
+            await util.errormsg(ctx, "Invalid arguments")
+            return
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
