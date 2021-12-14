@@ -121,6 +121,17 @@ class VoltageDivider:
         ```
         """
 
+    def format(self):
+        self.r1 = si_prefix.si_format(self.r1)
+        self.r2 = si_prefix.si_format(self.r2)
+        self.vout = si_prefix.si_format(self.vout)
+        self.vin = si_prefix.si_format(self.vin)
+
+    def randomize(self):
+        self.r1 = randint(1,1000000)
+        self.r2 = randint(1, 1000000)
+        self.vin = randint(1, 100)
+
     def gen_embed(self):
         try:
             self.calculate()
@@ -553,11 +564,15 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     async def _divider(
             self,
             ctx: discord.ApplicationContext,
-            vin: scmd.Option(str, "Input voltage", required=True, default=None),
             r1: scmd.Option(str, "Value for R1", required=False, default=None),
             r2: scmd.Option(str, "Value for R2", required=False, default=None),
+            vin: scmd.Option(str, "Input voltage", required=False, default=None),
             vout: scmd.Option(str, "Output Voltage", required=False, default=False)
     ):
+        """
+        Calculate values of an unloaded voltage divider. Run the command for more details.
+        Thank you dimin for the idea and the "art"
+        """
         args_parsed = dict(
             r1=slash_preprocessor(r1),
             r2=slash_preprocessor(r2),
