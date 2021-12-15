@@ -15,5 +15,6 @@ data/redis
 data/*.yml
 # test files
 test*.*
-
+# Pycharm
+.idea
 
