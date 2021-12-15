@@ -65,6 +65,7 @@ enabled_ext = [
     "thatkitebot.cogs.help",
     "thatkitebot.cogs.chemistry",
     "thatkitebot.cogs.electronics",
+    "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser"
 ]
 
