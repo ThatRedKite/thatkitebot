@@ -162,7 +162,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             "mm", "ehhh", "uhh", "<:zycosmoke:821821351576338534>", "🥵",
             "hot", "Kite sounds", "uh huh", "no idea",
             "almost nice", "scary", "negative", "mm?", "has a good ring", "why?", "iconic",
-            "epic", "rad", "neat", "accaptable", "superb", "awful", "not good", "sad", "beastly",
+            "epic", "rad", "neat", "acceptable", "superb", "awful", "not good", "sad", "beastly",
             "wild", "meh...", "I am fuming", "What is that supposed to mean?", "are you trying to cancel me?",
             "cool", "not cool", "try harder", "idk", "exceptional", "big", "massive", "I am not sure",
             "why not?", "my ass", "worthy", "hahaha", "good one", "not great not, terrible", "is it legal?",

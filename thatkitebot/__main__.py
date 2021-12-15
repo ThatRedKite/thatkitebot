@@ -20,6 +20,8 @@
 
 
 import os
+from abc import ABC
+
 import redis
 from datetime import datetime
 from pathlib import Path
@@ -63,11 +65,12 @@ enabled_ext = [
     "thatkitebot.cogs.help",
     "thatkitebot.cogs.chemistry",
     "thatkitebot.cogs.electronics",
+    "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser"
 ]
 
 
-class ThatKiteBot(commands.Bot):
+class ThatKiteBot(commands.Bot, ABC):
     def __init__(self, command_prefix, dirname, tt, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
@@ -78,7 +81,7 @@ class ThatKiteBot(commands.Bot):
         self.tempdir = "/tmp/"
 
         # info
-        self.version = "3.2"
+        self.version = "3.3"
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())

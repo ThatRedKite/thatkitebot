@@ -46,15 +46,17 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         await self.bot.close()
 
     @commands.is_owner()
-    @commands.command(aliases=["reload", "reboot"])
+    @commands.command(aliases=["reload", "reboot", "r"])
     async def restart(self, ctx):
         """Reloads all cogs"""
         extensions = list(self.bot.extensions.keys())
         for extension in extensions:
-            try:
-                self.bot.reload_extension(extension)
-            except Exception as exc:
-                raise exc
+            if not extension == "thatkitebot.cogs.electroslash":
+                try:
+                    self.bot.reload_extension(extension)
+                    print(f"Reloaded {extension}")
+                except Exception as exc:
+                    raise exc
         await ctx.send(f"All cogs reloaded.")
 
     @commands.is_owner()
