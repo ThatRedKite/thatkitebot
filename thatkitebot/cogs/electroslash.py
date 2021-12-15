@@ -13,7 +13,7 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     def __init__(self, bot):
         self.bot = bot
 
-    @scmd.slash_command(guild_ids=[759419755253465188], name="rc")
+    @scmd.slash_command(name="rc")
     async def _rc(
             self,
             ctx: discord.ApplicationContext,
@@ -54,7 +54,7 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
             await ctx.respond(embed=a)
             return
 
-    @scmd.slash_command(guild_ids=[759419755253465188], name="divider")
+    @scmd.slash_command(name="divider")
     async def _divider(
             self,
             ctx: discord.ApplicationContext,
