@@ -58,6 +58,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
                 except Exception as exc:
                     raise exc
         await ctx.send(f"All cogs reloaded.")
+        print("\n")
 
     @commands.is_owner()
     @commands.command()
