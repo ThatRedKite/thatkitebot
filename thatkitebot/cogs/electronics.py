@@ -449,8 +449,11 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         Calculate values of an unloaded voltage divider. Run the command for more details.
         Thank you dimin for the idea and the "art"
         """
-        div = VoltageDivider(d=parse_input(args))
-        await ctx.send(div.gen_embed())
+        try:
+            div = VoltageDivider(d=parse_input(args))
+        except:
+            div = VoltageDivider(d={})
+        await ctx.send(embed=div.gen_embed())
 
     @commands.command(name="cap_energy", aliases=["joule", "energy", "ce", "charge"])
     async def capacitor_energy(self, ctx, *, args=None):
