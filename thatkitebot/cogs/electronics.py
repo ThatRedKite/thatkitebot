@@ -88,7 +88,7 @@ class VoltageDivider:
             self.mode = "vout"
 
         elif self.r2 and self.vin and self.vout and not self.r1:
-            self.r1 = self.vout * self.r1 / (self.vin - self.vout)
+            self.r1 = self.r2 * (self.vin - self.vout) / self.vout
             self.mode = "r1"
 
         elif self.r1 and self.vin and self.vout and not self.r2:
