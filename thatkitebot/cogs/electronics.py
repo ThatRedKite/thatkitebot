@@ -142,7 +142,6 @@ class VoltageDivider:
 
         embed = discord.Embed(title="Unloaded voltage divider calculation")
         embed.add_field(name="Schematic", value=self.draw(), inline=False)
-        embed.set_footer(text="Note: the above voltage divider is randomly generated")
         match self.mode:
             case None:
                 embed.add_field(
