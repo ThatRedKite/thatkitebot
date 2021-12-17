@@ -105,7 +105,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                         b = gen2.make_short_sentence(10)
                         genlist2.add(b)
 
-            if len(genlist) > 0:
+            if len(genlist2) > 0:
                 out = ". ".join([a for a in genlist2 if a])
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
