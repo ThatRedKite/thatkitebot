@@ -23,11 +23,15 @@ import discord
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from thatkitebot.backend.util import errormsg
+from thatkitebot.backend import cache
+import aioredis
+import json
 
 
 class ListenerCog(commands.Cog):
     def __init__(self, bot):
         self.dirname = bot.dirname
+        self.redis: aioredis.Redis = bot.redis_cache
         self.bot: discord.Client = bot
 
     @commands.Cog.listener()
@@ -69,6 +73,22 @@ class ListenerCog(commands.Cog):
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx, ex):
         raise ex
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        await cache.add_message_to_cache(self.redis, message)
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        key = f"{payload.guild_id}:{payload.channel_id}:{payload.cached_message.author.id}:{payload.message_id}"
+        if await self.redis.exists(key):
+            await self.redis.delete(key)
+
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload):
+        key = f"{payload.guild_id}:{payload.channel_id}:{payload.cached_message.author.id}:{payload.message_id}"
+        if await self.redis.exists(key):
+            await cache.add_message_to_cache(self.redis, payload.cached_message)
 
 
 def setup(bot):

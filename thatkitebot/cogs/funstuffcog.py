@@ -24,7 +24,7 @@ from discord.ext import commands
 import typing
 import glob
 from random import choice, Random
-from thatkitebot.backend import url, util
+from thatkitebot.backend import url, util, cache
 from datetime import datetime
 
 
@@ -46,7 +46,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         self.bot: discord.Client = bot
         self._last_member = None
         self.dirname = bot.dirname
-        # Variables for markov game
+        self.redis = bot.redis_cache
 
     @commands.command()
     @commands.check(can_send_image)
@@ -54,22 +54,24 @@ class FunStuff(commands.Cog, name="fun commands"):
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
-    @commands.cooldown(1, 90, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, user: typing.Optional[discord.Member],  channel: typing.Optional[discord.TextChannel]):
+    async def _markov(self, ctx, user: typing.Optional[discord.User],  channel: typing.Optional[discord.TextChannel]):
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
         if not user:
             user = ctx.message.author
-        if not channel:
+        elif not channel:
             channel = ctx.channel
+
         async with ctx.channel.typing():
             try:
-                messagelist = [message.clean_content for message in self.bot.cached_messages if message.author is user and message.guild is ctx.guild and ctx.channel is channel]
-                if not len(messagelist) > 150:
+                messagelist = await cache.get_contents(self.redis, ctx.guild.id, channel.id, user.id)
+                if not len(messagelist) > 300:
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
+                        await cache.add_message_to_cache(self.redis, message)
                         messagelist.append(str(message.clean_content))
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
@@ -103,7 +105,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                         b = gen2.make_short_sentence(10)
                         genlist2.add(b)
 
-            if len(genlist) > 0:
+            if len(genlist2) > 0:
                 out = ". ".join([a for a in genlist2 if a])
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
