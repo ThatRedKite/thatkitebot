@@ -3,7 +3,6 @@ services:
     build:  .
     links:
       - "redis:redis"
-      - "redis_cache:redis_cache"
     volumes:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/
@@ -19,8 +18,4 @@ services:
       - ./data/redis:/data
     image: "redis:alpine"
     entrypoint: redis-server --appendonly yes
-
-  redis_cache:
-    container_name: redis_cache
-    image: "redis:alpine"
 
