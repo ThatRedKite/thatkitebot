@@ -40,7 +40,10 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         """
         process = psutil.Process(self.bot.pid)
         mem = si_prefix.si_format(process.memory_info()[0])
-        redismem = si_prefix.si_format((await self.redis.info())["used_memory"])
+        redismem = si_prefix.si_format(
+            ((await self.redis.info())["used_memory"] + (await self.bot.redis_cache.info())["used_memory"])
+        )
+
         cpu = psutil.cpu_percent(interval=None)
         ping = round(self.bot.latency * 1000, 1)
         uptime = str(datetime.now() - self.bot.starttime).split(".")[0]
