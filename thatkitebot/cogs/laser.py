@@ -152,7 +152,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
                          If you are not sure the wavelength but you know the color,
                          you can ask someone, do `{self.bot.command_prefix}laser color (color)` or refer to `+spectrum`.""",
                         inline=True)
-        embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety")
+        embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety2 or ask.")
         await ctx.send(embed=embed)
 
     @laser.command()
