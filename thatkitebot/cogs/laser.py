@@ -167,7 +167,8 @@ class LaserCog(commands.Cog, name="Laser commands"):
         file = discord.File(BytesIO(b), filename="color.jpeg")
         embed = discord.Embed(title=f"Approximated color for {color}nm")
         embed.set_image(url="attachment://color.jpeg")
-        embed.set_footer(text="This is not 100% accurate since your monitor and eyes play a role but this is as close as it can realistically get.\n"
+        embed.set_footer(text="This is not 100% accurate since your monitor and\n" 
+                              "eyes play a role but this is as close as it can realistically get.\n"
                               "If the color is black, it is considered invisible")
         await ctx.send(file=file, embed=embed)
 
