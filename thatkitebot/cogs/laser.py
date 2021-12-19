@@ -169,7 +169,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
         embed.set_image(url="attachment://color.jpeg")
         embed.set_footer(text="This is not 100% accurate since your monitor and\n" 
                               "eyes play a role but this is as close as it can get.\n"
-                              "If the color is black, it is considered invisible")
+                              "If the color is black, it is considered invisible.")
         await ctx.send(file=file, embed=embed)
 
     @laser.command(aliases=["diff"])
