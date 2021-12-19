@@ -17,6 +17,7 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 # ------------------------------------------------------------------------------
+from typing import Optional
 
 from discord.ext import commands
 from wand.image import Image as WandImage
@@ -119,40 +120,55 @@ class LaserCog(commands.Cog, name="Laser commands"):
             await self.goggles(ctx)
 
     @laser.command(aliases=["glasses", "safety"])
-    async def goggles(self, ctx):
+    async def goggles(self, ctx, section: str = ""):
         """
         Returns a laser safety information.
         """
-        embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
-                              description="""5mW is the safety limit where your blink reflex should save you from any damage.
-                               Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
+        brands = section.lower() in ["brands", "companies", "manufacturers"]
+        od = section.lower() in ["od", "density"]
+        amazon = section.lower() in ["amazon", "wish"]
+        wavelength = section.lower() in ["wavelength", "nm", "nanometers"]
+        if not brands and not od and not amazon and not wavelength:
+            brands = True
+            od = True
+            amazon = True
+            wavelength = True
+            embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
+                                  description="""5mW is the safety limit where your blink reflex should save you from any damage.
+                                   Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
+        else:
+            embed = discord.Embed(title="Laser safety guide")
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/909159696798220400/912036244073115658/14429.png")
-        embed.add_field(name="\nLaser safety equipment can be found here: ",
-                        value="[Laserglow](https://www.laserglow.com/product/AGF-Laser-Safety-Goggles)\n"
-                              "[Lasertack](https://lasertack.com/en/laser-safety-glasses)\n"
-                              "[Thorlabs](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=762)",
-                        inline=False)
-        embed.add_field(name="\nOther trusted brands include",
-                        value="Honeywell, Glendale, Sperian,"
-                              "Newport/MKS, Edmund Optics, Laservision/Uvex,"
-                              "Laserglow, NoIR (LaserShield)",
-                        inline=False)
-        embed.add_field(name="\nAnything from Amazon, AliExpress, Wish is **__unsafe!__**",
-                        value="If you wish to see for the rest of your life, **__do not use them!__**", inline=True)
-        embed.add_field(name="\nWhat is OD?",
-                        value="""OD stands for *Optical density*.
-                        It’s the fraction of light (of a certain wavelength) that gets through the goggles,expressed in powers of 10.
-                        OD1 means that *10%* of the light that hits the goggles gets through.
-                        OD2 means *1%*,
-                        OD3 is *0.1%*, and so on.""",
-                        inline=False)
-        embed.add_field(name="\nWhat is the wavelength or nm?",
-                        value=f"""The wavelength in nanometers (nm) corresponds to the color.
-                         If you are not sure the wavelength but you know the color,
-                         you can ask someone, do `{self.bot.command_prefix}laser color (color)` or refer to `+spectrum`.""",
-                        inline=True)
-        embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety")
+        if brands:
+            embed.add_field(name="\nLaser safety equipment can be found here: ",
+                            value="[Laserglow](https://www.laserglow.com/product/AGF-Laser-Safety-Goggles)\n"
+                                  "[Lasertack](https://lasertack.com/en/laser-safety-glasses)\n"
+                                  "[Thorlabs](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=762)",
+                            inline=False)
+            embed.add_field(name="\nOther trusted brands include",
+                            value="Honeywell, Glendale, Sperian,"
+                                  "Newport/MKS, Edmund Optics, Laservision/Uvex,"
+                                  "Laserglow, NoIR (LaserShield)",
+                            inline=False)
+        if amazon:
+            embed.add_field(name="\nAnything from Amazon, AliExpress, Wish is **__unsafe!__**",
+                            value="If you wish to see for the rest of your life, **__do not use them!__**", inline=True)
+        if od:
+            embed.add_field(name="\nWhat is OD?",
+                            value="""OD stands for *Optical density*.
+                            It’s the fraction of light (of a certain wavelength) that gets through the goggles,expressed in powers of 10.
+                            OD1 means that *10%* of the light that hits the goggles gets through.
+                            OD2 means *1%*,
+                            OD3 is *0.1%*, and so on.""",
+                            inline=False)
+        if wavelength:
+            embed.add_field(name="\nWhat is the wavelength or nm?",
+                            value=f"""The wavelength in nanometers (nm) corresponds to the color.
+                             If you are not sure the wavelength but you know the color,
+                             you can ask someone, do `{self.bot.command_prefix}laser color (color)` or refer to `+spectrum`.""",
+                            inline=True)
+            embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety")
         await ctx.send(embed=embed)
 
     @laser.command()
@@ -167,8 +183,8 @@ class LaserCog(commands.Cog, name="Laser commands"):
         file = discord.File(BytesIO(b), filename="color.jpeg")
         embed = discord.Embed(title=f"Approximated color for {color}nm")
         embed.set_image(url="attachment://color.jpeg")
-        embed.set_footer(text="This is not 100% accurate since your monitor and eyes play a role but this is as close as it can realistically get.\n"
-                              "If the color is black, it is considered invisible")
+        embed.set_footer(text="This is not 100% accurate since your monitor and\neyes play a role but this is as close as it can get.\n"
+                              "If the color is black, it is considered invisible.")
         await ctx.send(file=file, embed=embed)
 
     @laser.command(aliases=["diff"])
