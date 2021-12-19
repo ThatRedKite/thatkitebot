@@ -110,7 +110,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
             url="https://media.discordapp.net/attachments/910895468001767484/913348594269036584/unknown.png")
         await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 10, commands.BucketType.channel)
+    @commands.cooldown(1, 5, commands.BucketType.channel)
     @commands.group()
     async def laser(self, ctx):
         """
@@ -201,12 +201,14 @@ class LaserCog(commands.Cog, name="Laser commands"):
                             value="The diffraction grating's slits per mm (L/mm) \n Distance from the diffraction grating to a wall (L) \n Distance between split beams (D) ",
                             inline=False)
             embed.add_field(name="Use the bot for calculations.",
-                            value="You can use this command to do the calculation, for example: `{}laser diffraction lmm=1000 D=14.3 L=11.3`".format(
+                            value="You can use this command to do the calculation, for example: `{}laser diffraction lmm=1000 L=6.78 D=11.6`".format(
                                 self.bot.command_prefix))
+            embed.set_footer(text="This command accepts SI prefixes.")
             await ctx.send(embed=embed)
         else:
             try:
                 p = parse_input(args)
+                p = {k.lower(): v for k, v in p.items()}
                 res = calculate_diffraction(p)
                 embed = discord.Embed(title="Diffraction Grating Equation")
                 embed.set_image(
