@@ -10,9 +10,8 @@ async def add_message_to_cache(redis: Redis, message: Message):
         clean_content=message.clean_content,
         created_at=message.created_at.timestamp()
     )
-    async with redis.pipeline(transaction=True) as pipe:
-        await pipe.hmset(key, msgdict)
-        await pipe.expire(key, timedelta(weeks=1))
+    await redis.hmset(key, msgdict)
+    await redis.expire(key, timedelta(weeks=1))
     return message
 
 
