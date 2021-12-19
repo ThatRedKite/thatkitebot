@@ -135,7 +135,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
                         inline=False)
         embed.add_field(name="\nOther trusted brands include",
                         value="Honeywell, Glendale, Sperian,"
-                              "Newport/MKS, Thorlabs, Laservision/Uvex,"
+                              "Newport/MKS, Edmund Optics, Laservision/Uvex,"
                               "Laserglow, NoIR (LaserShield)",
                         inline=False)
         embed.add_field(name="\nAnything from Amazon, AliExpress, Wish is **__unsafe!__**",
@@ -167,9 +167,8 @@ class LaserCog(commands.Cog, name="Laser commands"):
         file = discord.File(BytesIO(b), filename="color.jpeg")
         embed = discord.Embed(title=f"Approximated color for {color}nm")
         embed.set_image(url="attachment://color.jpeg")
-        embed.set_footer(text="this is not 100% accurate\n since your monitor,"
-                              "eyes and other factors play a role\n but"
-                              "it is as close as it can get")
+        embed.set_footer(text="This is not 100% accurate since your monitor and eyes play a role but this is as close as it can realistically get.\n"
+                              "If the color is black, it is considered invisible")
         await ctx.send(file=file, embed=embed)
 
     @laser.command(aliases=["diff"])
