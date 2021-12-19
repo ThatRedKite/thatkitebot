@@ -63,7 +63,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         """
         if not user:
             user = ctx.message.author
-        elif not channel:
+        if not channel:
             channel = ctx.channel
 
         async with ctx.channel.typing():
