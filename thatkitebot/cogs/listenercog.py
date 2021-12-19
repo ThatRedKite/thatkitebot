@@ -80,13 +80,13 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        key = f"{payload.guild_id}:{payload.channel_id}:{payload.cached_message.author.id}:{payload.message_id}"
+        key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
         if await self.redis.exists(key):
             await self.redis.delete(key)
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
-        key = f"{payload.guild_id}:{payload.channel_id}:{payload.cached_message.author.id}:{payload.message_id}"
+        key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
         if await self.redis.exists(key):
             await cache.add_message_to_cache(self.redis, payload.cached_message)
 
