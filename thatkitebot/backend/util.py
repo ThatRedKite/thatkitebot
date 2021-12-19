@@ -43,7 +43,6 @@ async def errormsg(ctx=None, msg: str="", exc="", embed_only=False):
         embed.set_footer(text=exc)
         await ctx.send(embed=embed, delete_after=5.0)
         await asyncio.sleep(5.0)
-        await ctx.message.delete()
     else:
         embed = discord.Embed(title="**ERROR!**", description=msg)
         embed.color = EmbedColors.traffic_red
