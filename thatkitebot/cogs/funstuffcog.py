@@ -85,13 +85,13 @@ class FunStuff(commands.Cog, name="fun commands"):
                 return
 
             genlist = set()  # create a set to avoid duplicate messages (only works sometimes)
-            for i in range(5):
-                a = gen1.make_sentence(tries=10)
+            for i in range(10):
+                a = gen1.make_sentence(tries=30)
                 if a:
                     genlist.add(a)  # add the string a to the genlist
                 else:
-                    a = gen1.make_short_sentence(7)  # try to make a short sentence instead
-                    genlist.add(a) # add the string to the genlist
+                    a = gen1.make_short_sentence(5)  # try to make a short sentence instead
+                    genlist.add(a)  # add the string to the genlist
 
             if len(genlist) > 0:
                 out = ". ".join([a for a in genlist if a])  # join the strings together with periods
