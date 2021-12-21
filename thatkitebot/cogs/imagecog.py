@@ -115,25 +115,40 @@ def reduce(buf, fn):
 
 def caption(blob, fn, ct, path):
     in_str = str(ct)
+    # find any emotes in the text 
     x = re.findall(r"[<]:\w{2,}:\d{15,}[>]", in_str)
     for n in x: in_str = in_str.replace(str(n), re.findall(r":\w{2,}:", n)[0])
-    with Drawing() as draw:
+    # find any parameters in the command
+    color = "white"
+    x = re.findall(r"color:\d{1,3},\d{1,3},\d{1,3}", in_str)
+    if len(x) > 0: 
+        color = x[0].lower().replace("color:", "rgb(") + ")"
+        in_str = in_str.replace(x[0], "")
+    x = re.findall(r"color:(?:\d{2}|[1-f]{2}){3}", in_str)
+    if len(x) > 0: 
+        color = x[0].lower().replace("color:", "#") 
+        in_str = in_str.replace(x[0], "")
+    try:
         with WandImage(file=blob) as image:
             # Calculate image parameters for the text to wrap and fit.
-            txt_top = int(0.75 * image.height)  # add text to the bottom 15% of the image
+            txt_top = int(0.70 * image.height)  # add text to the bottom 25% of the image
             txt_left = int(0.10 * image.width)  # leave 10 % the image from the left
             txt_width = image.width - (
                         txt_left * 2)  # total width - 10% * 2 will leave 10% of with on the right side as well
             txt_height = image.height - txt_top  # use the whole 15% for text
-            if len(in_str) >= 10:
-                stroke_width = 1
+            stroke_width = (txt_height * txt_width)/(10000 + (2500 * len(in_str)))
+            if stroke_width < 1.5 or color is not "white":
+                font = Font(path + "OpenSansEmoji.ttf", color=color)
             else:
-                stroke_width = 3
-            font = Font(path + "DejaVuSans.ttf", color="white", stroke_color="black", stroke_width=stroke_width)
+                font = Font(path + "OpenSansEmoji.ttf", color=color, stroke_color="black", stroke_width=stroke_width)
             image.caption(in_str, left=txt_left, top=txt_top, width=txt_width, height=txt_height, font=font,
-                          gravity='center')
+                        gravity='center')
             image.format = 'png'
             b = image.make_blob()
+            image.destroy()
+    except:
+        fn = -3 # probably wrong command
+        b = None
     return b, fn
 
 
@@ -153,6 +168,14 @@ def deepfry(buf, fn):
     with WandImage(file=buf) as a:
         a.modulate(saturation=600.00)
         a.noise("gaussian", attenuate=0.1)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+
+def rotate(buf, fn, angle: int = 90):
+    with WandImage(file=buf) as a:
+        a.rotate(degree=angle, )
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
@@ -344,7 +367,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
-        """Adds a caption to an image."""
+        """Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values. Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22`"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(caption, buf, 10, text, self.dd), "captioned")
@@ -410,6 +433,16 @@ class ImageStuff(commands.Cog, name="image commands"):
         await ctx.send(file=image_file)  # send the result to the channel where the command was sent
         await pmsg.delete()  # delete the "download successful" message from earlier
         """
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def rotate(self, ctx: commands.Context, degree: int = 90):
+        """Rotate an image clockwise 90 degrees by default, you can specify the degree value as an argument"""
+        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(functools.partial(rotate, buf=buf, fn=11, angle=degree), "rotated")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
 
 
 def setup(bot):

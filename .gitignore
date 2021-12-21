@@ -15,6 +15,6 @@ data/redis
 data/*.yml
 # test files
 test*.*
-# Pycharm
+# IDEs
 .idea
-
+.vscode
