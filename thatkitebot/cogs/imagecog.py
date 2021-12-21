@@ -191,7 +191,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.ll = asyncio.get_event_loop()
         self.session = self.bot.aiohttp_session
         self.tt = self.bot.tenortoken
-        self.tenor_pattern = re.compile("^https://tenor.com\S+-(\d+)$")
+        self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
     # this function is originally from iangecko's pyrobot, modifications were made for this bot
     async def get_last_image(self, ctx, return_buffer=False):
@@ -225,7 +225,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             break
         else:
             return None
-        filetype = re.search("(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
+        filetype = re.search(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
         if not return_buffer:
             return blob, filename, url, filetype
         else:
@@ -367,7 +367,10 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
-        """Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values. Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22`"""
+        """
+        Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values.
+        Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22`
+        """
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(caption, buf, 10, text, self.dd), "captioned")

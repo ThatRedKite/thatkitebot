@@ -31,13 +31,13 @@ from bs4 import BeautifulSoup
 from .util import EmbedColors as ec
 from random import randrange
 
-gifpattern = re.compile("(^https?://\S+.(?i)(gif))")  # only gif images
+gifpattern = re.compile(r"(^https?://\S+.(?i)(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-otherpattern = re.compile("(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
+otherpattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
-tenorpattern = re.compile("^https://tenor.com\S+-(\d+)$")
+tenorpattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
-emoji_pattern = re.compile("<:\S+:\n+>")
+emoji_pattern = re.compile(r"<:\S+:\n+>")
 
 
 async def imageurlgetter(session: aiohttp.ClientSession, history, token=None, gif=False):
