@@ -367,7 +367,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
-        """Adds a caption to an image."""
+        """Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values. Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22`"""
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(caption, buf, 10, text, self.dd), "captioned")
