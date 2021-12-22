@@ -30,7 +30,7 @@ from datetime import datetime
 
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
-        return ctx.channel.id == 909159696798220400
+        return ctx.channel.id in [864194488797102091, 424397590214344704]
     else:
         return True
 
@@ -62,51 +62,39 @@ class FunStuff(commands.Cog, name="fun commands"):
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
         if not user:
-            user = ctx.message.author
+            user = ctx.message.author  # default to message author
         if not channel:
-            channel = ctx.channel
+            channel = ctx.channel  # default to current channel
 
         async with ctx.channel.typing():
             try:
+                # try to get the messages from the cache
                 messagelist = await cache.get_contents(self.redis, ctx.guild.id, channel.id, user.id)
                 if not len(messagelist) > 300:
+                    # populate the cache if there are less than 300 messages
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
-                        await cache.add_message_to_cache(self.redis, message)
-                        messagelist.append(str(message.clean_content))
+                        await cache.add_message_to_cache(self.redis, message)  # add the message to the cache
+                        messagelist.append(str(message.clean_content))  # add the message to the messagelist
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
             try:
-                 gen1 = markovify.NewlineText("\n".join(messagelist))
-            except KeyError:
-                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
-                return
-            genlist = set()
-            for i in range(30):
-                    a = gen1.make_sentence(tries=30)
-                    if a:
-                        genlist.add(a)
-                    else:
-                        a = gen1.make_short_sentence(5)
-                        genlist.add(a)
-
-            try:
-                 gen2 = markovify.NewlineText('\n'.join([a for a in genlist if a]))
+                gen1 = markovify.NewlineText("\n".join(messagelist))  # generate the model from the messages
             except KeyError:
                 await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
                 return
 
-            genlist2 = set()
-            for i in range(3):
-                    b = gen2.make_sentence(tries=20)
-                    if b:
-                        genlist2.add(b)
-                    else:
-                        b = gen2.make_short_sentence(10)
-                        genlist2.add(b)
+            genlist = set()  # create a set to avoid duplicate messages (only works sometimes)
+            for i in range(10):
+                a = gen1.make_sentence(tries=30)
+                if a:
+                    genlist.add(a)  # add the string a to the genlist
+                else:
+                    a = gen1.make_short_sentence(5)  # try to make a short sentence instead
+                    genlist.add(a)  # add the string to the genlist
 
-            if len(genlist2) > 0:
-                out = ". ".join([a for a in genlist2 if a])
+            if len(genlist) > 0:
+                out = ". ".join([a for a in genlist if a])  # join the strings together with periods
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
@@ -150,7 +138,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="eval", aliases=["evaluate", "8ball", "opinion"])
-    async def _eval(self, ctx, *, args = None):
+    async def _eval(self, ctx, *, args=None):
         resp_list = [
             "Get real. <:troll:910540961958989934>", "Nice", "Based", "Cringe",
             "<:schmuck:900445607888551947>", "Ok, and?", "yeah...", "perhaps",
