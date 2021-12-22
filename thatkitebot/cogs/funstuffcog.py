@@ -30,7 +30,7 @@ from datetime import datetime
 
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
-        return ctx.channel.id == 909159696798220400
+        return ctx.channel.id in [864194488797102091, 424397590214344704]
     else:
         return True
 
