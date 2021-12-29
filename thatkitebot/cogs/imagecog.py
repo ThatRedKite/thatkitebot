@@ -244,11 +244,15 @@ class ImageStuff(commands.Cog, name="image commands"):
             try:
                 b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
             except asyncio.TimeoutError:
-                e = await util.errormsg(msg="Processing timed out", embed_only=True)
+
+                e = await util.errormsg(
+                    msg="Processing timed out",
+                    embed_only=True
+                )
                 return e, None
             if fn < 0:
                 a = await util.errormsg(
-                    msg="Your image is too large! Image should be smaller than 3000x3000",
+                    "Your image is too large! Image should be smaller than 3000x3000",
                     embed_only=True
                 )
                 return a, None
