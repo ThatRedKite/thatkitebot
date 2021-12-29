@@ -244,6 +244,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             try:
                 b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
             except asyncio.TimeoutError:
+
                 e = await util.errormsg(
                     msg="Processing timed out",
                     embed_only=True
