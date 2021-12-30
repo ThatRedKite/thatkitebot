@@ -49,12 +49,13 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
                 latest_join = int(joined_dict["latest_join"])
                 joined_id = int(joined_dict["user_id"])
 
-                if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
+                if welcome_channel is channel and latest_welcome <= latest_join and joined_id != author:
                     welcome_count += 1
                 else:
-                    write = False
+                    return
             else:
                 write = True
+         
         datadict = dict(
             latest_welcome=int(unixtime),
             welcome_count=int(welcome_count)
@@ -74,14 +75,12 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         """Welcome leaderboard"""
         current_time = datetime.utcfromtimestamp(int(time.mktime(ctx.message.created_at.timetuple())))
         # Scan all users in the DB
-        cur = b'0'  # set initial cursor to 0
-        key_list = []
-        while cur:
-            cur, keys = await self.redis_welcomes.scan(cur, match=f'leaderboard:*:{ctx.guild.id}')
-            key_list += keys
-        leaderboard = {}
+        # here's a nice one-liner
+        key_list = [key async for key in self.redis_welcomes.scan_iter(match=f"leaderboard:*:{ctx.guild.id}]  
+        
+        leaderboard = dict()
         for i in key_list:
-            author = re.findall(r":[\d]{5,}:", i)[0][1:-1]
+            author = re.findall(r":[\d]{5,}:", i)[0][1:-1]  # extract the author id
             leaderboard[f"<@{author}>"] = await self.redis_welcomes.hgetall(i)
 
         sorted_lb = sorted(leaderboard.items(), key=lambda x: x[1]['welcome_count'], reverse=True)
@@ -100,7 +99,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                         number_str = ":third_place: "
                     else:
                         number_str = "​  **" + str(number) + "**. "
-                    lb_str += number_str + str(i[0]) \
+                    lb_str += number_str + str(i[0]) \  # this is a mess
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
                               + str(
                         (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
@@ -114,13 +113,14 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                          + str((current_time - datetime.utcfromtimestamp(
                 int(last_join_dict['latest_join']))).seconds // 3600)) + "** hours ago"
             embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
+        
         elif args.lower() == "me":
-            embed = discord.Embed(title="Personal Welcome count")
+            embed = discord.Embed(title="Personal welcome count")
             target_user = ctx.message.author.id
             lb_str = ""
             number = 1
             for i in sorted_lb:
-                if str(target_user) in i[0]:
+                if str(target_user) in i[0]:  # holy fuck, this is a mess
                     lb_str += "**" + str(number) + "**. " + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
                               + str(
