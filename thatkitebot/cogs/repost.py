@@ -1,3 +1,5 @@
+# Copyright (c) 2019-2021 ThatRedKite and contributors
+
 import typing
 import re
 from io import BytesIO
