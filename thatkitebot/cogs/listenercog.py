@@ -32,6 +32,7 @@ class ListenerCog(commands.Cog):
     def __init__(self, bot):
         self.dirname = bot.dirname
         self.redis: aioredis.Redis = bot.redis_cache
+        self.repost_redis: aioredis.Redis = bot.redis_repost
         self.bot: discord.Client = bot
 
     @commands.Cog.listener()
@@ -83,6 +84,10 @@ class ListenerCog(commands.Cog):
         key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
         if await self.redis.exists(key):
             await self.redis.delete(key)
+
+        # delete the associated repost if it exists
+        if len(rkeys := [rkey async for rkey in self.repost_redis.scan_iter(match=f"{payload.message_id}:*")]) > 0:
+            await self.repost_redis.delete(rkeys[0])
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
