@@ -3,6 +3,7 @@ from aioredis import Redis
 from datetime import timedelta
 import base64
 
+
 async def add_message_to_cache(redis: Redis, message: Message):
     key = f"{hex(message.guild.id)}:{hex(message.channel.id)}:{hex(message.author.id)}:{hex(message.id)}"
     msgdict = dict(

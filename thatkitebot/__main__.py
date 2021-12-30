@@ -66,7 +66,8 @@ enabled_ext = [
     "thatkitebot.cogs.chemistry",
     "thatkitebot.cogs.electronics",
     "thatkitebot.cogs.electroslash",
-    "thatkitebot.cogs.laser"
+    "thatkitebot.cogs.laser",
+    "thatkitebot.cogs.welcomecog"
 ]
 
 
@@ -95,6 +96,7 @@ class ThatKiteBot(commands.Bot, ABC):
         self.loop.run_until_complete(self.aiohttp_start())
         self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
         self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
+        self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
 
         # bot status info
         self.cpu_usage = 0

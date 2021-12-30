@@ -20,18 +20,22 @@
 
 
 import discord
+from discord import member
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from thatkitebot.backend.util import errormsg
 from thatkitebot.backend import cache
+from thatkitebot.cogs import welcomecog
 import aioredis
+import time
 import json
 
 
 class ListenerCog(commands.Cog):
     def __init__(self, bot):
         self.dirname = bot.dirname
-        self.redis: aioredis.Redis = bot.redis_cache
+        self.redis_cache: aioredis.Redis = bot.redis_cache
+        self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.bot: discord.Client = bot
 
     @commands.Cog.listener()
@@ -76,19 +80,36 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        await cache.add_message_to_cache(self.redis, message)
+        await cache.add_message_to_cache(self.redis_cache, message)
+        if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id:
+            await welcomecog.update_count(self.redis_welcomes, message)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
-        if await self.redis.exists(key):
-            await self.redis.delete(key)
+        if await self.redis_cache.exists(key):
+            await self.redis_cache.delete(key)
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
         key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
-        if await self.redis.exists(key):
-            await cache.add_message_to_cache(self.redis, payload.cached_message)
+        if await self.redis_cache.exists(key):
+            await cache.add_message_to_cache(self.redis_cache, payload.cached_message)
+
+    @commands.Cog.listener()
+    async def on_member_join(self, joinedmember):
+        welcomechannel = joinedmember.guild.system_channel.id
+        lastjoined = joinedmember.joined_at
+        unixtime = time.mktime(lastjoined.timetuple())
+        guild = joinedmember.guild.id
+        key = f"latest_join:{guild}"
+        datadict = dict(
+            latest_join=int(unixtime),
+            user_id=int(joinedmember.id),
+            join_channel=int(welcomechannel)
+        )
+        await self.redis_welcomes.hmset(key, datadict)
+        await joinedmember.guild.system_channel.send("welcome")
 
 
 def setup(bot):
