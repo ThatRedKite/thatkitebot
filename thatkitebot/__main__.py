@@ -68,6 +68,7 @@ enabled_ext = [
     "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser",
     "thatkitebot.cogs.welcomecog"
+    "thatkitebot.cogs.repost"
 ]
 
 
@@ -94,7 +95,12 @@ class ThatKiteBot(commands.Bot, ABC):
         self.tenortoken = tt
         # sessions
         self.loop.run_until_complete(self.aiohttp_start())
+        # redis databases:
+        # 0: initial settings, not accessed while the bot is running
+        # 1: guild settings
+        # 2: reposts
         self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
+        self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
         self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
         self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
 

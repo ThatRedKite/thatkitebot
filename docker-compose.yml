@@ -23,4 +23,5 @@ services:
   redis_cache:
     container_name: redis_cache
     image: "redis:alpine"
+    entrypoint: redis-server --save "" --appendonly no
 

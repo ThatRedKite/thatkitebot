@@ -303,7 +303,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.message.author
         await ctx.send(user.avatar.url)
 
-    @commands.cooldown(3, 5, commands.BucketType.guild)
+    @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
@@ -313,7 +313,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 5, commands.BucketType.guild)
+    @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
@@ -372,7 +372,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
@@ -382,7 +382,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 15, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """
@@ -396,7 +396,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 20, commands.BucketType.user)
+    @commands.cooldown(3, 60, commands.BucketType.user)
     @commands.command()
     async def gmagik(self, ctx: commands.Context, mode: str = "", *, ct: str = ""):
         """
