@@ -74,7 +74,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         current_time = datetime.utcfromtimestamp(int(time.mktime(ctx.message.created_at.timetuple())))
         # Scan all users in the DB
         # here's a nice one-liner
-        key_list = [key async for key in self.redis_welcomes.scan_iter(match=f"leaderboard:*:{ctx.guild.id}]  
+        key_list = [key async for key in self.redis_welcomes.scan_iter(match=f"leaderboard:*:{ctx.guild.id}")]
         
         leaderboard = dict()
         for i in key_list:
@@ -104,7 +104,6 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                               + "** hours ago\n"
                     number += 1
                     continue
-                break
             last_join_dict = await self.redis_welcomes.hgetall(f"latest_join:{ctx.message.guild.id}")
             embed.add_field(name=":medal: Top 10:", value=lb_str, inline=False)
             footer = str(str(f"<@{last_join_dict['user_id']}>") + " joined: **"
