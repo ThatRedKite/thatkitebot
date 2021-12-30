@@ -83,7 +83,7 @@ class ThatKiteBot(commands.Bot, ABC):
         self.tempdir = "/tmp/"
 
         # info
-        self.version = "3.4"
+        self.version = "3.5"
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
