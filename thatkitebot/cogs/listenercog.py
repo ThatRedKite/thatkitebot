@@ -20,7 +20,6 @@
 
 
 import discord
-from discord import member
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from thatkitebot.backend.util import errormsg
@@ -28,7 +27,6 @@ from thatkitebot.backend import cache
 from thatkitebot.cogs import welcomecog
 import aioredis
 import time
-import json
 
 
 class ListenerCog(commands.Cog):

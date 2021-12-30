@@ -20,9 +20,6 @@
 # ------------------------------------------------------------------------------
 import discord
 from discord.ext import commands
-from thatkitebot.backend import util
-#from aioredis import Redis
-import aioredis
 import time
 import aioredis
 import re
