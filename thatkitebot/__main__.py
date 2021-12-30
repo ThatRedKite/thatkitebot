@@ -67,6 +67,7 @@ enabled_ext = [
     "thatkitebot.cogs.electronics",
     "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser",
+    "thatkitebot.cogs.welcomecog"
     "thatkitebot.cogs.repost"
 ]
 
@@ -100,6 +101,7 @@ class ThatKiteBot(commands.Bot, ABC):
         # 2: reposts
         self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
         self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
+        self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
         self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
 
         # bot status info
