@@ -97,7 +97,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                         number_str = ":third_place: "
                     else:
                         number_str = "​  **" + str(number) + "**. "
-                    lb_str += number_str + str(i[0]) \  # this is a mess
+                    lb_str += number_str + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
                               + str(
                         (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
@@ -117,7 +117,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             lb_str = ""
             number = 1
             for i in sorted_lb:
-                if str(target_user) in i[0]:  # holy fuck, this is a mess
+                if str(target_user) in i[0]:
                     lb_str += "**" + str(number) + "**. " + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
                               + str(
