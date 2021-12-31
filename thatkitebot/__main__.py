@@ -67,7 +67,7 @@ enabled_ext = [
     "thatkitebot.cogs.electronics",
     "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser",
-    "thatkitebot.cogs.welcomecog"
+    "thatkitebot.cogs.welcomecog",
     "thatkitebot.cogs.repost"
 ]
 
