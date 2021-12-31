@@ -34,25 +34,27 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
         unixtime = time.mktime(message.created_at.timetuple())
         join_key = f"latest_join:{guild}"
         usr_key = f"leaderboard:{author}:{guild}"
+        joined_dict = await redis.hgetall(join_key)
+        welcome_channel = int(joined_dict["join_channel"])
+        latest_join = int(joined_dict["latest_join"])
+        joined_id = int(joined_dict["user_id"])
         write = True
         welcome_count = 1
         if await redis.exists(join_key):
             if await redis.exists(usr_key):
                 user_dict = await redis.hgetall(usr_key)
-                joined_dict = await redis.hgetall(join_key)
-
                 latest_welcome = int(user_dict["latest_welcome"])
                 welcome_count = int(user_dict["welcome_count"])
-                welcome_channel = int(joined_dict["join_channel"])
-                latest_join = int(joined_dict["latest_join"])
-                joined_id = int(joined_dict["user_id"])
                 if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
                     welcome_count += 1
                 else:
                     return
             else:
-                write = True
-         
+                if welcome_channel == channel:
+                    write = True
+                else:
+                    write = False
+
         datadict = dict(
             latest_welcome=int(unixtime),
             welcome_count=int(welcome_count)
@@ -66,7 +68,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         self.bot: discord.Client = bot
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.settings_redis: aioredis.Redis = bot.redis
-            
+
     async def cog_check(self, ctx):
         return await self.settings_redis.hget(ctx.guild.id, "WELCOME") == "TRUE"
 
@@ -78,7 +80,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         # Scan all users in the DB
         # here's a nice one-liner
         key_list = [key async for key in self.redis_welcomes.scan_iter(match=f"leaderboard:*:{ctx.guild.id}")]
-        
+
         leaderboard = dict()
         for i in key_list:
             author = re.findall(r":[\d]{5,}:", i)[0][1:-1]  # extract the author id
@@ -114,7 +116,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                              + str((current_time - datetime.utcfromtimestamp(
                     int(last_join_dict['latest_join']))).seconds // 3600)) + "** hours ago"
                 embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
-        
+
         elif args.lower() == "me":
             embed = discord.Embed(title="Personal welcome count")
             target_user = ctx.message.author.id
