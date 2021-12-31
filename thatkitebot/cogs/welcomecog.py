@@ -34,26 +34,29 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
         unixtime = time.mktime(message.created_at.timetuple())
         join_key = f"latest_join:{guild}"
         usr_key = f"leaderboard:{author}:{guild}"
-        joined_dict = await redis.hgetall(join_key)
+        if await redis.exists(join_key):
+            joined_dict = await redis.hgetall(join_key)
+        else:
+            return
         welcome_channel = int(joined_dict["join_channel"])
         latest_join = int(joined_dict["latest_join"])
         joined_id = int(joined_dict["user_id"])
         write = True
         welcome_count = 1
-        if await redis.exists(join_key):
-            if await redis.exists(usr_key):
-                user_dict = await redis.hgetall(usr_key)
-                latest_welcome = int(user_dict["latest_welcome"])
-                welcome_count = int(user_dict["welcome_count"])
-                if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
-                    welcome_count += 1
-                else:
-                    return
+
+        if await redis.exists(usr_key):
+            user_dict = await redis.hgetall(usr_key)
+            latest_welcome = int(user_dict["latest_welcome"])
+            welcome_count = int(user_dict["welcome_count"])
+            if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
+                welcome_count += 1
             else:
-                if welcome_channel == channel:
-                    write = True
-                else:
-                    write = False
+                return
+        else:
+            if welcome_channel == channel:
+                write = True
+            else:
+                write = False
 
         datadict = dict(
             latest_welcome=int(unixtime),
