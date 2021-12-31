@@ -109,10 +109,11 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                     continue
             last_join_dict = await self.redis_welcomes.hgetall(f"latest_join:{ctx.message.guild.id}")
             embed.add_field(name=":medal: Top 10:", value=lb_str, inline=False)
-            footer = str(str(f"<@{last_join_dict['user_id']}>") + " joined: **"
-                         + str((current_time - datetime.utcfromtimestamp(
-                int(last_join_dict['latest_join']))).seconds // 3600)) + "** hours ago"
-            embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
+            if 'user_id' in last_join_dict:
+                footer = str(str(f"<@{last_join_dict['user_id']}>") + " joined: **"
+                             + str((current_time - datetime.utcfromtimestamp(
+                    int(last_join_dict['latest_join']))).seconds // 3600)) + "** hours ago"
+                embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
         
         elif args.lower() == "me":
             embed = discord.Embed(title="Personal welcome count")
