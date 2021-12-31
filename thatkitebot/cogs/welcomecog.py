@@ -66,6 +66,10 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
+        self.settings_redis: aioredis.Redis = bot.redis
+            
+    async def cog_check(self, ctx):
+        return await self.settings_redis.hget(ctx.guild.id, "WELCOME") == "TRUE"
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
