@@ -114,6 +114,11 @@ def reduce(buf, fn):
 
 
 def caption(blob, fn, ct, path):
+    color_alias = {
+        "piss":"#f9fc12",
+        "cum":"#ededd5",
+        "pickle":"#12a612"
+    }
     in_str = str(ct)
     # find any emotes in the text 
     x = re.findall(r"[<]:\w{2,}:\d{15,}[>]", in_str)
@@ -128,6 +133,12 @@ def caption(blob, fn, ct, path):
     if len(x) > 0: 
         color = x[0].lower().replace("color:", "#") 
         in_str = in_str.replace(x[0], "")
+    x = re.findall(r"color:[\w]{3,30}", in_str)
+    if len(x) > 0: 
+        color = x[0].lower().replace("color:", "") 
+        in_str = in_str.replace(x[0], "")
+        if color in color_alias:
+            color = color_alias[color]
     try:
         with WandImage(file=blob) as image:
             # Calculate image parameters for the text to wrap and fit.
@@ -137,7 +148,7 @@ def caption(blob, fn, ct, path):
                         txt_left * 2)  # total width - 10% * 2 will leave 10% of with on the right side as well
             txt_height = image.height - txt_top  # use the whole 15% for text
             stroke_width = (txt_height * txt_width)/(10000 + (2500 * len(in_str)))
-            if stroke_width < 1.5 or color is not "white":
+            if stroke_width < 1.5 or color != "white":
                 font = Font(path + "OpenSansEmoji.ttf", color=color)
             else:
                 font = Font(path + "OpenSansEmoji.ttf", color=color, stroke_color="black", stroke_width=stroke_width)
@@ -147,7 +158,7 @@ def caption(blob, fn, ct, path):
             b = image.make_blob()
             image.destroy()
     except:
-        fn = -3 # probably wrong command
+        fn = -3 # probably wrong color
         b = None
     return b, fn
 
@@ -250,11 +261,11 @@ class ImageStuff(commands.Cog, name="image commands"):
                     embed_only=True
                 )
                 return e, None
-            if fn < 0:
-                a = await util.errormsg(
-                    "Your image is too large! Image should be smaller than 3000x3000",
-                    embed_only=True
-                )
+            if fn < 0 and fn != -3:
+                a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
+                return a, None
+            elif fn == -3:
+                a = await util.errormsg("The color selected does not exist or is in the wrong format.", embed_only=True)
                 return a, None
         embed = discord.Embed(title="Processed image")
         embed.set_image(url=f"attachment://{name}.png")
@@ -292,7 +303,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.message.author
         await ctx.send(user.avatar.url)
 
-    @commands.cooldown(3, 5, commands.BucketType.guild)
+    @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """deepfry an image"""
@@ -302,7 +313,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 5, commands.BucketType.guild)
+    @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizonally stretch an image"""
@@ -361,7 +372,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
@@ -371,12 +382,13 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
+    @commands.cooldown(3, 15, commands.BucketType.user)
     @commands.command()
     async def caption(self, ctx, *, text: str = ""):
         """
         Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values.
-        Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22`
+        Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22` or `caption funny color:firebrick`
+        A full list of colors can be found here: https://imagemagick.org/script/color.php
         """
         buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
@@ -384,7 +396,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 20, commands.BucketType.user)
+    @commands.cooldown(3, 60, commands.BucketType.user)
     @commands.command()
     async def gmagik(self, ctx: commands.Context, mode: str = "", *, ct: str = ""):
         """

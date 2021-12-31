@@ -16,3 +16,4 @@ hiredis
 aioredis
 matplotlib
 xkcd
+imagehash

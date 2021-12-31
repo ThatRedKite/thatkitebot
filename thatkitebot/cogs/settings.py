@@ -24,7 +24,7 @@ class SettingsCog(commands.Cog, name="settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.redis: aioredis.Redis = self.bot.redis
-        self.possible_settings = ["NSFW", "IMAGE"]
+        self.possible_settings = ["NSFW", "IMAGE", "REPOST"]
 
     @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
     @commands.check(can_change_settings)
@@ -97,6 +97,14 @@ class SettingsCog(commands.Cog, name="settings"):
              Standard value: `TRUE`
              """
         )
+        e.add_field(
+            name="REPOST",
+            value="""
+             Enable or disable repost detection for the server.\n
+             Possible values: `TRUE`, `FALSE`\n
+             Standard value: `TRUE`
+             """
+        )
         await ctx.send(embed=e, delete_after=10)
         await asyncio.sleep(10)
         await ctx.message.delete()
@@ -106,7 +114,8 @@ class SettingsCog(commands.Cog, name="settings"):
         # this initializes the settings for the guild the bot joins
         initdict = {
             "NSFW": "FALSE",
-            "IMAGE": "TRUE"
+            "IMAGE": "TRUE",
+            "REPOST": "FALSE"
         }
         # check if there already are settings for the guild present
         if not await self.redis.hexists(guild.id, "IMAGE"):
