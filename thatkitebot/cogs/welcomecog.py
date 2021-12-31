@@ -46,8 +46,7 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
                 welcome_channel = int(joined_dict["join_channel"])
                 latest_join = int(joined_dict["latest_join"])
                 joined_id = int(joined_dict["user_id"])
-
-                if welcome_channel is channel and latest_welcome <= latest_join and joined_id != author:
+                if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
                     welcome_count += 1
                 else:
                     return
@@ -85,7 +84,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             author = re.findall(r":[\d]{5,}:", i)[0][1:-1]  # extract the author id
             leaderboard[f"<@{author}>"] = await self.redis_welcomes.hgetall(i)
 
-        sorted_lb = sorted(leaderboard.items(), key=lambda x: x[1]['welcome_count'], reverse=True)
+        sorted_lb = sorted(leaderboard.items(), key=lambda x: int(x[1]['welcome_count']), reverse=True)
 
         if not args:
             embed = discord.Embed(title="Welcome leaderboard")
