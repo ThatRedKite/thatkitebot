@@ -21,10 +21,8 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         Displays the status of the bot.
         """
         process = psutil.Process(self.bot.pid)
-        mem = si_prefix.si_format(process.memory_info()[0])
-        redismem = si_prefix.si_format(
-            ((await self.redis.info())["used_memory"] + (await self.bot.redis_cache.info())["used_memory"])
-        )
+        mem = process.memory_info()[0]
+        redismem = (await self.redis.info())["used_memory"] + (await self.bot.redis_cache.info())["used_memory"]
 
         cpu = psutil.cpu_percent(interval=None)
         ping = round(self.bot.latency * 1000, 1)
@@ -34,8 +32,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
 
         embed = discord.Embed()
         embed.add_field(name="System status",
-                        value=f"""RAM usage: **{mem}B**
-                                DB memory usage: ** {redismem}B**
+                        value=f"""RAM usage: **{si_prefix.si_format(mem + redismem)}B**
                                 CPU usage: **{cpu} %**
                                 uptime: **{uptime}**
                                 ping: **{ping} ms**""")
