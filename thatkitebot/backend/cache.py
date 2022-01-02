@@ -1,3 +1,5 @@
+#  Copyright (c) 2019-2022 ThatRedKite and contributors
+
 from discord import Message
 from aioredis import Redis
 from datetime import timedelta

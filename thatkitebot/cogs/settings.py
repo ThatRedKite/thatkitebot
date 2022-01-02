@@ -1,10 +1,11 @@
-import asyncio
+#  Copyright (c) 2019-2022 ThatRedKite and contributors
 
+import asyncio
+import aioredis
 import discord
+
 from discord.ext import commands
 from thatkitebot.backend import util
-import aioredis
-
 
 def pp(a):
     if type(a) is str:

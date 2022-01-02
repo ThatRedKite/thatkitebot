@@ -13,7 +13,6 @@ from PIL import Image as PILImage
 from thatkitebot.cogs.settings import can_change_settings
 from thatkitebot.backend.util import errormsg
 
-
 tenorpattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 otherpattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 

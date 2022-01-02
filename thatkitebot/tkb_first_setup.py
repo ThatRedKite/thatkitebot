@@ -1,7 +1,9 @@
-import redis
-import yaml
-from pathlib import Path
+#  Copyright (c) 2019-2022 ThatRedKite and contributors
+
 import os
+import yaml
+import redis
+
 settings = {}
 
 r = redis.Redis(host="redis", db=0, charset="utf8", decode_responses=True)
