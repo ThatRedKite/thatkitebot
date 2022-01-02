@@ -12,23 +12,22 @@ from discord.ext import commands
 
 async def update_count(redis: aioredis.Redis, message: discord.Message):
     if "welcome" in message.content.lower():
+        write = True
         guild, channel, author  = message.guild.id, message.channel.id, message.author.id
         unixtime = time.mktime(message.created_at.timetuple())
-        join_key = f"latest_join:{guild}"
-        usr_key = f"leaderboard:{author}:{guild}"
 
-        assert await redis.exists(join_key)
+        join_key = f"latest_join:{guild}"
+        assert await redis.exists(join_key)  # make sure there is a last_joined key
         joined_dict = await redis.hgetall(join_key)
+
         welcome_channel, latest_join, joined_id = itemgetter("join_channel", "latest_join", "user_id")(joined_dict)
 
-        write = True
-
+        usr_key = f"leaderboard:{author}:{guild}"
         if await redis.exists(usr_key):
             user_dict = await redis.hgetall(usr_key)
             latest_welcome, welcome_count  = itemgetter("latest_welcome", "welcome_count")(user_dict)
             if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
-                await redis.hincrby(usr_key, "welcome_count", 1)
-                welcome_count += 1
+                await redis.hincrby(usr_key, "welcome_count", 1)  # increase welcome_count by one; create if not exist
             else:
                 return
         else:
@@ -50,7 +49,10 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
     @commands.Cog.listener()
     async def on_message(self, message):
         if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id:
-            await update_count(self.redis_welcomes, message)
+            try:
+                await update_count(self.redis_welcomes, message)
+            except AssertionError:
+                pass
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
