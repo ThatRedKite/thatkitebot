@@ -76,27 +76,28 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             number = 1
             for i in sorted_lb:
                 if number <= 10:
-                    if number == 1:
-                        number_str = ":first_place: "
-                    elif number == 2:
-                        number_str = ":second_place: "
-                    elif number == 3:
-                        number_str = ":third_place: "
-                    else:
-                        number_str = "​  **" + str(number) + "**. "
+                    match number:
+                        case 1:
+                            number_str = ":first_place: "
+                        case 2:
+                            number_str = ":second_place: "
+                        case 3:
+                            number_str = ":third_place: "
+                        case _:
+                            number_str = "​  **" + str(number) + "**. "
                     lb_str += number_str + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
-                              + str(
-                        (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
+                              + str((current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
                               + "** hours ago\n"
                     number += 1
                     continue
             last_join_dict = await self.redis_welcomes.hgetall(f"latest_join:{ctx.message.guild.id}")
             embed.add_field(name=":medal: Top 10:", value=lb_str, inline=False)
             if 'user_id' in last_join_dict:
-                footer = str(str(f"<@{last_join_dict['user_id']}>") + " joined: **"
-                             + str((current_time - datetime.utcfromtimestamp(
-                    int(last_join_dict['latest_join']))).seconds // 3600)) + "** hours ago"
+                footer = str(str(f"<@{last_join_dict['user_id']}>")
+                             + " joined: **"
+                             + str((current_time - datetime.utcfromtimestamp(int(last_join_dict['latest_join']))).seconds // 3600))\
+                             + "** hours ago"
                 embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
 
         elif args.lower() == "me":
@@ -108,8 +109,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                 if str(target_user) in i[0]:
                     lb_str += "**" + str(number) + "**. " + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
-                              + str(
-                        (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
+                              + str((current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
                               + "** hours ago\n"
                     embed.add_field(name=f"{str(ctx.message.author)}'s welcome count:", value=lb_str, inline=False)
                 number += 1
