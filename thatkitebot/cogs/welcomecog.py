@@ -1,69 +1,41 @@
-# ------------------------------------------------------------------------------
-#  MIT License
-#
-#  Copyright (c) 2019-2021 ThatRedKite
-#  Copyright (c) 2021 dimonDDL
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-#  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-#
-#  The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-#  the Software.
-#
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-#  THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-#  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#  SOFTWARE.
-# ------------------------------------------------------------------------------
-import discord
-from discord.ext import commands
+#  Copyright (c) 2019-2022 ThatRedKite and contributors
+
 import time
-import aioredis
 import re
 from datetime import datetime
+from operator import itemgetter
+
+import aioredis
+import discord
+from discord.ext import commands
 
 
 async def update_count(redis: aioredis.Redis, message: discord.Message):
     if "welcome" in message.content.lower():
-        guild = message.guild.id
-        channel = message.channel.id
-        author = message.author.id
+        guild, channel, author  = message.guild.id, message.channel.id, message.author.id
         unixtime = time.mktime(message.created_at.timetuple())
         join_key = f"latest_join:{guild}"
         usr_key = f"leaderboard:{author}:{guild}"
-        if await redis.exists(join_key):
-            joined_dict = await redis.hgetall(join_key)
-        else:
-            return
-        welcome_channel = int(joined_dict["join_channel"])
-        latest_join = int(joined_dict["latest_join"])
-        joined_id = int(joined_dict["user_id"])
+
+        assert await redis.exists(join_key)
+        joined_dict = await redis.hgetall(join_key)
+        welcome_channel, latest_join, joined_id = itemgetter("join_channel", "latest_join", "user_id")(joined_dict)
+
         write = True
-        welcome_count = 1
 
         if await redis.exists(usr_key):
             user_dict = await redis.hgetall(usr_key)
-            latest_welcome = int(user_dict["latest_welcome"])
-            welcome_count = int(user_dict["welcome_count"])
+            latest_welcome, welcome_count  = itemgetter("latest_welcome", "welcome_count")(user_dict)
             if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
+                await redis.hincrby(usr_key, "welcome_count", 1)
                 welcome_count += 1
             else:
                 return
         else:
-            if welcome_channel == channel:
-                write = True
-            else:
-                write = False
+            write = welcome_channel == channel
 
-        datadict = dict(
-            latest_welcome=int(unixtime),
-            welcome_count=int(welcome_count)
-        )
         if write:
-            await redis.hmset(usr_key, datadict)
+            await redis.hset(usr_key, "latest_welcome", int(unixtime))
 
 
 class WelcomeCog(commands.Cog, name="Welcome counter"):
@@ -74,6 +46,11 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
     async def cog_check(self, ctx):
         return await self.settings_redis.hget(ctx.guild.id, "WELCOME") == "TRUE"
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id:
+            await update_count(self.redis_welcomes, message)
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
