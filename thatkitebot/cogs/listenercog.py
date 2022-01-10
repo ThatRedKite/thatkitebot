@@ -1,13 +1,12 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
+import time
 import discord
+import aioredis
 from discord.ext import commands, tasks
 from discord.ext.commands.errors import CommandInvokeError
 from thatkitebot.backend.util import errormsg
 from thatkitebot.backend import cache
-from thatkitebot.cogs import welcomecog
-import aioredis
-import time
 
 
 class ListenerCog(commands.Cog):
@@ -61,8 +60,6 @@ class ListenerCog(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         await cache.add_message_to_cache(self.redis_cache, message)
-        if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id:
-            await welcomecog.update_count(self.redis_welcomes, message)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
