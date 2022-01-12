@@ -28,9 +28,8 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
 
         usr_key = f"leaderboard:{author}:{guild}"
         if await redis.exists(usr_key):
-            user_dict = await redis.hgetall(usr_key)
-            latest_welcome, welcome_count  = itemgetter("latest_welcome", "welcome_count")(user_dict)
-            if welcome_channel == channel and latest_welcome <= latest_join and joined_id != author:
+            latest_welcome = await redis.hget(usr_key, "latest_welcome")
+            if welcome_channel == welcome_channel and latest_welcome <= latest_join and joined_id != author:
                 await redis.hincrby(usr_key, "welcome_count", 1)  # increase welcome_count by one; create if not exist
             else:
                 return
