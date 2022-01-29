@@ -118,7 +118,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
             wavelength = True
             embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
                                   description="""5mW is the safety limit where your blink reflex should save you from any damage.
-                                   Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
+                                   Anything above that can cause permanent eye damage faster than you can blink and in the worse case, permanent blindness.""")
         else:
             embed = discord.Embed(title="Laser safety guide")
         embed.set_thumbnail(
@@ -130,8 +130,8 @@ class LaserCog(commands.Cog, name="Laser commands"):
                                   "[Thorlabs](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=762)",
                             inline=False)
             embed.add_field(name="\nOther trusted brands include",
-                            value="Honeywell, Glendale, Sperian,"
-                                  "Newport/MKS, Edmund Optics, Laservision/Uvex,"
+                            value="Honeywell, Glendale, Sperian, "
+                                  "Newport/MKS, Edmund Optics, Laservision/Uvex, "
                                   "Laserglow, NoIR (LaserShield)",
                             inline=False)
         if amazon:
@@ -151,7 +151,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
                              If you are not sure the wavelength but you know the color,
                              you can ask someone, do `{self.bot.command_prefix}laser color (color)` or refer to `+spectrum`.""",
                             inline=True)
-            embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety")
+            # embed.set_footer(text=f"For a more in depth explanation, use {self.bot.command_prefix}laser safety")
         await ctx.send(embed=embed)
 
     @laser.command()
@@ -167,7 +167,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
         embed = discord.Embed(title=f"Approximated color for {color}nm")
         embed.set_image(url="attachment://color.jpeg")
         embed.set_footer(text="This is not 100% accurate since your monitor and\neyes play a role but this is as close as it can get.\n"
-                              "If the color is black, it is considered invisible.1")
+                              "If the color is black, it is considered invisible.")
         await ctx.send(file=file, embed=embed)
 
     @laser.command(aliases=["diff"])
