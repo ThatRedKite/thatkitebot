@@ -124,19 +124,21 @@ class LaserCog(commands.Cog, name="Laser commands"):
         Returns a laser safety information.
         """
         embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
-                              description="""5mW is the safety limit where your blink reflex should save you from any damage.
-                               Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
+                              description="""5mW is the safety limit where your blink reflex should save you from any damage. Anything above that can cause
+                               permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
         embed.set_thumbnail(
             url="https://cdn.discordapp.com/attachments/909159696798220400/912036244073115658/14429.png")
         embed.add_field(name="\nLaser safety equipment can be found here: ",
-                        value="[Laserglow](https://www.laserglow.com/product/AGF-Laser-Safety-Goggles)\n"
+                        value="[Laserglow](https://www.laserglow.com/product/AGF-Laser-Safety-Goggles)\n" 
                               "[Lasertack](https://lasertack.com/en/laser-safety-glasses)\n"
+                              "[Kentek](https://www.kenteklaserstore.com/products/eyewear/laser-safety-eyewear)\n"
                               "[Thorlabs](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=762)",
                         inline=False)
         embed.add_field(name="\nOther trusted brands include",
                         value="Honeywell, Glendale, Sperian,"
                               "Newport/MKS, Edmund Optics, Laservision/Uvex,"
-                              "Laserglow, NoIR (LaserShield)",
+                              "Laserglow, NoIR (LaserShield)"
+                              "Feel free to ask if a brand not listed is trustworthy.",
                         inline=False)
         embed.add_field(name="\nAnything from Amazon, AliExpress, Wish is **__unsafe!__**",
                         value="If you wish to see for the rest of your life, **__do not use them!__**", inline=True)
