@@ -18,7 +18,7 @@ async def add_message_to_cache(redis: Redis, message: Message):
 
 
 async def get_contents(redis: Redis, gid, cid, uid):
-    key = f"{hex(gid)}:{hex(cid)}:{hex(uid)}:*"
+    key = f"{gid}:{cid}:{uid}:*"
     a = list()
     async for mkey in redis.scan_iter(key):
         c = await redis.hget(mkey, "content")
