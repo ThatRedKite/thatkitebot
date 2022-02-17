@@ -118,7 +118,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
             wavelength = True
             embed = discord.Embed(title="Lasers of all powers can pose a serious risk to your eyes.",
                                   description="""5mW is the safety limit where your blink reflex should save you from any damage.
-                                   Anything above that can cause permanent eye damage faster than you can blink and in the worse case, permanent blindness.""")
+                                  Anything above that can cause permanent eye damage faster than you can blink and the worse case, permanent blindness.""")
         else:
             embed = discord.Embed(title="Laser safety guide")
         embed.set_thumbnail(
@@ -126,13 +126,15 @@ class LaserCog(commands.Cog, name="Laser commands"):
         if brands:
             embed.add_field(name="\nLaser safety equipment can be found here: ",
                             value="[Laserglow](https://www.laserglow.com/product/AGF-Laser-Safety-Goggles)\n"
+                                  "[Kentek](https://www.kenteklaserstore.com/products/eyewear/laser-safety-eyewear)\n"
                                   "[Lasertack](https://lasertack.com/en/laser-safety-glasses)\n"
                                   "[Thorlabs](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=762)",
                             inline=False)
             embed.add_field(name="\nOther trusted brands include",
                             value="Honeywell, Glendale, Sperian, "
                                   "Newport/MKS, Edmund Optics, Laservision/Uvex, "
-                                  "Laserglow, NoIR (LaserShield)",
+                                  "Laserglow, NoIR (LaserShield)"
+                                  "\nFeel free to ask if a brand not listed is trustworthy.",
                             inline=False)
         if amazon:
             embed.add_field(name="\nAnything from Amazon, AliExpress, Wish is **__unsafe!__**",
