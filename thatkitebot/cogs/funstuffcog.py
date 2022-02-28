@@ -119,7 +119,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         await ctx.send("https://cdn.discordapp.com/attachments/759419756620546080/911279036146258000/unknown.png")
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(name="eval", aliases=["evaluate", "8ball", "opinion"])
+    @commands.command(name="eval", aliases=["evaluate", "opinion"])
     async def _eval(self, ctx, *, args=None):
         resp_list = [
             "Get real. <:troll:910540961958989934>", "Nice", "Based", "Cringe",
@@ -153,6 +153,33 @@ class FunStuff(commands.Cog, name="fun commands"):
         eval_random.seed(str_seed)
         result = resp_list[eval_random.randint(0, len(resp_list) - 1 )]
         await ctx.send(result)
+
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.command(name="8ball")
+    async def _8ball(self, ctx, *, args=None):
+        resp_list = [
+            "It is certain.",
+            "It is decidedly so.",
+            "Without a doubt.",
+            "Yes definately.",
+            "You may rely on it.",
+            "As I see it, yes.",
+            "Most likely.",
+            "Outlook good.",
+            "Yes.",
+            "Signs point to yes.",
+            "Reply hazy, try again.",
+            "Ask again later.",
+            "Better not tell you now.",
+            "Cannot predict now.",
+            "Concentrate and ask again.",
+            "Don't count on it.",
+            "My reply is no.",
+            "My sources say no.",
+            "Outlook not so good.",
+            "Very doubtful."
+        ]
+        await ctx.send(random.choice(resp_list)) # Not seeded random due to there being non-committal answers
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)
@@ -222,4 +249,3 @@ class FunStuff(commands.Cog, name="fun commands"):
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
-    
