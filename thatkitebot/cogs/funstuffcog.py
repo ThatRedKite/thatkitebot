@@ -179,7 +179,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             "Outlook not so good.",
             "Very doubtful."
         ]
-        await ctx.send(random.choice(resp_list)) # Not seeded random due to there being non-committal answers
+        await ctx.send(choice(resp_list)) # Not seeded random due to there being non-committal answers
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(can_send_image)
