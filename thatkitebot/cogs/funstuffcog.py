@@ -156,7 +156,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="8ball")
-    async def _eval(self, ctx, *, args=None):
+    async def _8ball(self, ctx, *, args=None):
         resp_list = [
             "It is certain.",
             "It is decidedly so.",
