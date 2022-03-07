@@ -17,12 +17,7 @@ import thatkitebot.tkb_first_setup
 tempdir = "/tmp/tkb/"
 datadir = "/app/data"
 
-intents = discord.Intents.default()
-intents.typing = True
-intents.members = True
-intents.invites = False
-intents.presences = True
-intents.reactions = True
+intents = discord.Intents.all()
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 
