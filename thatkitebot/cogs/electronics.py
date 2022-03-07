@@ -49,7 +49,7 @@ def parse_input(s):
     s_dict = dict(zip(s[::2], s[1::2]))
     for key in s_dict.keys():
         old = s_dict[key]
-        new = old.replace("v", "").replace("V", "").replace("u", "µ")
+        new = old.replace("v", "").replace("V", "").replace("u", "µ").replace("Ω", "")
         s_dict.update({key: new})
     return s_dict
 
@@ -58,23 +58,96 @@ def slash_preprocessor(a: str):
     return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
 
 
+class conversion:
+    def __init__(self, d: dict):
+        self.mm = si_prefix.si_parse(d.get("mm")) if d.get("mm") else None
+        self.mil = si_prefix.si_parse(d.get("mil")) if d.get("mil") else None
+        self.oz = si_prefix.si_parse(d.get("oz")) if d.get("oz") else None
+        self.mode = "length"
+        
+    def calculate(self):
+        if self.mm is not None and self.mil is None and self.oz is None:
+            self.mil = round(pcb_mod.mm2mil(self.mm), 3)
+            self.mode = "mil"
+        elif self.mm is None and self.mil is not None and self.oz is None:
+            self.mm = round(pcb_mod.mil2mm(self.mil), 3)
+            self.mode = "mm"
+        elif self.mm is None and self.mil is None and self.oz is not None:
+            self.mil = round(pcb_mod.weight2mil(self.oz), 3)
+            self.mm = round(pcb_mod.mil2mm(self.mil) * 1000, 1)
+            self.mode = "oz"
+        else:
+            raise TooFewArgsError()
+        
+    def gen_embed(self):
+        try:
+            self.calculate()
+        except TooFewArgsError:
+            self.mode = None
+                            
+        embed = discord.Embed(title="PCB Unit Conversions")    
+        match self.mode:
+            case None:    
+                embed.add_field(
+                    name="How to use this?",
+                    value=f"""With this command you can convert between millimeters and mils for PCB applications
+                    And it can give you the copper height in both mils and micrometers
+                    
+                    Example: `conv mm=20` to convert 20 mm to mils
+                    
+                    Example: `conv mil=20` to convert 20 mils to mm
+                    
+                    Example: `conv oz=2` to get the height of 2oz/ft² copper on a PCB
+                    
+                    This accepts any SI prefixes, but does not support endings with "mm" or "mil" 
+                    """,
+                    inline=True)
+                return embed
+            case "mm":
+                embed.add_field(name="Result:",
+                    value=f"{self.mil}mil(s) = __{self.mm}mm__")
+            case "mil":
+                embed.add_field(name="Result:",
+                    value=f"{self.mm}mm = __{self.mil}mil(s)__")
+            case "oz":
+                embed.add_field(name="Result:",
+                    value=f"{self.oz}oz/ft² = __{self.mil}mil(s)__ or __{self.mm}μm__")
+                
+        if embed:
+            return embed
+
+
 class PCB_calc:
     def __init__(self, d: dict, internal = False):
         self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
         self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None
-        self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else 0
+        self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else None
         self.temp = si_prefix.si_parse(d.get("temp")) if d.get("temp") else None
         self.internal = internal
         self.mode = None
 
     def calculate(self):
-        if self.current < 0 or self.width < 0 or self.thicc < 0 or self.temp < 0:
+        if self.temp is not None and self.temp < 0:
+            raise ImpossibleValueError("Get real")
+        if self.thicc is not None and self.thicc < 0:
             raise ImpossibleValueError("Get real")
         if self.current is not None and self.width is None:
-            self.width = pcb_mod.width(self.current, self.temp, self.thicc, self.internal)
+            if self.current < 0:
+                raise ImpossibleValueError("Get real")
+            self.width = round(pcb_mod.width(self.current, self.temp, int(0 if self.thicc is None else self.thicc), self.internal), 3)
         elif self.current is None and self.width is not None:
-            self.current = pcb_mod.current(self.temp, self.width, self.thicc, self.internal)
-                        
+            if self.width < 0:
+                raise ImpossibleValueError("Get real")
+            self.current = round(pcb_mod.current(self.temp, self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
+        else:
+            raise TooFewArgsError()
+        
+        if self.thicc is None:
+            if self.internal:
+                self.thicc = 0.5
+            else:
+                self.thicc = 1  
+                                      
         self.mode = "succ"
             
     def draw(self):
@@ -83,24 +156,19 @@ class PCB_calc:
         Width = {self.width}mils
           <---->
            ┌──┐   
-        ───┴──┴─── 
+        ───┴──┴───
         Copper weight = {self.thicc}oz/ft²
         Max Current = {self.current}A
         ΔTemperature = {self.temp}°C
-        Internal layer? = {self.internal}
+        Internal layer? {self.internal}
         ```
         """
-        
-    def format(self):
-        self.current = si_prefix.si_format(self.current)
-        self.width = si_prefix.si_format(self.width)
-        self.thicc = si_prefix.si_format(self.thicc)
-        self.temp = si_prefix.si_format(self.temp)    
         
     def randomize(self):
         self.current = randint(1,10)
         self.temp = randint(1, 100)
         self.thicc = 1
+        self.temp = 10
         
     def gen_embed(self):
         try:
@@ -120,10 +188,10 @@ class PCB_calc:
                     value=f"""With this command you can calculate either how wide your PCB traces have to be,
                     or how much current they can handle. This is done with the IPC-2221 formulas.
                     
-                    Example: 'pcbtrace i=2 temp=10` 
+                    Example: `pcbtrace i=2 temp=10` 
                     this will calculate how wide an outside trace has to be to carry 2A without heating more than 10°C
                     
-                    Example: 'pcbtrace w=10 temp=10'
+                    Example: `pcbtrace w=10 temp=10`
                     this will calculate how much current a 10 mils trace can carry without heating more than 10°C
                     
                     You can also specify the copper weight in oz/ft² with the `t=2` variable.
@@ -131,12 +199,12 @@ class PCB_calc:
                     To calculate for internal traces use `internal = true`.
                     """,
                     inline=True)
-                embed.set_footer(text="Note: the above voltage divider is randomly generated")
+                embed.set_footer(text="Note: the above values are randomly generated")
                 return embed
-            case "succ":
+            case "succ":                        
                 embed.add_field(
                     name="Values",
-                    value=f"Width = {self.width}mils\nCopper weight = {self.thicc}oz/ft²\nMax Current = {self.current}A\nΔTemperature = {self.temp}°C\nInternal layer? = {self.internal}\n")
+                    value=f"Width = {self.width}mils\nCopper weight = {self.thicc}oz/ft²\nMax Current = {self.current}A\nΔTemperature = {self.temp}°C\nInternal layer? {self.internal}\n")
 
         if embed:
             return embed
@@ -509,19 +577,30 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             prefix = ctx.prefix
         alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
         return ", ".join(alist)
+    
+    @commands.command(name = "conversion", aliases = ["mm2mil", "mil2mm", "conv"])
+    async def conversion(self, ctx, *, args = None):
+        """
+        Convert between mils and millimeters, or oz/ft² to mils and millimeters
+        """
+        try:
+            conv = conversion(d = parse_input(args))
+        except:
+            conv = conversion(d={})
+        await ctx.send(embed = conv.gen_embed())
+        
 
     @commands.command(name = "pcbcalculator", aliases = ["pcbtrace", "trace", "pcb", "tracewidth", "tracecurrent"])
-    async def pcbtrace(self, ctx, *, args = None):
+    async def pcbtrace(self, ctx, *, args = ""):
         """
         Calculate the PCB trace width or the maximum current it can handle using the IPC2221 standard.
         """
-        args_parsed = parse_input(args)
         try:
             if args.endswith("internal"):
-                pcb = PCB_calc(d = args_parsed, internal = True)
+                pcb = PCB_calc(d = parse_input(args), internal = True)
                 await ctx.send(embed = pcb.gen_embed())
             else:
-                pcb = PCB_calc(d = args_parsed)
+                pcb = PCB_calc(d = parse_input(args))
                 await ctx.send(embed = pcb.gen_embed())
         except TooFewArgsError:
             await util.errormsg(ctx, "Not enough arguments to compute anything.")
