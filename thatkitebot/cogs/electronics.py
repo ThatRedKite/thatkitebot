@@ -63,34 +63,20 @@ class PCB_calc:
     def __init__(self, d: dict, internal = False):
         self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
         self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None
-        self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else None
+        self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else 0
         self.temp = si_prefix.si_parse(d.get("temp")) if d.get("temp") else None
         self.internal = internal
+        self.mode = None
 
     def calculate(self):
-        if self.current is not None and self.width is None and self.temp is not None:
-            if self.current < 0 or self.temp < 0:
-                raise ImpossibleValueError("Get real")
-            if not self.internal:
-                if self.thicc is not None:
-                    self.width = pcb_mod.width(self.current, self.temp, self.thicc, 0)
-                self.width = pcb_mod.jlc_width(self.current, self.temp, 0)   
-            if self.thicc is not None:
-                    self.width = pcb_mod.width(self.current, self.temp, self.thicc, int(self.internal))
-            self.width = pcb_mod.jlc_width(self.current, self.temp, int(self.internal))
-                
-        elif self.current is None and self.width is not None and self.temp is not None:
-            if self.current < 0 or self.temp < 0:
-                raise ImpossibleValueError("Get real")
-            if not self.internal:
-                if self.thicc is not None:
-                    self.width = pcb_mod.current(self.current, self.width, self.thicc, 0)
-                self.width = pcb_mod.jlc_current(self.current, self.width, 0)
-            if self.thicc is not None:
-                    self.width = pcb_mod.width(self.temp, self.width, self.thicc, int(self.internal))
-            self.width = pcb_mod.jlc_width(self.temp, self.width, int(self.internal))
-            
-        self.mode = succ
+        if self.current < 0 or self.width < 0 or self.thicc < 0 or self.temp < 0:
+            raise ImpossibleValueError("Get real")
+        if self.current is not None and self.width is None:
+            self.width = pcb_mod.width(self.current, self.temp, self.thicc, self.internal)
+        elif self.current is None and self.width is not None:
+            self.width = pcb_mod.current(self.temp, self.width, self.thicc, self.internal)
+                        
+        self.mode = "succ"
             
     def draw(self):
         return f"""
@@ -524,6 +510,24 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             prefix = ctx.prefix
         alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
         return ", ".join(alist)
+
+    @commands.command(name = "pcbcalculator", aliases = ["pcbtrace", "trace", "pcb", "tracewidth", "tracecurrent"])
+    async def pcbtrace(self, ctx, *, args = None):
+        """
+        Calculate the PCB trace width or the maximum current it can handle using the IPC2221 standard.
+        """
+        args_parsed = parse_input(args)
+        try:
+            if args.endswith("internal"):
+                pcb = PCB_calc(d = args_parsed, internal = True)
+                await ctx.send(embed = pcb.gen_embed())
+            else:
+                pcb = PCB_calc(d = args_parsed)
+                await ctx.send(embed = pcb.gen_embed())
+        except TooFewArgsError:
+            await util.errormsg(ctx, "Not enough arguments to compute anything.")
+            return
+        
 
     @commands.command()
     async def divider(self, ctx, *, args=None):
