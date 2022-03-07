@@ -74,7 +74,7 @@ class PCB_calc:
         if self.current is not None and self.width is None:
             self.width = pcb_mod.width(self.current, self.temp, self.thicc, self.internal)
         elif self.current is None and self.width is not None:
-            self.width = pcb_mod.current(self.temp, self.width, self.thicc, self.internal)
+            self.current = pcb_mod.current(self.temp, self.width, self.thicc, self.internal)
                         
         self.mode = "succ"
             
