@@ -9,6 +9,7 @@ import discord.commands as scmd
 from discord.ext import commands
 import si_prefix
 from random import randint
+import pcb_mod
 
 from thatkitebot.backend import util
 
@@ -55,6 +56,77 @@ def parse_input(s):
 
 def slash_preprocessor(a: str):
     return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
+
+
+class PCB_calc:
+    def __init__(self, d: dict, internal = False):
+        self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
+        self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None
+        self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else None
+        self.temp = si_prefix.si_parse(d.get("temp")) if d.get("temp") else None
+        self.internal = internal
+
+    def calculate(self):
+        if self.current is not None and self.width is None and self.temp is not None:
+            if self.current < 0:
+                raise ImpossibleValueError("Get real")
+            if self.temp < 0:
+                raise ImpossibleValueError("Get real")
+            
+            if self.internal is False:
+                if self.thicc is not None:
+                    self.width = pcb_mod.width(self.current, self.temp, self.thicc, 0)
+            
+                self.width = pcb_mod.jlc_width(self.current, self.temp, 0)
+                            
+            if self.thicc is True:
+                    self.width = pcb_mod.width(self.current, self.temp, self.thicc, int(self.internal))
+            
+            self.width = pcb_mod.jlc_width(self.current, self.temp, int(self.internal))
+                
+        elif self.current is None and self.width is not None and self.temp is not None:
+            if self.width < 0:
+                raise ImpossibleValueError("Get real")
+            if self.temp < 0:
+                raise ImpossibleValueError("Get real")
+            
+            if self.internal is False:
+                if self.thicc is not None:
+                    self.width = pcb_mod.current(self.current, self.width, self.thicc, 0)
+            
+                self.width = pcb_mod.jlc_current(self.current, self.width, 0)
+                
+            if self.thicc is True:
+                    self.width = pcb_mod.width(self.temp, self.width, self.thicc, int(self.internal))
+            
+            self.width = pcb_mod.jlc_width(self.temp, self.width, int(self.internal))
+            
+    def draw(self):
+        return f"""
+        ```
+        
+        """
+        
+    def format(self):
+        self.current = si_prefix.si_format(self.current)
+        self.width = si_prefix.si_format(self.width)
+        self.thicc = si_prefix.si_format(self.thicc)
+        self.temp = si_prefix.si_format(self.temp)    
+        
+    def randomize(self):
+        self.current = randint(1,10)
+        self.temp = randint(1, 100)
+        
+    def gen_embed(self):
+        try:
+            self.calculate()
+        except TooFewArgsError:
+            self.randomize()
+            self.calculate()
+            self.mode = None
+
+        if embed:
+            return embed
 
 
 class VoltageDivider:
