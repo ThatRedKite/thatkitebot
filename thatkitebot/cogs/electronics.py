@@ -2,6 +2,7 @@
 
 import math
 from math import log10, sqrt
+from sre_constants import SUCCESS
 import matplotlib.pyplot as plt
 from io import BytesIO
 import discord
@@ -68,43 +69,41 @@ class PCB_calc:
 
     def calculate(self):
         if self.current is not None and self.width is None and self.temp is not None:
-            if self.current < 0:
+            if self.current < 0 or self.temp < 0:
                 raise ImpossibleValueError("Get real")
-            if self.temp < 0:
-                raise ImpossibleValueError("Get real")
-            
-            if self.internal is False:
+            if not self.internal:
                 if self.thicc is not None:
                     self.width = pcb_mod.width(self.current, self.temp, self.thicc, 0)
-            
-                self.width = pcb_mod.jlc_width(self.current, self.temp, 0)
-                            
-            if self.thicc is True:
+                self.width = pcb_mod.jlc_width(self.current, self.temp, 0)   
+            if self.thicc is not None:
                     self.width = pcb_mod.width(self.current, self.temp, self.thicc, int(self.internal))
-            
             self.width = pcb_mod.jlc_width(self.current, self.temp, int(self.internal))
                 
         elif self.current is None and self.width is not None and self.temp is not None:
-            if self.width < 0:
+            if self.current < 0 or self.temp < 0:
                 raise ImpossibleValueError("Get real")
-            if self.temp < 0:
-                raise ImpossibleValueError("Get real")
-            
-            if self.internal is False:
+            if not self.internal:
                 if self.thicc is not None:
                     self.width = pcb_mod.current(self.current, self.width, self.thicc, 0)
-            
                 self.width = pcb_mod.jlc_current(self.current, self.width, 0)
-                
-            if self.thicc is True:
+            if self.thicc is not None:
                     self.width = pcb_mod.width(self.temp, self.width, self.thicc, int(self.internal))
-            
             self.width = pcb_mod.jlc_width(self.temp, self.width, int(self.internal))
+            
+        self.mode = succ
             
     def draw(self):
         return f"""
         ```
-        
+        Width = {self.width}mils
+          <---->
+           ┌──┐   
+        ───┴──┴─── 
+        Copper weight = {self.thicc}oz/ft²
+        Max Current = {self.current}A
+        ΔTemperature = {self.temp}°C
+        Internal layer? = {self.internal}
+        ```
         """
         
     def format(self):
@@ -116,6 +115,7 @@ class PCB_calc:
     def randomize(self):
         self.current = randint(1,10)
         self.temp = randint(1, 100)
+        self.thicc = 1
         
     def gen_embed(self):
         try:
@@ -124,6 +124,34 @@ class PCB_calc:
             self.randomize()
             self.calculate()
             self.mode = None
+
+        embed = discord.Embed(title="PCB Trace Calculator")
+        embed.add_field(name="Drawing", value=self.draw(), inline=False)
+
+        match self.mode:
+            case None:
+                embed.add_field(
+                    name="How to use this?",
+                    value=f"""With this command you can calculate either how wide your PCB traces have to be,
+                    or how much current they can handle. This is done with the IPC-2221 formulas.
+                    
+                    Example: 'pcbtrace i=2 temp=10` 
+                    this will calculate how wide an outside trace has to be to carry 2A without heating more than 10°C
+                    
+                    Example: 'pcbtrace w=10 temp=10'
+                    this will calculate how much current a 10 mils trace can carry without heating more than 10°C
+                    
+                    You can also specify the copper weight in oz/ft² with the `t=2` variable.
+                    however if you do not specify the copper weight the bot will use JLCPCBs standard values
+                    To calculate for internal traces use `internal = true`.
+                    """,
+                    inline=True)
+                embed.set_footer(text="Note: the above voltage divider is randomly generated")
+                return embed
+            case "succ":
+                embed.add_field(
+                    name="Values",
+                    value=f"Width = {self.width}mils\nCopper weight = {self.thicc}oz/ft²\nMax Current = {self.current}A\nΔTemperature = {self.temp}°C\nInternal layer? = {self.internal}\n")
 
         if embed:
             return embed
