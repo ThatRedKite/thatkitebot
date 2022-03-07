@@ -72,7 +72,7 @@ class ThatKiteBot(commands.Bot, ABC):
         # ---dynamic values---
 
         # settings
-        self.debugmode = False
+        self.debugmode = True
         self.tenortoken = tt
         # sessions
         self.loop.run_until_complete(self.aiohttp_start())
