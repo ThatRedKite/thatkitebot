@@ -10,10 +10,9 @@ import discord.commands as scmd
 from discord.ext import commands
 import si_prefix
 from random import randint
-import pcb_mod
 
 from thatkitebot.backend import util
-
+from thatkitebot.backend import pcb_mod
 
 class InputDifferenceError(Exception):
     pass
