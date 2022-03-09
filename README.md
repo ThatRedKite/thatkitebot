@@ -1,8 +1,8 @@
 ## KiteBot
-A discord bot focused on science commands and fun stuff. No moderation for now.
+A Discord bot focused on science commands and fun stuff. No moderation features for now.
 
 ## Installation and first run
-The following instructions will be for a debian server.
+The following instructions will be for a Debian system. **There can be problems if your system uses SELinux!!!**
 (It is recommended that you [add yourself](https://docs.docker.com/engine/install/linux-postinstall/) to the docker user group to omit sudo for better security)
 ### Install docker:
 
@@ -19,7 +19,6 @@ git clone https://github.com/ThatRedKite/thatkitebot.git
 ```
 cd thatkitebot
 sudo docker-compose up
-
 ```
 Docker will download all dependencies and start. This can take a while.
 After it finishes starting hit `ctrl+c` to stop it and wait until it finishes.
@@ -46,6 +45,7 @@ sudo docker-compose up -d thatkitebot
 You will see it print:
 ```
 Starting redis ... done
+
 Starting thatkitebot ... done
 ```
 To check the status of the container do `sudo docker container ls` you will see 2 containers `redis:alpine` and `thatkitebot_thatkitebot` that means everything is running.
