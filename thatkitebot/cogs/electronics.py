@@ -134,11 +134,11 @@ class PCB_calc:
         if self.current is not None and self.width is None:
             if self.current < 0:
                 raise ImpossibleValueError("Get real")
-            self.width = round(pcb_mod.width(self.current, self.temp, int(0 if self.thicc is None else self.thicc), self.internal), 3)
+            self.width = round(pcb_mod.width(self.current, int(0 if self.temp is None else self.temp), int(0 if self.thicc is None else self.thicc), self.internal), 3)
         elif self.current is None and self.width is not None:
             if self.width < 0:
                 raise ImpossibleValueError("Get real")
-            self.current = round(pcb_mod.current(self.temp, self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
+            self.current = round(pcb_mod.current(int(0 if self.temp is None else self.temp), self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
         else:
             raise TooFewArgsError()
         

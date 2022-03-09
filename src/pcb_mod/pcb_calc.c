@@ -26,8 +26,9 @@ float _width(float current, float delta_temp, float thickness, int internal)
     float K = (internal == 0) ? 0.048f : 0.024f;  // give out the correct K variable depending on if the trace is internal or external
     float H = (internal == 0) ? jlc_standard_1 : jlc_standard_int;   // give out the H variable depending on if the trace is internal or external
     float thicc = (thickness == 0) ? H : thickness;     // incase this value is 0, choose the default value H instead of user given value thickness
+    float temp = (delta_temp == 0) ? 10 : delta_temp;   // if user does not select a temperature, assume 10°C
 
-    return powf((current / (K * powf(delta_temp, ipc_exp3))), ipc_exp1) / thicc;
+    return powf((current / (K * powf(temp, ipc_exp3))), ipc_exp1) / thicc;
 }
 
 /*
@@ -38,8 +39,9 @@ float _current(float temp_delta, float width, float thickness, int internal)
     float K = (internal == 0) ? 0.048f : 0.024f;  // give out the correct K variable depending on if the trace is internal or external
     float H = (internal == 0) ? jlc_standard_1 : jlc_standard_int;   // give out the H variable depending on if the trace is internal or external
     float thicc = (thickness == 0) ? H : thickness;     // incase this value is 0, choose the default value H instead of user given value thickness
+    float temp = (delta_temp == 0) ? 10 : delta_temp;   // if user does not select a temperature, assume 10°C
 
-    return K * powf(temp_delta, ipc_exp3) * powf((width * thicc), ipc_exp2);
+    return K * powf(temp, ipc_exp3) * powf((width * thicc), ipc_exp2);
 }
 
 // convert millimeters to mils
