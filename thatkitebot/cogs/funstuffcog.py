@@ -246,6 +246,14 @@ class FunStuff(commands.Cog, name="fun commands"):
             return
         await ctx.send(embed=embed)
 
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command(name="uwuify", aliases=["uwu"])
+    async def _uwuify(self, ctx: commands.Context, *, msg: str):
+        """UwUify your text (i'm sorry mom)"""
+        trans_table = msg.maketrans({"l": "w", "L": "W", "r": "w", "R": "W"})
+        uwuified_text = msg.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo")
+        await ctx.send(uwuified_text)
+
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
