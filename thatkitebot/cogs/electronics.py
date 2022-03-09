@@ -362,7 +362,7 @@ class LM317:
         self.e = si_prefix.si_parse(d.get("e")) if d.get("e") else None
             
     def calculate(self):
-        if pcb_mod.check_series(int(self.e)) == 0 or self.e == 1:
+        if self.e is not None and pcb_mod.check_series(int(self.e)) == 0:
             raise ImpossibleValueError("Get real")
         if self.iout is not None:
             if self.iout is not None:
@@ -506,7 +506,7 @@ class RCFilter:
         self.mode = None
 
     def calculate(self):
-        if pcb_mod.check_series(int(self.e)) == 0 or self.e == 1:
+        if self.e is not None and pcb_mod.check_series(int(self.e)) == 0:
             raise ImpossibleValueError("Get real")
         if not self.fcut and self.r1 is not None and self.c1 is not None:
             self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
