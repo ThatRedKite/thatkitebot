@@ -18,3 +18,4 @@ test*.*
 # IDEs
 .idea
 .vscode
+src/pcb_mod/build
