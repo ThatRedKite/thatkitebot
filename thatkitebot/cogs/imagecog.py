@@ -282,9 +282,15 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def pfp(self, ctx, user: Optional[discord.Member] = None):
         """sends the pfp of someone"""
+        #special case for one user        
         if not user:
-            user = ctx.message.author
-        await ctx.send(user.avatar.url)
+            if ctx.message.author.id == 528315825803755559:
+                await ctx.send("https://cdn.discordapp.com/attachments/910895468001767484/951243466590003220/704924900711727194.png")
+            else:
+                user = ctx.message.author
+                await ctx.send(user.avatar.url)
+        else:
+            await ctx.send(user.avatar.url)
 
     @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()

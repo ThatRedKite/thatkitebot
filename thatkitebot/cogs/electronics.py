@@ -30,20 +30,6 @@ class ImpossibleValueError(Exception):
     pass
 
 
-def convert_e24(input):
-    e24_list = [
-        1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0,
-        3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1,
-    ]
-    mantissa = input
-    power = 0
-    while mantissa >= 10:
-        power += 1
-        mantissa = mantissa / 10
-    nearest = min(e24_list, key=lambda x: abs(x - mantissa))
-    return nearest * 10 ** power
-
-
 def parse_input(s):
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
@@ -118,49 +104,69 @@ class conversion:
 
 
 class PCB_calc:
-    def __init__(self, d: dict, internal = False):
+    def __init__(self, d: dict, internal = False, limit = False):
         self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
         self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None
         self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else None
         self.temp = si_prefix.si_parse(d.get("temp")) if d.get("temp") else None
         self.internal = internal
+        self.limit = limit
         self.mode = None
 
     def calculate(self):
-        if self.temp is not None and self.temp < 0:
+        if self.limit:
+            self.mode = "limit"
+        if self.temp is not None and (self.temp < 10 or self.temp > 100):
             raise ImpossibleValueError("Get real")
-        if self.thicc is not None and self.thicc < 0:
+        if self.thicc is not None and (self.thicc < 0.5 or self.thicc > 3):
             raise ImpossibleValueError("Get real")
+        
         if self.current is not None and self.width is None:
-            if self.current < 0:
+            if self.current <= 0 or self.current > 35:
                 raise ImpossibleValueError("Get real")
-            self.width = round(pcb_mod.width(self.current, self.temp, int(0 if self.thicc is None else self.thicc), self.internal), 3)
+            self.width = round(pcb_mod.width(self.current, int(0 if self.temp is None else self.temp), int(0 if self.thicc is None else self.thicc), self.internal), 3)
+            self.mode = "succ"
         elif self.current is None and self.width is not None:
-            if self.width < 0:
+            if self.width < 0 or self.width > 400:
                 raise ImpossibleValueError("Get real")
-            self.current = round(pcb_mod.current(self.temp, self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
-        else:
-            raise TooFewArgsError()
+            self.current = round(pcb_mod.current(int(0 if self.temp is None else self.temp), self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
+            self.mode = "succ"
+        elif not self.limit:
+            raise ImpossibleValueError("Get real")
         
         if self.thicc is None:
             if self.internal:
                 self.thicc = 0.5
             else:
                 self.thicc = 1  
-                                      
-        self.mode = "succ"
-            
+        
+        if self.temp is None:
+            self.temp = 10
+                                                  
     def draw(self):
-        return f"""
+        if self.mode != "succ":
+            return f"""
         ```
-        Width = {self.width}mils
-          <---->
-           ┌──┐   
-        ───┴──┴───
-        Copper weight = {self.thicc}oz/ft²
-        Max Current = {self.current}A
-        ΔTemperature = {self.temp}°C
-        Internal layer? {self.internal}
+        
+Width = {self.width}mils
+  <---->
+   ┌──┐   
+───┴──┴───
+
+Copper weight = {self.thicc}oz/ft²
+Max Current = {self.current}A
+ΔTemperature = {self.temp}°C
+Internal layer? {self.internal}
+        ```
+        """
+        else:
+            return """
+        ```
+        
+Width = {self.width}mils
+  <---->
+   ┌──┐   
+───┴──┴───
         ```
         """
         
@@ -179,7 +185,9 @@ class PCB_calc:
             self.mode = None
 
         embed = discord.Embed(title="PCB Trace Calculator")
-        embed.add_field(name="Drawing", value=self.draw(), inline=False)
+        
+        if self.mode != "limit":
+            embed.add_field(name="Drawing", value=self.draw(), inline=False)
 
         match self.mode:
             case None:
@@ -196,11 +204,26 @@ class PCB_calc:
                     
                     You can also specify the copper weight in oz/ft² with the `t=2` variable.
                     however if you do not specify the copper weight the bot will use JLCPCBs standard values
-                    To calculate for internal traces use `internal = true`.
+                    To calculate for internal traces, add `internal` to the end of the command.
+                    To check the command limits, type `pcbtrace limit`
                     """,
                     inline=True)
                 embed.set_footer(text="Note: the above values are randomly generated")
-                return embed
+            case "limit":
+                embed.add_field(
+                    name="IPC2221 Formula limits",
+                    value=f"""This command is using the IPC2221 standard as the source for PCB related formulas.
+                    Because of that, it has been hardcoded to only accept inputs within the range the formula was made for.
+                    
+                    These limits are:```
+Width: 0 to 400mils
+Copper weight: 0.5 to 3oz/ft²
+Max Current: 0 to 35A
+ΔTemperature: 10 to 100°C```
+                    Note, exactly 0A is not an acceptable input.
+                    Because who really needs a trace that cant carry any current? <:schmuck:900445607888551947>
+                    """,
+                    inline=True)
             case "succ":                        
                 embed.add_field(
                     name="Values",
@@ -221,15 +244,15 @@ class VoltageDivider:
     def calculate(self):
         if self.r1 and self.r2 and self.vin and not self.vout:
             self.vout = self.vin * self.r2 / (self.r1 + self.r2)
-            self.mode = "vout"
+            self.mode = "succ"
 
         elif self.r2 and self.vin and self.vout and not self.r1:
             self.r1 = self.r2 * (self.vin - self.vout) / self.vout
-            self.mode = "r1"
+            self.mode = "succ"
 
         elif self.r1 and self.vin and self.vout and not self.r2:
             self.r2 = self.vout * self.r1 / (self.vin - self.vout)
-            self.mode = "r2"
+            self.mode = "succ"
 
         else:
             raise TooFewArgsError()
@@ -237,23 +260,47 @@ class VoltageDivider:
         self.format()
 
     def draw(self):
-        return f"""
+        if self.mode is None:
+            return f"""
         ```
-         Vin = {self.vin}V
-         ▲
-         │
-        ┌┴┐
-        │ │ R1 = {self.r1}Ω
-        │ │
-        └┬┘
-         ├───► Vout = {self.vout}V
-        ┌┴┐
-        │ │ R2 = {self.r2}Ω
-        │ │
-        └┬┘
-         │
-        ─┴─
-        GND
+        
+   Vin
+    ▲
+    │
+   ┌┴┐
+   │ │ R1
+   └┬┘
+    ├───○ Vout
+   ┌┴┐
+   │ │ R2
+   └┬┘
+    │
+   ─┴─
+   GND
+   
+Vin = {self.vin}V
+Vout = {self.vout}V
+R1 = {self.r1}Ω
+R2 = {self.r2}Ω
+        ```
+        """
+        else:
+            return """
+        ```
+        
+   Vin
+    ▲
+    │
+   ┌┴┐
+   │ │ R1
+   └┬┘
+    ├───○ Vout
+   ┌┴┐
+   │ │ R2
+   └┬┘
+    │
+   ─┴─
+   GND
         ```
         """
 
@@ -293,22 +340,13 @@ class VoltageDivider:
                     inline=True)
                 embed.set_footer(text="Note: the above voltage divider is randomly generated")
                 return embed
-            case "r1":
+            case "succ":
                 embed.add_field(
                     name="Values",
-                    value=f"R1 =  __{self.r1}__Ω\nR2 = {self.r2}Ω\nVin = {self.vin}V\nVout = {self.vout}V")
-            case "r2":
+                    value=f"R1 =  {self.r1}Ω\nR2 = {self.r2}Ω\nVin = {self.vin}V\nVout = {self.vout}V")
                 embed.add_field(
-                    name="Values",
-                    value=f"R1 =  {self.r1}Ω\nR2 = __{self.r2}__Ω\nVin = {self.vin}V\nVout = {self.vout}V")
-            case "vin":
-                embed.add_field(
-                    name="Values",
-                    value=f"R1 =  {self.r1}Ω\nR2 = {self.r2}Ω\nVin = __{self.vin}__V\nVout = {self.vout}V")
-            case "vout":
-                embed.add_field(
-                    name="Values",
-                    value=f"R1 =  {self.r1}Ω\nR2 = {self.r2}Ω\nVin = __{self.vin}__V\nVout = {self.vout}V")
+                    name=f"Closest E{(12 if self.e is None or 0 else self.e)} resistor values",
+                    value=f"R1 = {si_prefix.si_format(pcb_mod.e_resistor(self.r1, (12 if self.e is None or 0 else self.e)))}Ω\nR2 = {si_prefix.si_format(pcb_mod.e_resistor(self.r2, int(12 if self.e is None or 0 else self.e)))}Ω")
 
         if embed:
             return embed
@@ -321,8 +359,11 @@ class LM317:
         self.vout = si_prefix.si_parse(d.get("vout")) if d.get("vout") else None
         self.vin = si_prefix.si_parse(d.get("vin")) if d.get("vin") else None
         self.iout = si_prefix.si_parse(d.get("iout")) if d.get("iout") else None
-    
+        self.e = si_prefix.si_parse(d.get("e")) if d.get("e") else None
+            
     def calculate(self):
+        if pcb_mod.check_series(int(self.e)) == 0 or self.e == 1:
+            raise ImpossibleValueError("Get real")
         if self.iout is not None:
             if self.iout is not None:
                 if self.iout < 0:
@@ -371,36 +412,43 @@ class LM317:
     def draw(self):
         if self.iout is not None:
             return f"""
-            ```
-            \n
-        Vin = {self.vin}V                         
-            ┌──────────┐         
-       >────┤IN     OUT├────┐ 
-            │   ADJ    │   ┌┴┐
-            └────┬─────┘   │ │ R1 = {si_prefix.si_format(self.r1)}Ω
-                 │         └┬┘
-                 └──────────┴──>
-                            Iout = {self.iout}A
+            ```         
+                        
+Vin  ┌──────────┐         
+○────┤IN     OUT├────┐ 
+     │   ADJ    │   ┌┴┐
+     └────┬─────┘   │ │ R1
+          │         └┬┘
+          └──────────┴──○
+                     Iout
+                            
+R1 = {si_prefix.si_format(self.r1)}Ω
+Vin = {self.vin}V
+Iout = {self.iout}A
             ```
             """
         else:
             return f"""
             ```
-            \n
-        Vin = {self.vin}V                         
-            ┌──────────┐     Vout = {self.vout}V    
-       >────┤IN     OUT├────┬──> 
-            │   ADJ    │   ┌┴┐
-            └────┬─────┘   │ │ R1 = {si_prefix.si_format(self.r1)}Ω
-                 │         └┬┘
-                 ├──────────┘
-                ┌┴┐
-                │ │ R2 = {si_prefix.si_format(self.r2)}Ω
-                └┬┘
-                 │
-                ─┴─
-                GND
-            ```
+            
+Vin  ┌──────────┐    Vout
+○────┤IN     OUT├────┬──○
+     │   ADJ    │   ┌┴┐
+     └────┬─────┘   │ │ R1
+          │         └┬┘
+          ├──────────┘
+         ┌┴┐
+         │ │ R2
+         └┬┘
+          │
+         ─┴─
+         GND
+                
+R1 = {si_prefix.si_format(self.r1)}Ω
+R2 = {si_prefix.si_format(self.r2)}Ω
+Vin = {self.vin}V
+Vout = {self.vout}V
+```
             """
             
     def gen_embed(self):
@@ -433,18 +481,18 @@ class LM317:
                 embed.add_field(name="Schematic", value=self.draw(), inline=False)
                 embed.add_field(
                     name="Values",
-                    value=f"R1 = __{si_prefix.si_format(self.r1)}Ω__\nVin = {self.vin}V\nIout = {self.iout}A")
+                    value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nVin = {self.vin}V\nIout = {self.iout}A")
                 embed.add_field(
-                    name="Closest E24 resistor values",
-                    value=f"R1 = __{si_prefix.si_format(convert_e24(self.r1))}__Ω\n")
+                    name=f"Closest E{(12 if self.e is None or 0 else self.e)} resistor values",
+                    value=f"R1 = {si_prefix.si_format(pcb_mod.e_resistor(self.r1, int(12 if self.e is None or 0 else self.e)))}Ω\n")
                 return embed
             embed.add_field(name="Schematic", value=self.draw(), inline=False)
             embed.add_field(
                 name="Values",
-                value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nR2 = __{si_prefix.si_format(self.r2)}Ω__\nVin = {self.vin}V\nVout = {self.vout}V")
+                value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nR2 = {si_prefix.si_format(self.r2)}Ω\nVin = {self.vin}V\nVout = {self.vout}V")
             embed.add_field(
-                name="Closest E24 resistor values",
-                value=f"R1 = {si_prefix.si_format(convert_e24(self.r1))}Ω\nR2 = __{si_prefix.si_format(convert_e24(self.r2))}Ω__")
+                name=f"Closest E{(12 if self.e is None or 0 else self.e)} resistor values",
+                value=f"R1 = {si_prefix.si_format(pcb_mod.e_resistor(self.r1, (12 if self.e is None or 0 else self.e)))}Ω\nR2 = {si_prefix.si_format(pcb_mod.e_resistor(self.r2, int(12 if self.e is None or 0 else self.e)))}Ω")
             return embed
 
 
@@ -453,31 +501,56 @@ class RCFilter:
         self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
         self.c1 = si_prefix.si_parse(d.get("c1")) if d.get("c1") else None
         self.fcut = si_prefix.si_parse(d.get("fcut")) if d.get("fcut") else None
+        self.e = si_prefix.si_parse(d.get("e")) if d.get("e") else None
         self.doPlot = plot
+        self.mode = None
 
     def calculate(self):
+        if pcb_mod.check_series(int(self.e)) == 0 or self.e == 1:
+            raise ImpossibleValueError("Get real")
         if not self.fcut and self.r1 is not None and self.c1 is not None:
             self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
+            self.mode = "fcut"
         elif not self.r1 and self.fcut is not None and self.c1 is not None:
             self.r1 = 1 / (2 * math.pi * self.fcut * self.c1)
+            self.mode = "r1"
         elif not self.c1 and self.fcut is not None and self.r1 is not None:
             self.c1 = 1 / (2 * math.pi * self.fcut * self.r1)
+            self.mode = "c1"
         else:
             raise TooFewArgsError()
     
     def draw(self):
-        return f"""
+        if self.mode is None:
+            return f"""
         ```
-        \n   
-        R1 = {si_prefix.si_format(self.r1)}Ω     Fcut = {si_prefix.si_format(self.fcut)}Hz
-        ┌───────┐ 
-   IN ──┤       ├─────┬── OUT
-        └───────┘     │ C1 = {si_prefix.si_format(self.c1)}F
-                   ───┴───                                      
-                   ───┬───        
-                      │   
-     ─────────────────┴──────
-                            
+            
+IN  ┌───────┐          OUT
+○───┤  R1   ├─────┬──────○ 
+    └───────┘     │ 
+               ───┴─── C1
+               ───┬───
+                  │   
+                 ─┴─
+                 GND
+                 
+R1 = {si_prefix.si_format(self.r1)}Ω    
+C1 = {si_prefix.si_format(self.c1)}F
+Fcut = {si_prefix.si_format(self.fcut)}Hz           
+        ```
+        """
+        else:
+            return """
+        ```
+            
+IN  ┌───────┐          OUT
+○───┤  R1   ├─────┬──────○ 
+    └───────┘     │ 
+               ───┴─── C1
+               ───┬───
+                  │   
+                 ─┴─
+                 GND      
         ```
         """
 
@@ -523,40 +596,55 @@ class RCFilter:
         return imgdata
 
     def gen_embed(self):
-        embed = discord.Embed(title="RC filter")
         try:
             self.calculate()
-            self.mode = 1
         except TooFewArgsError:
             self.randomize()
             self.calculate()
             self.mode = None
-        embed.add_field(name="Schematic", value=self.draw(), inline=False)
-        if not self.mode:
-            embed.add_field(
-                name="How to use this?",
-                value=f"""
-            With this command you can calculate required resistor or capacitor value for a specific RC filter.
-            Example: `rc fcut=1k r1=100` to find c1. You can add `plot` to the end of the command if you would like a bode plot.
-            This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
-            Don't try writing out the `Ω` in Ohms 
-            as it just confuses the bot (don't use R either).
-            You can also use `rcfilter`, `filter`, `lowpass`.
-            """,
-                inline=True)
-            embed.set_footer(text="Note: the above RC filter is randomly generated")
-            if self.doPlot:
-                embed.set_image(url="attachment://rc.png")
-            return embed
-        if embed:
-            embed.add_field(
+        
+        embed = discord.Embed(title="RC filter")
+        embed.add_field(name="Schematic", value=self.draw(), inline=False)   
+        match self.mode:
+            case None:
+                embed.add_field(
+                    name="How to use this?",
+                    value=f"""
+                        With this command you can calculate required resistor or capacitor value for a specific RC filter.
+                        Example: `rc fcut=1k r1=100` to find c1. You can add `plot` to the end of the command if you would like a bode plot.
+                        If you want the closest real value resistor you can get, you can specify the series with `e`
+                        Example: `rc cut=20k c1=20n e=48` to find r1 and the closest E48 series resistor
+                        
+                        This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
+                        Don't try writing out the `Ω` in Ohms 
+                        as it just confuses the bot (don't use R either).
+                        You can also use `rcfilter`, `filter`, `lowpass`.
+                        """,
+                    inline=True)
+                embed.set_footer(text="Note: the above RC filter is randomly generated")
+            case "r1":
+                embed.add_field(
                     name="Values",
-                    value=f"R1 = __{si_prefix.si_format(self.r1)}Ω__\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
-            embed.add_field(
-                    name="Closest E24 resistor value",
-                    value=f"R1 = __{si_prefix.si_format(convert_e24(self.r1))}Ω__")
-            if self.doPlot:
-                embed.set_image(url="attachment://rc.png")
+                    value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
+                embed.add_field(
+                    name=f"Closest E{int(24 if self.e is None or 0 else self.e)} resistor value",
+                    value=f"R1 = {si_prefix.si_format(pcb_mod.e_resistor(self.r1, int(24 if self.e is None or 0 else self.e)))}Ω")
+            case "c1":
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
+                embed.add_field(
+                    name=f"Closest E{int(12 if self.e is None or 0 else self.e)} capacitor value",
+                    value=f"C1 = {si_prefix.si_format(pcb_mod.e_resistor(self.r1, int(12 if self.e is None or 0 else self.e)))}F")
+            case "fcut":
+                embed.add_field(
+                    name="Values",
+                    value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
+        
+        if self.doPlot:
+            embed.set_image(url="attachment://rc.png")
+        
+        if embed:
             return embed
 
     def gen_file(self):
@@ -599,11 +687,14 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             if args.endswith("internal"):
                 pcb = PCB_calc(d = parse_input(args), internal = True)
                 await ctx.send(embed = pcb.gen_embed())
-            else:
-                pcb = PCB_calc(d = parse_input(args))
+            elif args.endswith("limit"):
+                pcb = PCB_calc(d = parse_input(args), limit = True)
                 await ctx.send(embed = pcb.gen_embed())
-        except TooFewArgsError:
-            await util.errormsg(ctx, "Not enough arguments to compute anything.")
+            else:
+                pcb = PCB_calc(d = {})
+                await ctx.send(embed = pcb.gen_embed())
+        except ImpossibleValueError:
+            await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
             return
         
 
@@ -684,6 +775,9 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 await ctx.send(embed=rc.gen_embed())
         except TooFewArgsError:
             await util.errormsg(ctx, "Not enough arguments to compute anything.")
+            return
+        except ImpossibleValueError:
+            await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
             return
 
 
