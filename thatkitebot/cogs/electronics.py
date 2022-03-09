@@ -127,7 +127,7 @@ class PCB_calc:
             self.width = round(pcb_mod.width(self.current, int(0 if self.temp is None else self.temp), int(0 if self.thicc is None else self.thicc), self.internal), 3)
             self.mode = "succ"
         elif self.current is None and self.width is not None:
-            if self.width <= 0 or self.width > 400:
+            if self.width < 0 or self.width > 400:
                 raise ImpossibleValueError("Get real")
             self.current = round(pcb_mod.current(int(0 if self.temp is None else self.temp), self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
             self.mode = "succ"
@@ -362,7 +362,7 @@ class LM317:
         self.e = si_prefix.si_parse(d.get("e")) if d.get("e") else None
             
     def calculate(self):
-        if self.e is not None and pcb_mod.check_series(int(self.e)) == 0:
+        if pcb_mod.check_series(int(self.e)) == 0 or self.e == 1:
             raise ImpossibleValueError("Get real")
         if self.iout is not None:
             if self.iout is not None:
@@ -506,7 +506,7 @@ class RCFilter:
         self.mode = None
 
     def calculate(self):
-        if self.e is not None and pcb_mod.check_series(int(self.e)) == 0:
+        if pcb_mod.check_series(int(self.e)) == 0 or self.e == 1:
             raise ImpossibleValueError("Get real")
         if not self.fcut and self.r1 is not None and self.c1 is not None:
             self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
