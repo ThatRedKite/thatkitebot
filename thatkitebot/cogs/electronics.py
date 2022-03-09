@@ -127,7 +127,7 @@ class PCB_calc:
             self.width = round(pcb_mod.width(self.current, int(0 if self.temp is None else self.temp), int(0 if self.thicc is None else self.thicc), self.internal), 3)
             self.mode = "succ"
         elif self.current is None and self.width is not None:
-            if self.width < 0 or self.width > 400:
+            if self.width <= 0 or self.width > 400:
                 raise ImpossibleValueError("Get real")
             self.current = round(pcb_mod.current(int(0 if self.temp is None else self.temp), self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
             self.mode = "succ"
