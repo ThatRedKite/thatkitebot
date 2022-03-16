@@ -59,24 +59,33 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        await cache.add_message_to_cache(self.redis_cache, message)
+        try:
+            await cache.add_message_to_cache(self.redis_cache, message)
+        except:
+            print("could not add message to cache!")
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
-        if await self.redis_cache.exists(key):
-            await self.redis_cache.delete(key)
+        try:
+            key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
+            if await self.redis_cache.exists(key):
+                await self.redis_cache.delete(key)
 
-        # delete the associated repost if it exists
-        if len(rkeys := [rkey async for rkey in self.repost_redis.scan_iter(match=f"{payload.message_id}:*")]) > 0:
-            await self.repost_redis.delete(rkeys[0])
+            # delete the associated repost if it exists
+            if len(rkeys := [rkey async for rkey in self.repost_redis.scan_iter(match=f"{payload.message_id}:*")]) > 0:
+                await self.repost_redis.delete(rkeys[0])
+        except:
+            print("could not delete message from cache!")
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
-        key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
-        if await self.redis_cache.exists(key):
-            await cache.add_message_to_cache(self.redis_cache, payload.cached_message)
-
+        try:
+            key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
+            if await self.redis_cache.exists(key):
+                await cache.add_message_to_cache(self.redis_cache, payload.cached_message)
+        except:
+            print("could not edit cached message")
+            
     @commands.Cog.listener()
     async def on_member_join(self, joinedmember):
         welcomechannel = joinedmember.guild.system_channel.id
