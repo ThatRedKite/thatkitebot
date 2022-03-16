@@ -44,7 +44,7 @@ class ListenerCog(commands.Cog):
         print("\nbot successfully started!")
         self.reset_invoke_counter.start()
         await self.bot.change_presence(
-            activity=discord.Activity(name="a battle against itself", type=5),
+            activity=discord.Activity(name="a battle against russia", type=5),
             status=discord.Status.online,
         )
 
