@@ -38,13 +38,11 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, user: typing.Optional[discord.User],  channel: typing.Optional[discord.TextChannel], guild: typing.Optional[discord.Guild]):
+    async def _markov(self, ctx, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
-        if not guild:
-            guild = ctx.guild.id
         if not user:
             user = ctx.message.author  # default to message author
         if not channel:
@@ -53,7 +51,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.channel.typing():
             try:
                 # try to get the messages from the cache
-                messagelist = await cache.get_contents(self.redis, guild, channel.id, user.id)
+                messagelist = await cache.get_contents(self.redis, channel.guild.id, channel.id, user.id)
                 if not len(messagelist) > 300:
                     # populate the cache if there are less than 300 messages
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
