@@ -47,11 +47,21 @@ class FunStuff(commands.Cog, name="fun commands"):
             user = ctx.message.author  # default to message author
         if not channel:
             channel = ctx.channel  # default to current channel
+            
+        guild = channel.guild
+        
+        if self.bot.debugmode:
+            print("Markov debug \n \n")
+            print("username:", user.name)
+            print("user id:", user.id)
+            print("channel name:", channel.name)
+            print("channel id", channel.id)
+            print("guild:", guild.name)
 
         async with ctx.channel.typing():
             try:
                 # try to get the messages from the cache
-                messagelist = await cache.get_contents(self.redis, channel.guild.id, channel.id, user.id)
+                messagelist = await cache.get_contents(self.redis, guild, channel.id, user.id)
                 if not len(messagelist) > 300:
                     # populate the cache if there are less than 300 messages
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
