@@ -43,7 +43,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
-        if not guild_id:
+        if not guild:
             guild = ctx.guild.id
         if not user:
             user = ctx.message.author  # default to message author
