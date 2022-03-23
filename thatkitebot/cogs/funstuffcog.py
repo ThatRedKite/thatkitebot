@@ -44,9 +44,12 @@ class FunStuff(commands.Cog, name="fun commands"):
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
         if self.bot.debugmode:
-            print("Markov debug")
-            print("user", user.name)
-            print("channel", channel.name)
+            try:
+                print("Markov debug")
+                print("user", user.name)
+                print("channel", channel.name)
+            except:
+                pass
             
         if not user:
             user = ctx.message.author  # default to message author
