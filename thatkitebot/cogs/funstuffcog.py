@@ -61,7 +61,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.channel.typing():
             try:
                 # try to get the messages from the cache
-                messagelist = await cache.get_contents(self.redis, guild, channel.id, user.id)
+                messagelist = await cache.get_contents(self.redis, guild.id, channel.id, user.id)
                 if not len(messagelist) > 300:
                     # populate the cache if there are less than 300 messages
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
