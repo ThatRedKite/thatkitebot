@@ -43,6 +43,11 @@ class FunStuff(commands.Cog, name="fun commands"):
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
+        if self.bot.debugmode:
+            print("Markov debug")
+            print("user", user.name)
+            print("channel", channel.name)
+            
         if not user:
             user = ctx.message.author  # default to message author
         if not channel:
@@ -51,11 +56,10 @@ class FunStuff(commands.Cog, name="fun commands"):
         guild = channel.guild
         
         if self.bot.debugmode:
-            print("Markov debug \n \n")
-            print("username:", user.name)
-            print("user id:", user.id)
-            print("channel name:", channel.name)
-            print("channel id", channel.id)
+            print("username 2:", user.name)
+            print("user id 2:", user.id)
+            print("channel name: 2", channel.name)
+            print("channel id 2:", channel.id)
             print("guild:", guild.name)
 
         async with ctx.channel.typing():
