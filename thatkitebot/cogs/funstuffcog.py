@@ -163,7 +163,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             await ctx.send("🍑")
             return
         elif "ferracult" in args.lower():
-            awiat ctx.send("cringe")
+            await ctx.send("cringe")
             return
         elif "geckult" in args.lower():
             await ctx.send("cringe")
