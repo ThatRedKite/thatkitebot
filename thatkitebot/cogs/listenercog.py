@@ -103,7 +103,7 @@ class ListenerCog(commands.Cog):
         await self.redis_welcomes.hmset(key, datadict)
         
         if joinedmember.guild.id == 424394851170385921:
-            await joinedmember.guild.system_channel.send("Welcome. To get started you should run `?rank Femboy_TDM cult to get started`")
+            await joinedmember.guild.system_channel.send("Welcome. Run `?rank Femboy_TDM cult` to get started")
         else:
             await joinedmember.guild.system_channel.send("welcome")
 
