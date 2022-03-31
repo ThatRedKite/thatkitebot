@@ -59,6 +59,8 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        if message.guild.id == 424394851170385921 and "?rank furri" in message.content:
+            await message.add_reaction("🚫")
         try:
             await cache.add_message_to_cache(self.redis_cache, message)
         except:
