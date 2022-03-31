@@ -33,7 +33,7 @@ class ListenerCog(commands.Cog):
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
             case commands.NotOwner:
-                await errormsg(ctx, "Only the bot owner (ThatRedKite) can do this! Contact him if needed.")
+                await errormsg(ctx, "Only the bot owner can do this! Contact him if needed.")
 
     @tasks.loop(hours=1.0)
     async def reset_invoke_counter(self):
@@ -99,7 +99,11 @@ class ListenerCog(commands.Cog):
             join_channel=int(welcomechannel)
         )
         await self.redis_welcomes.hmset(key, datadict)
-        await joinedmember.guild.system_channel.send("welcome")
+        
+        if joinedmember.guild.id == 424394851170385921:
+            await joinedmember.guild.system_channel.send("Welcome. To get started you should run `?rank Femboy_TDM cult to get started`")
+        else:
+            await joinedmember.guild.system_channel.send("welcome")
 
 
 def setup(bot):
