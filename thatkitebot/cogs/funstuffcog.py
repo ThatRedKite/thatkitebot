@@ -173,6 +173,10 @@ class FunStuff(commands.Cog, name="fun commands"):
             return
         elif "femboy" in args.lower():
             await ctx.send("femboy cult best cult")
+            return
+        elif "furri" in args.lower():
+            await ctx.send("cringe")
+            return
             
         if ctx.message.reference is not None:
             str_seed = ctx.message.reference.message_id
