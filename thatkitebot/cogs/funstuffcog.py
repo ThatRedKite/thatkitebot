@@ -162,6 +162,18 @@ class FunStuff(commands.Cog, name="fun commands"):
         if user == 454210418592841740 and args.lower() == "my ass":
             await ctx.send("🍑")
             return
+        elif "ferracult" in args.lower():
+            awiat ctx.send("cringe")
+            return
+        elif "geckult" in args.lower():
+            await ctx.send("cringe")
+            return
+        elif "piss" in args.lower():
+            await ctx.send("cringe")
+            return
+        elif "femboy" in args.lower():
+            await ctx.send("femboy cult best cult")
+            
         if ctx.message.reference is not None:
             str_seed = ctx.message.reference.message_id
         else:
