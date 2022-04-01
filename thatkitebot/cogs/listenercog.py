@@ -88,24 +88,6 @@ class ListenerCog(commands.Cog):
         except:
             print("could not edit cached message")
             
-    @commands.Cog.listener()
-    async def on_member_join(self, joinedmember):
-        welcomechannel = joinedmember.guild.system_channel.id
-        lastjoined = joinedmember.joined_at
-        unixtime = time.mktime(lastjoined.timetuple())
-        guild = joinedmember.guild.id
-        key = f"latest_join:{guild}"
-        datadict = dict(
-            latest_join=int(unixtime),
-            user_id=int(joinedmember.id),
-            join_channel=int(welcomechannel)
-        )
-        await self.redis_welcomes.hmset(key, datadict)
-        
-        if joinedmember.guild.id == 424394851170385921:
-            await joinedmember.guild.system_channel.send("Welcome. Run `?rank Femboy_TDM cult` to get started")
-        else:
-            await joinedmember.guild.system_channel.send("welcome")
 
 
 def setup(bot):
