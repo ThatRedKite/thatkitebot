@@ -71,8 +71,6 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         )
         await self.redis_welcomes.hmset(key, datadict)
         
-        if not
-        
         if joinedmember.guild.id == 424394851170385921:
             await joinedmember.guild.system_channel.send("Welcome. Run `?rank Femboy_TDM cult` to get started but not really because this is a joke and someone got realy offended by this joke.")
         else:
