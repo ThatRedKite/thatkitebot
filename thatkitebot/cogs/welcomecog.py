@@ -56,7 +56,29 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                 await update_count(self.redis_welcomes, message)
             except AssertionError:
                 pass
-
+            
+    @commands.Cog.listener()
+    async def on_member_join(self, joinedmember):
+        welcomechannel = joinedmember.guild.system_channel.id
+        lastjoined = joinedmember.joined_at
+        unixtime = time.mktime(lastjoined.timetuple())
+        guild = joinedmember.guild.id
+        key = f"latest_join:{guild}"
+        datadict = dict(
+            latest_join=int(unixtime),
+            user_id=int(joinedmember.id),
+            join_channel=int(welcomechannel)
+        )
+        await self.redis_welcomes.hmset(key, datadict)
+        
+        if not
+        
+        if joinedmember.guild.id == 424394851170385921:
+            await joinedmember.guild.system_channel.send("Welcome. Run `?rank Femboy_TDM cult` to get started but not really because this is a joke and someone got realy offended by this joke.")
+        else:
+            await joinedmember.guild.system_channel.send("welcome")
+            
+    
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
     async def welcome(self, ctx, *, args=None):
