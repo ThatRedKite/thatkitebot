@@ -2,22 +2,22 @@
 
 import os
 from abc import ABC
-
-import redis
 from datetime import datetime
 from pathlib import Path
+
+import redis
 import aiohttp
 import psutil
 import discord
-from discord.ext import commands
 import aioredis
+from discord.ext import commands
 
 import thatkitebot.tkb_first_setup
 
 tempdir = "/tmp/tkb/"
 datadir = "/app/data"
 
-intents = discord.Intents.all()
+intents = discord.Intents.all()  # this is a pretty dumb way of doing things, but it works
 
 dirname = Path(os.path.dirname(os.path.realpath(__file__)))
 
@@ -25,7 +25,7 @@ with redis.Redis(host="redis", db=0, charset="utf-8", decode_responses=True) as 
     print("Loading tokens from redis")
     tokens = tr.mget(["DISCORDTOKEN", "TENORTOKEN", "PREFIX"])
     if None in tokens:
-        print("Trying to initialize tokens from settings.json ...")
+        print("Trying to initialize tokens from init_settings.yml ...")
         thatkitebot.tkb_first_setup.initial()
         tokens = tr.mget(["DISCORDTOKEN", "TENORTOKEN", "PREFIX"])
     discord_token, tenor_token, prefix = tokens
@@ -70,11 +70,13 @@ class ThatKiteBot(commands.Bot, ABC):
         self.debugmode = False
         self.tenortoken = tt
         # sessions
+        self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
         # redis databases:
         # 0: initial settings, not accessed while the bot is running
         # 1: guild settings
         # 2: reposts
+        # 3: welcome leaderboards
         self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
         self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
         self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
@@ -91,6 +93,7 @@ class ThatKiteBot(commands.Bot, ABC):
 
 bot = ThatKiteBot(prefix, dirname, tt=tenor_token, intents=intents)
 print(f"Loading extensions: \n")
+
 for ext in enabled_ext:
     try:
         print(f"   loading {ext}")
