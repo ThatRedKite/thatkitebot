@@ -8,7 +8,6 @@ from thatkitebot.backend import util
 from discord.ext import commands
 
 
-
 class SudoCommands(commands.Cog, name="administrative commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
@@ -18,6 +17,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
     @commands.command()
     async def kill(self, ctx):
         """Kills the bot :("""
+        # this is currently broken too
         await self.bot.change_presence(status=discord.Status.offline)
         # clear the temp file folder
         util.clear_temp_folder(self.dirname)
@@ -32,6 +32,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
     @commands.command(aliases=["reload", "reboot", "r"])
     async def restart(self, ctx):
         """Reloads all cogs"""
+        # this will currently break all image commands
         extensions = list(self.bot.extensions.keys())
         for extension in extensions:
             if not extension == "thatkitebot.cogs.electroslash":
@@ -56,21 +57,6 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         """pretend to be the bot"""
         await ctx.message.delete()
         await ctx.send(message)
-
-    @commands.is_owner()
-    @commands.command(aliases=["pull"])
-    async def update(self, ctx):
-        """Pull new git changes"""
-        process = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE)
-        out, error = process.communicate()
-        if out:
-            text = out.decode()
-            if text == "Already up to date.\n":
-                await ctx.send(f"Nothing to pull")
-            else:
-                await ctx.send(f"Pull successful, restart the bot for the update to take effect.")
-        if error:
-            await util.errormsg(ctx=ctx, msg="Could not pull")
 
 
 def setup(bot):
