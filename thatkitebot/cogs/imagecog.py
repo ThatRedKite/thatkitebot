@@ -196,6 +196,31 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.tt = self.bot.tenortoken
         self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
+    async def get_attachments(self, message: discord.Message):
+        if message.attachments:
+            blob = await message.attachments[0].read()
+            filename = message.attachments[0].filename
+            url = message.attachments[0].url
+            return blob, filename, url
+        else:
+            attachment = message.embeds[0]
+            if attachment.type == "image":
+                url = attachment.url
+            elif attachment.type == "rich" and attachment.image:
+                url = attachment.image.url
+            else:
+                return None, None, None
+
+        if not url:
+            return None, None, None
+
+        filename = attachment.image.filename
+        session = self.bot.aiohttp_session
+        async with session.get(url=url) as r:
+            blob = await r.read()
+
+        return blob, filename, url
+
     # this function is originally from iangecko's pyrobot, modifications were made for this bot
     async def get_last_image(self, ctx, return_buffer=False):
         # search past 30 messages for suitable media
@@ -203,31 +228,33 @@ class ImageStuff(commands.Cog, name="image commands"):
         url = None
         blob = None
         filename = "image"
-        async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
-            if msg.attachments:
-                blob = await msg.attachments[0].read()
-                filename = msg.attachments[0].filename
-                url = msg.attachments[0].url
-            else:
-                attachment = msg.embeds[0]
-                match attachment.type:
-                    case "image":
-                        url = attachment.url
-                    case "rich":
-                        if attachment.image:
-                            url = attachment.image.url
-                        else:
-                            continue
-                    case _:
-                        continue
-                if url:
-                    filename = attachment.image.filename
-                    session = self.bot.aiohttp_session
-                    async with session.get(url=url) as r:
-                        blob = await r.read()
-            break
+
+        if ctx.message.reference:
+
+            message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+            blob, filename, url = await self.get_attachments(message)
+            if self.bot.debugmode:
+                print("\nDebug for getting Images")
+                print("mode: reply")
+                print("message:", message)
+                print("filename:", filename)
+                print("url:", url)
         else:
-            return None
+            async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
+                blob, filename, url = await self.get_attachments(msg)
+
+                if self.bot.debugmode:
+                    print("\nDebug for getting Images")
+                    print("mode: iteration")
+                    print("message:", msg)
+                    print("filename:", filename)
+                    print("url:", url)
+
+                if None in [blob, filename, url]:
+                    continue
+                else:
+                    break
+
         filetype = re.search(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
         if not return_buffer:
             return blob, filename, url, filetype
