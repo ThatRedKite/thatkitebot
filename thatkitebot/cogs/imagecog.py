@@ -184,6 +184,7 @@ def overlay(background, fn, image):
             img.destroy()
     return b, fn
 
+
 class ImageStuff(commands.Cog, name="image commands"):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -196,75 +197,59 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.tt = self.bot.tenortoken
         self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
-    async def get_attachments(self, message: discord.Message):
-        if message.attachments:
-            blob = await message.attachments[0].read()
-            filename = message.attachments[0].filename
-            url = message.attachments[0].url
-            return blob, filename, url
+
+    async def get_image_url(self, message: discord.Message):
+        # check if the message has an attachment or embed of the type "image"
+        if message.embeds and message.embeds[0].type == "image":
+            # if it does, return the embed's url
+            return message.embeds[0].url
+        # check if the message has an embed of the type "rich" and if it contains an image
+        elif message.embeds and message.embeds[0].type == "rich" and message.embeds[0].image:
+            # if it does, return the embed's url
+            return message.embeds[0].image.url
         else:
-            attachment = message.embeds[0]
-            if attachment.type == "image":
-                url = attachment.url
-            elif attachment.type == "rich" and attachment.image:
-                url = attachment.image.url
-            else:
-                return None, None, None
+            # if it doesn't, return None
+            return None
 
-        if not url:
-            return None, None, None
-
-        filename = attachment.image.filename
-        session = self.bot.aiohttp_session
-        async with session.get(url=url) as r:
-            blob = await r.read()
-
-        return blob, filename, url
-
-    # this function is originally from iangecko's pyrobot, modifications were made for this bot
     async def get_last_image(self, ctx, return_buffer=False):
-        # search past 30 messages for suitable media
-        attachment = None
-        url = None
-        blob = None
-        filename = "image"
+        # search past 30 messages for suitable media content, only search messages with an attachment or embed
+        # first, get a suitable message
 
         if ctx.message.reference:
+            # fetch the message from the reference
+            message = await ctx.fetch_message(ctx.message.reference.message_id)
+            url = await self.get_image_url(message)
 
-            message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
-            blob, filename, url = await self.get_attachments(message)
-            if self.bot.debugmode:
-                print("\nDebug for getting Images")
-                print("mode: reply")
-                print("message:", message)
-                print("filename:", filename)
-                print("url:", url)
         else:
+            # iterate over the last 30 messages
             async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
-                blob, filename, url = await self.get_attachments(msg)
-
-                if self.bot.debugmode:
-                    print("\nDebug for getting Images")
-                    print("mode: iteration")
-                    print("message:", msg)
-                    print("filename:", filename)
-                    print("url:", url)
-
-                if None in [blob, filename, url]:
-                    continue
-                else:
+                # get the url of the image and break the loop if it's not None
+                if url:= await self.get_image_url(msg):
                     break
+                else:
+                    continue
 
-        filetype = re.search(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))", url).group(2)
-        if not return_buffer:
-            return blob, filename, url, filetype
-        else:
-            buf = BytesIO(blob)
-            buf.seek(0)
-            return buf, filename, url, filetype
+        # if the url is None, return None because there is no suitable image in the last 30 messages
+        if not url:
+            raise commands.BadArgument("No suitable image found.")
+            return None
+
+        # if the url is not None, download the image and return it
+        async with self.session.get(url) as resp:
+            # if return_buffer is True, return a BytesIO buffer of the image and seek to the beginning
+            if return_buffer:
+                buf = BytesIO(await resp.read())
+                buf.seek(0)
+                return buf
+            # if return_buffer is False, return the image as a blob
+            else:
+                return await resp.read()
+
+    async def cog_command_error(self, ctx, error):
+        await util.errormsg(ctx, error)
 
     async def cog_check(self, ctx):
-        is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE"
+        is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE" if ctx.guild else True
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed
@@ -275,10 +260,7 @@ class ImageStuff(commands.Cog, name="image commands"):
                 b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
             except asyncio.TimeoutError:
 
-                e = await util.errormsg(
-                    msg="Processing timed out",
-                    embed_only=True
-                )
+                e = await util.errormsg(msg="Processing timed out",embed_only=True)
                 return e, None
             if fn < 0 and fn != -3:
                 a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
@@ -295,7 +277,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=0), "magik")
             buf.close()
@@ -308,7 +290,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         Applies some content aware and swirling scaling to an image.
         When the image is a GIF, it takes the first frame
         """
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(swirlmagik, buf=buf, fn=1), "swirlmagik")
             buf.close()
@@ -318,18 +300,17 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def pfp(self, ctx, user: Optional[discord.Member] = None):
         """sends the pfp of someone"""
-        #special case for one user        
-        if not user:
-            user = ctx.message.author
-            await ctx.send(user.avatar.url)
-        else:
-            await ctx.send(user.avatar.url)
+        if user is None:
+            user = ctx.author
+        embed = discord.Embed(title=f"{user.name}'s profile picture", color=user.color)
+        embed.set_image(url=user.avatar.url)
+        await ctx.send(embed=embed)
 
     @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
-        """deepfry an image"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        """Deepfries an image"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(deepfry, buf=buf, fn=2), "deepfry")
             buf.close()
@@ -338,18 +319,20 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def wide(self, ctx: commands.Context):
-        """Horizonally stretch an image"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        """Horizontally stretch an image"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(wide, buf=buf, fn=3), "wide")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
+
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
         """remove the alpha channel and replace it with white"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(opacify, buf=buf, fn=4), "opacify")
             buf.close()
@@ -359,7 +342,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["inflate"])
     async def explode(self, ctx: commands.Context):
         """Explodes an image"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(explode, buf=buf, fn=5), "explode")
             buf.close()
@@ -369,7 +352,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["deflate"])
     async def implode(self, ctx: commands.Context):
         """Implodes an image"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(implode, buf=buf, fn=6), "implode")
             buf.close()
@@ -378,8 +361,8 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inverse", "anti"])
     async def invert(self, ctx: commands.Context):
-        """implode an image"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        """Invert an image' colors"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(invert, buf=buf, fn=7), "inverted")
             buf.close()
@@ -388,7 +371,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(reduce, buf=buf, fn=8), "reduced")
             buf.close()
@@ -398,7 +381,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
         """swirl an image"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(swirl, buf=buf, fn=9, angle=degree), "swirled")
             buf.close()
@@ -412,7 +395,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22` or `caption funny color:firebrick`
         A full list of colors can be found here: https://imagemagick.org/script/color.php
         """
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(caption, buf, 10, text, self.dd), "captioned")
             buf.close()
@@ -482,7 +465,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def rotate(self, ctx: commands.Context, degree: int = 90):
         """Rotate an image clockwise 90 degrees by default, you can specify the degree value as an argument"""
-        buf, filename, url, filetype = await self.get_last_image(ctx, return_buffer=True)
+        buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(rotate, buf=buf, fn=11, angle=degree), "rotated")
             buf.close()
@@ -491,7 +474,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.channel)  # remove after cult war
     @commands.command()
     async def cultpfp(self, ctx, user: Optional[discord.Member] = None):
-        """sends the cultpfp of someone"""       
+        """sends the cultpfp of someone"""
         if not user:
             user = ctx.message.author
         async with ctx.channel.typing():
