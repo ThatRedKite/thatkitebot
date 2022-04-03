@@ -32,14 +32,14 @@ async def errormsg(ctx=None, msg: str="", exc="", embed_only=False):
         return embed
 
 
-def clear_temp_folder(dirname):
+def clear_temp_folder():
     """
-        a simple function to clear the temp data folder of the bot
+        a simple function to clear the temp data folder of the bot+
     """
-    cleanupfiles = glob.glob(os.path.join(dirname, "*.png"))
-    cleanupfiles += glob.glob(os.path.join(dirname, "*.webp"))
-    cleanupfiles += glob.glob(os.path.join(dirname, "*.gif"))
-    cleanupfiles += glob.glob(os.path.join(dirname, "*.mp3"))
+    cleanupfiles = glob.glob(os.path.join("/tmp/", "*.png"))
+    cleanupfiles += glob.glob(os.path.join("/tmp/", "*.webp"))
+    cleanupfiles += glob.glob(os.path.join("/tmp/", "*.gif"))
+    cleanupfiles += glob.glob(os.path.join("/tmp/", "*.mp3"))
     for file in cleanupfiles:
         os.remove(file)
 
