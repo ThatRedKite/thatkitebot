@@ -58,11 +58,55 @@ class UtilityCommands(commands.Cog, name="utility commands"):
             embed.color = ec.purple_violet
         await ctx.send(embed=embed)
 
-    # TODO: make this command actually do something
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(pass_context=True)
     async def about(self, ctx):
-        pass
+        """
+        This command is here to show you what the bot is made of.
+        """
+        embed = discord.Embed(
+            color=ec.purple_violet,
+            title="About ThatKiteBot",
+            description="""This bot licensed under the MIT license is open source and free to use for everyone.
+                  I put a lot of my time into this bot and I really hope you enjoy it.
+                  The source code is available [here](https://github.com/ThatRedKite/thatkitebot), feel free to contribute!
+                  If you like it, consider [giving me a donation](https://www.buymeacoffee.com/ThatRedKite) to keep the server running.
+                """
+        )
+        embed.set_thumbnail(url=str(self.bot.user.avatar.url))
+
+        embed.add_field(
+            name="Authors",
+            value="ThatRedKite#4842 and [contributors](https://github.com/ThatRedKite/thatkitebot/graphs/contributors)"
+        )
+        embed.add_field(
+            name="libraries used",
+            inline=False,
+            value="""
+            [pycord](https://github.com/Pycord-Development/pycord)
+            [aiohttp](https://github.com/aio-libs/aiohttp)
+            [beautifulsoup4](https://www.crummy.com/software/BeautifulSoup/)
+            [PyYAML](https://pyyaml.org/)
+            [Pillow](https://github.com/python-pillow/Pillow)
+            [Wand](https://github.com/emcconville/wand)
+            [markovify](https://github.com/jsvine/markovify)
+            [psutil](https://github.com/giampaolo/psutil)
+            [molmass](https://github.com/cgohlke/molmass)
+            [si_prefix](https://github.com/cfobel/si-prefix)
+            [redis-py](https://github.com/redis/redis-py)
+            [lxml](https://lxml.de/)
+            [hiredis-py](https://github.com/redis/hiredis-py)
+            [aioredis-py](https://github.com/aio-libs/aioredis-py)
+            [matplotlib](https://matplotlib.org/)
+            [python-xkcd](https://github.com/TC01/python-xkcd)
+            [imagehash](https://github.com/JohannesBuchner/imagehash)
+            """
+        )
+
+        embed.set_footer(text="ThatKiteBot v{}".format(self.bot.version))
+
+        await ctx.send(embed=embed)
+
 
     @commands.command()
     async def invite(self, ctx):
