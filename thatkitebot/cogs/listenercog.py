@@ -24,15 +24,13 @@ class ListenerCog(commands.Cog):
             case commands.CommandInvokeError:
                 if self.bot.debugmode:
                     await errormsg(ctx, repr(error))
-                    raise error
-                else:
-                    raise error
+                raise error
             case commands.CheckFailure:
                 await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
             case commands.NotOwner:
-                await errormsg(ctx, "Only the bot owner can do this! Contact him if needed.")
+                await errormsg(ctx, "Only the bot owner can do this! Contact them if needed.")
 
     @tasks.loop(hours=1.0)
     async def reset_invoke_counter(self):
