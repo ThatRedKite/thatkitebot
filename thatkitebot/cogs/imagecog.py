@@ -8,11 +8,8 @@ from io import BytesIO
 import discord
 from discord.ext import commands
 from typing import Optional
-from os.path import join
-from PIL import ImageDraw, ImageFont, Image
 from wand.image import Image as WandImage
 from wand.color import Color
-from wand.drawing import Drawing
 from wand.font import Font
 from thatkitebot.backend import util
 
@@ -222,6 +219,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             message = await ctx.fetch_message(ctx.message.reference.message_id)
             url = await self.get_image_url(message)
 
+        # check if the message has an attachment
         elif ctx.message.attachments or ctx.message.embeds:
             url = await self.get_image_url(ctx.message)
         else:

@@ -2,7 +2,6 @@
 
 import math
 from math import log10, sqrt
-from sre_constants import SUCCESS
 import matplotlib.pyplot as plt
 from io import BytesIO
 import discord
