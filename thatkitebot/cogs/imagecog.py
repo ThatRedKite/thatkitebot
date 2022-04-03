@@ -100,10 +100,10 @@ def caption(blob, fn, ct, path):
     color_alias = {
         "piss":"#f9fc12",
         "cum":"#ededd5",
-        "pickle":"#12a612"
+        "pickle":"#12a612",
     }
     in_str = str(ct)
-    # find any emotes in the text 
+    # find any emotes in the text
     x = re.findall(r"[<]:\w{2,}:\d{15,}[>]", in_str)
     for n in x: in_str = in_str.replace(str(n), re.findall(r":\w{2,}:", n)[0])
     # find any parameters in the command
@@ -200,7 +200,9 @@ class ImageStuff(commands.Cog, name="image commands"):
 
     async def get_image_url(self, message: discord.Message):
         # check if the message has an attachment or embed of the type "image"
-        if message.embeds and message.embeds[0].type == "image":
+        if message.attachments:
+            return message.attachments[0].url
+        elif message.embeds and message.embeds[0].type == "image":
             # if it does, return the embed's url
             return message.embeds[0].url
         # check if the message has an embed of the type "rich" and if it contains an image
@@ -220,6 +222,8 @@ class ImageStuff(commands.Cog, name="image commands"):
             message = await ctx.fetch_message(ctx.message.reference.message_id)
             url = await self.get_image_url(message)
 
+        elif ctx.message.attachments or ctx.message.embeds:
+            url = await self.get_image_url(ctx.message)
         else:
             # iterate over the last 30 messages
             async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
