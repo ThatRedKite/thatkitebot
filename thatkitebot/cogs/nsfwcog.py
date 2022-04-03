@@ -11,6 +11,9 @@ from thatkitebot.backend.util import EmbedColors as ec
 
 
 class NSFW(commands.Cog, name="NSFW commands"):
+    """
+    NSFW commands. Only usable in NSFW channels and disabled by default.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.redis = bot.redis

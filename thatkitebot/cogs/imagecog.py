@@ -171,6 +171,7 @@ def rotate(buf, fn, angle: int = 90):
         a.destroy()
     return b, fn
 
+
 def overlay(background, fn, image):
     with WandImage(file=background) as bg:
         bg.sample(1024, 1024)
@@ -183,6 +184,9 @@ def overlay(background, fn, image):
 
 
 class ImageStuff(commands.Cog, name="image commands"):
+    """
+    Image commands for the bot. Can be disabled by the bot owner or an admin.
+    """
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.sep = asyncio.Semaphore(12)
@@ -194,6 +198,18 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.tt = self.bot.tenortoken
         self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
+    async def cog_command_error(self, ctx, error):
+        await util.errormsg(ctx, error)
+
+    async def cog_check(self, ctx):
+        is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE" if ctx.guild else True
+        can_attach = ctx.channel.permissions_for(ctx.author).attach_files
+        can_embed = ctx.channel.permissions_for(ctx.author).embed_links
+        return is_enabled and can_attach and can_embed
+
+    async def cog_unload(self):
+        # make sure to cancel all futures before unloading
+        self.pp.shutdown(cancel_futures=True, wait=False)
 
     async def get_image_url(self, message: discord.Message):
         # check if the message has an attachment or embed of the type "image"
@@ -247,15 +263,6 @@ class ImageStuff(commands.Cog, name="image commands"):
             else:
                 return await resp.read()
 
-    async def cog_command_error(self, ctx, error):
-        await util.errormsg(ctx, error)
-
-    async def cog_check(self, ctx):
-        is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE" if ctx.guild else True
-        can_attach = ctx.channel.permissions_for(ctx.author).attach_files
-        can_embed = ctx.channel.permissions_for(ctx.author).embed_links
-        return is_enabled and can_attach and can_embed
-
     async def image_worker(self, func, name):
         async with self.sep:
             try:
@@ -278,6 +285,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["magic"])
     async def magik(self, ctx: commands.Context):
+        # the GIF part is a lie btw
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
@@ -301,7 +309,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.channel)
     @commands.command()
     async def pfp(self, ctx, user: Optional[discord.Member] = None):
-        """sends the pfp of someone"""
+        """This sends someone's profile picture"""
         if user is None:
             user = ctx.author
         embed = discord.Embed(title=f"{user.name}'s profile picture", color=user.color)
@@ -311,7 +319,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
-        """Deepfries an image"""
+        """'Deepfries' an image by oversaturating it and applying noise"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(deepfry, buf=buf, fn=2), "deepfry")
@@ -328,12 +336,10 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
-        """remove the alpha channel and replace it with white"""
-
+        """Remove the alpha channel and replace it with white"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(opacify, buf=buf, fn=4), "opacify")
@@ -363,7 +369,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command(aliases=["inverse", "anti"])
     async def invert(self, ctx: commands.Context):
-        """Invert an image' colors"""
+        """Invert an image's colors"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(invert, buf=buf, fn=7), "inverted")
@@ -373,6 +379,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def reduce(self, ctx: commands.Context):
+        """Reduces an image's total colors"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(reduce, buf=buf, fn=8), "reduced")
@@ -382,7 +389,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.cooldown(3, 10, commands.BucketType.user)
     @commands.command()
     async def swirl(self, ctx: commands.Context, degree: int = 60):
-        """swirl an image"""
+        """Swirl an image"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(swirl, buf=buf, fn=9, angle=degree), "swirled")

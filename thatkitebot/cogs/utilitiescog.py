@@ -9,6 +9,9 @@ import si_prefix
 
 
 class UtilityCommands(commands.Cog, name="utility commands"):
+    """
+    Utility commands for the bot. These commands are basically informational commands.
+    """
     def __init__(self, bot: commands.Bot):
         self.dirname = bot.dirname
         self.redis = bot.redis
@@ -106,7 +109,6 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         embed.set_footer(text="ThatKiteBot v{}".format(self.bot.version))
 
         await ctx.send(embed=embed)
-
 
     @commands.command()
     async def invite(self, ctx):

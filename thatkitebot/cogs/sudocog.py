@@ -4,6 +4,9 @@ from discord.ext import commands
 
 
 class SudoCommands(commands.Cog, name="administrative commands"):
+    """
+    This cog contains commands that are used to manage the bot. These commands are only available to the bot owner.
+    """
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.dirname = bot.dirname

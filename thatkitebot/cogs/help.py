@@ -12,6 +12,9 @@ info = {
 
 
 class BetterHelpCommand(commands.HelpCommand):
+    """
+    Custom help command for the bot.
+    """
     async def send_embed(self, embed):
         embed.colour = discord.Colour.random()
         await self.get_destination().send(embed=embed)

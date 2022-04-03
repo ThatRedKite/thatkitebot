@@ -79,6 +79,9 @@ def calculate_diffraction(p):
 
 
 class LaserCog(commands.Cog, name="Laser commands"):
+    """
+    Laser calculations and safety advice.
+    """
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 

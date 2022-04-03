@@ -8,6 +8,9 @@ from thatkitebot.backend import util
 
 
 class ChemCog(commands.Cog, name="Chemistry commands"):
+    """
+    This cog contains commands for chemistry.
+    """
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 

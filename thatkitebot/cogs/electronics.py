@@ -44,6 +44,9 @@ def slash_preprocessor(a: str):
 
 
 class conversion:
+    """
+    Conversion commands for PCB components.
+    """
     def __init__(self, d: dict):
         self.mm = si_prefix.si_parse(d.get("mm")) if d.get("mm") else None
         self.mil = si_prefix.si_parse(d.get("mil")) if d.get("mil") else None
@@ -103,6 +106,9 @@ class conversion:
 
 
 class PCB_calc:
+    """
+    PCB calculations commands.
+    """
     def __init__(self, d: dict, internal = False, limit = False):
         self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
         self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None

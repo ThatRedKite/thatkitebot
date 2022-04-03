@@ -18,11 +18,17 @@ otherpattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 
 
 def hasher(data):
+    """
+    Returns a hash of the image data.
+    """
     pil_image = PILImage.open(BytesIO(data))
     return str(imagehash.phash(pil_image, hash_size=16))
 
 
 class RepostCog(commands.Cog, name="Repost Commands"):
+    """
+    Repost commands.
+    """
     def __init__(self, bot):
         self.bot = bot
         self.aiohttp = bot.aiohttp_session
@@ -31,6 +37,9 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.tt = bot.tenortoken
 
     async def get_tenor_image(self, url, token):
+        """
+        Downloads a tenor gif and returns the hash of the image.
+        """
         # define the header and the payload:
         tenor = tenorpattern.findall(url)
         if not tenor:
@@ -46,12 +55,18 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             return hasher(await r2.read())
 
     async def channel_is_enabled(self, channel):
+        """
+        Checks if the channel is enabled for repost detection.
+        """
         return await self.settings_redis.sismember("REPOST_CHANNELS", channel.id)
 
     async def cog_check(self, ctx):
         return await self.settings_redis.hget(ctx.guild.id, "REPOST") == "TRUE"
 
     async def extract_imagehash(self, message):
+        """
+        Extracts the image hash from a message's attachments or embeds.
+        """
         if message.attachments:
             # if the file was uploaded directly, get the image data from the attachment directly
             for attachment in message.attachments:
@@ -77,6 +92,9 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             return None
 
     async def check_distance(self, imghash, return_hash = False):
+        """
+        Checks the distance between the image hashes.
+        """
         imghash = imagehash.hex_to_hash(imghash)
         hashes = [key async for key in self.repost_redis.scan_iter("*")] or None  # get all hashes
         if not hashes:

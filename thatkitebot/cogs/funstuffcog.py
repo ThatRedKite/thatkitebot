@@ -24,6 +24,9 @@ def can_send_image(ctx):
 
 
 class FunStuff(commands.Cog, name="fun commands"):
+    """
+    Miscellaneous 'fun' commands that don't fit anywhere else.
+    """
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self._last_member = None

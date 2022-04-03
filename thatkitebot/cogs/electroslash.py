@@ -10,7 +10,7 @@ from thatkitebot.backend import util
 
 class ElectroSlashCog(Cog, name="Electronics slash commands"):
     """
-    A cog for slash commands related to electronics
+    A cog for slash commands related to electronics.
     """
     def __init__(self, bot):
         self.bot = bot

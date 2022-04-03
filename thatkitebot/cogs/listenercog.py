@@ -9,6 +9,9 @@ from thatkitebot.backend import cache
 
 
 class ListenerCog(commands.Cog):
+    """
+    The perfect place to put random listeners in.
+    """
     def __init__(self, bot):
         self.dirname = bot.dirname
         self.redis_cache: aioredis.Redis = bot.redis_cache

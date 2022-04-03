@@ -16,6 +16,9 @@ from discord.ext import commands
 
 
 async def update_count(redis: aioredis.Redis, message: discord.Message):
+    """
+    Updates the welcome count for the given message's author.
+    """
     if "welcome" in message.content.lower():
         write = True
         guild, channel, author  = message.guild.id, message.channel.id, message.author.id
@@ -41,6 +44,9 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
 
 
 class WelcomeCog(commands.Cog, name="Welcome counter"):
+    """
+    A cog that counts the number of times a user has welcome newly joined members.
+    """
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
@@ -51,6 +57,9 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        """
+        Updates the welcome count for the given message's author. This is called by the bot on every message.
+        """
         if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id and message.channel.id == message.guild.system_channel.id:
             try:
                 await update_count(self.redis_welcomes, message)
@@ -59,6 +68,9 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             
     @commands.Cog.listener()
     async def on_member_join(self, joinedmember):
+        """
+        Updates the latest_join key for the given member. This is called by the bot on every member join.
+        """
         welcomechannel = joinedmember.guild.system_channel.id
         lastjoined = joinedmember.joined_at
         unixtime = time.mktime(lastjoined.timetuple())
@@ -76,7 +88,9 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
     async def welcome(self, ctx, *, args=None):
-        """Welcome leaderboard"""
+        """
+        Displays the top 10 users with the most welcome count.
+        """
         current_time = datetime.utcfromtimestamp(int(time.mktime(ctx.message.created_at.timetuple())))
         # Scan all users in the DB
         # here's a nice one-liner

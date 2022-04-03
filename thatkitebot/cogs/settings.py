@@ -15,6 +15,9 @@ def pp(a):
 
 
 async def can_change_settings(ctx: commands.Context):
+    """
+    Checks if the user has the permission to change settings.
+    """
     channel: discord.TextChannel = ctx.channel
     isowner = await ctx.bot.is_owner(ctx.author)
     isadmin = channel.permissions_for(ctx.author).administrator
@@ -22,6 +25,10 @@ async def can_change_settings(ctx: commands.Context):
 
 
 class SettingsCog(commands.Cog, name="settings"):
+    """
+    Settings Cog. Allows the bot owner or admins to change settings for their server. All settings are stored in Redis
+    and only apply to the server the command was used in. Global settings are not a thing (yet).
+    """
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.redis: aioredis.Redis = self.bot.redis
