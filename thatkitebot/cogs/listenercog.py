@@ -1,6 +1,5 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
-import time
 import discord
 import aioredis
 from discord.ext import commands, tasks
@@ -64,6 +63,7 @@ class ListenerCog(commands.Cog):
         except:
             print("could not add message to cache!")
 
+    """
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         try:
@@ -75,7 +75,7 @@ class ListenerCog(commands.Cog):
             if len(rkeys := [rkey async for rkey in self.repost_redis.scan_iter(match=f"{payload.message_id}:*")]) > 0:
                 await self.repost_redis.delete(rkeys[0])
         except:
-            print("could not delete message from cache!")
+            pass 
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
@@ -85,7 +85,7 @@ class ListenerCog(commands.Cog):
                 await cache.add_message_to_cache(self.redis_cache, payload.cached_message)
         except:
             print("could not edit cached message")
-            
+    """
 
 
 def setup(bot):
