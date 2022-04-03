@@ -116,7 +116,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         """
         if not channel:
             channel = ctx.channel
-        # remove the curent channel from the list of repost channels
+        # remove the current channel from the list of repost channels
         await self.settings_redis.srem("REPOST_CHANNELS", channel.id)
 
     @repost.command(name="check")
@@ -138,7 +138,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             await errormsg(ctx, "You need to reply to a message or specify its id!")
             return
 
-        # forefully load the message because discord.py's message cache cannot be trusted (it sucks) and get the hash
+        # forcefully load the message because discord.py's message cache cannot be trusted (it sucks) and get the hash
         try:
             imghash = await self.extract_imagehash(await ctx.channel.fetch_message(message_id))
             original_key = await self.check_distance(imghash, return_hash=True)
@@ -149,7 +149,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                     description=f"Press [here]({original}) to jump to the original message.")
                 await ctx.send(embed=embed)
             else:
-                await errormsg(ctx, "No repost was found!")
+                raise TypeError
         except TypeError:
             await errormsg(ctx, "No repost was found!")
 
