@@ -1,6 +1,7 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
 
+from turtle import right
 import discord
 from discord.ext import commands
 
@@ -19,22 +20,21 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
         write = True
         guild, channel, author  = message.guild.id, message.channel.id, message.author.id
         unixtime = time.mktime(message.created_at.timetuple())
-
         join_key = f"latest_join:{guild}"
         assert await redis.exists(join_key)  # make sure there is a last_joined key
         joined_dict = await redis.hgetall(join_key)
-
         welcome_channel, latest_join, joined_id = itemgetter("join_channel", "latest_join", "user_id")(joined_dict)
-
+        welcome_channel, latest_join, joined_id = int(welcome_channel), int(latest_join), int(joined_id)
         usr_key = f"leaderboard:{author}:{guild}"
         if await redis.exists(usr_key):
-            latest_welcome = await redis.hget(usr_key, "latest_welcome")
-            if welcome_channel == welcome_channel and latest_welcome <= latest_join and joined_id != author:
+            latest_welcome = int(await redis.hget(usr_key, "latest_welcome"))
+            if latest_welcome <= latest_join and joined_id != author:
                 await redis.hincrby(usr_key, "welcome_count", 1)  # increase welcome_count by one; create if not exist
             else:
                 return
         else:
             write = (welcome_channel == channel)
+            await redis.hset(usr_key, "welcome_count", 1)
 
         if write:
             await redis.hset(usr_key, "latest_welcome", int(unixtime))
@@ -51,7 +51,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id:
+        if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id and message.channel.id == message.guild.system_channel.id:
             try:
                 await update_count(self.redis_welcomes, message)
             except AssertionError:
@@ -70,11 +70,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             join_channel=int(welcomechannel)
         )
         await self.redis_welcomes.hmset(key, datadict)
-        
-        if joinedmember.guild.id == 424394851170385921:
-            await joinedmember.guild.system_channel.send("Welcome. Run `?rank Femboy_TDM cult` to get started but not really because this is a joke and someone got realy offended by this joke.")
-        else:
-            await joinedmember.guild.system_channel.send("welcome")
+        await joinedmember.guild.system_channel.send("welcome")
             
     
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -85,12 +81,10 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         # Scan all users in the DB
         # here's a nice one-liner
         key_list = [key async for key in self.redis_welcomes.scan_iter(match=f"leaderboard:*:{ctx.guild.id}")]
-
         leaderboard = dict()
         for i in key_list:
             author = re.findall(r":[\d]{5,}:", i)[0][1:-1]  # extract the author id
             leaderboard[f"<@{author}>"] = await self.redis_welcomes.hgetall(i)
-
         sorted_lb = sorted(leaderboard.items(), key=lambda x: int(x[1]['welcome_count']), reverse=True)
 
         if not args:
