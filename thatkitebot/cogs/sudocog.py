@@ -1,10 +1,5 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
-import subprocess
-import discord
-
-from thatkitebot.backend import util
-
 from discord.ext import commands
 
 
@@ -17,14 +12,16 @@ class SudoCommands(commands.Cog, name="administrative commands"):
     @commands.command()
     async def kill(self, ctx):
         """Kills the bot :("""
-        # this is currently broken too
-        await self.bot.change_presence(status=discord.Status.offline)
-        # clear the temp file folder
-        util.clear_temp_folder(self.dirname)
+
         # close the aiohttp session
         await self.bot.aiohttp_session.close()
-        # close the redis connection
-        self.redis.close()
+
+        # close the redis connections
+        await self.redis.close()
+        await self.redis_repost.close()
+        await self.redis_welcomes.close()
+        await self.redis_cache.close()
+
         # close the discord session
         await self.bot.close()
 
