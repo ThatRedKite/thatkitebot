@@ -299,3 +299,14 @@ async def _xkcd(args=None):
     embed.set_image(url=f"{comic.imageLink}")
     embed.color = ec.blood_orange
     return embed
+
+async def _contributorjson(session: aiohttp.ClientSession):
+    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "text/html"}
+    async with session.get(
+            f"https://api.github.com/repos/ThatRedKite/thatkitebot/contributors?q=contributions&order=desc",
+            headers=headers) as r:
+        if r.status == 200:
+            jsonstr = await r.json()
+        else:
+            return None
+    return jsonstr
