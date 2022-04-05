@@ -480,21 +480,6 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(3, 10, commands.BucketType.channel)  # remove after cult war
-    @commands.command()
-    async def cultpfp(self, ctx, user: Optional[discord.Member] = None):
-        """sends the cultpfp of someone"""
-        if not user:
-            user = ctx.message.author
-        async with ctx.channel.typing():
-            async with self.session.get(url=user.avatar.url) as r:
-                pfp = BytesIO(await r.read())
-                pfp.seek(0)
-            async with self.session.get(url="https://cdn.discordapp.com/attachments/945802272326176878/947149928134746123/waruniform.png") as r:
-                    ovr = BytesIO(await r.read())
-                    ovr.seek(0)
-            embed, file = await self.image_worker(functools.partial(overlay, background=pfp, fn=12, image=ovr), "cultpfp")
-        await ctx.send(file=file, embed=embed)
 
 def setup(bot):
     bot.add_cog(ImageStuff(bot))
