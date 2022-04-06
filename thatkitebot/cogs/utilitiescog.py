@@ -6,6 +6,7 @@ from thatkitebot.backend.util import EmbedColors as ec
 import psutil
 from datetime import datetime
 import si_prefix
+from thatkitebot.backend import url
 
 
 class UtilityCommands(commands.Cog, name="utility commands"):
@@ -77,10 +78,33 @@ class UtilityCommands(commands.Cog, name="utility commands"):
                 """
         )
         embed.set_thumbnail(url=str(self.bot.user.avatar.url))
-
+        
+        # dictionary for discord username lookup from github username
+        # format: "githubusername":"discordID"
+        authordict = {
+            "ThatRedKite":"<@249056455552925697>",
+            "diminDDL":"<@312591385624576001>", 
+            "Cuprum77":"<@323502550340861963>",
+            "laserpup":"<@357258808105500674>",
+            "woo200":"<@881362093427814440>"
+        }
+        jsonData = await url._contributorjson(self.bot.aiohttp_session)
+        # get a list of "login" field values from json string variable jsonData
+        authorlist = [x["login"] for x in jsonData]
+        # if a username contains [bot] remove it from the list
+        authorlist = [x for x in authorlist if not x.lower().__contains__("bot")]
+        # keed only first 5 contributors in authorlist
+        authorlist = authorlist[:5]
+        embedStr = ""
+        for i in authorlist:
+            if i in authordict:
+                embedStr += f"{authordict[i]}\n"
+            else:
+                embedStr += f"{i}\n"
+        embedStr += "and other [contributors](https://github.com/ThatRedKite/thatkitebot/graphs/contributors)"    
         embed.add_field(
             name="Authors",
-            value="ThatRedKite#4842 and [contributors](https://github.com/ThatRedKite/thatkitebot/graphs/contributors)"
+            value=embedStr
         )
         embed.add_field(
             name="libraries used",
