@@ -40,6 +40,9 @@ def parse_input(s):
 
 
 def slash_preprocessor(a: str):
+    """
+    Preprocesses a string to be used in a command.
+    """
     return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
 
 
