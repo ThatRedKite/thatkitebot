@@ -98,6 +98,7 @@ def caption(blob, fn, ct, path):
         "piss":"#f9fc12",
         "cum":"#ededd5",
         "pickle":"#12a612",
+        "white":"#ffffff",
     }
     in_str = str(ct)
     # find any emotes in the text
@@ -116,7 +117,7 @@ def caption(blob, fn, ct, path):
     x = re.findall(r"color:[\w]{3,30}", in_str)
     if len(x) > 0: 
         color = x[0].lower().replace("color:", "") 
-        in_str = in_str.replace(x[0], "")
+        in_str = in_str.replace(x[0], "").rstrip()
         if color in color_alias:
             color = color_alias[color]
     try:
