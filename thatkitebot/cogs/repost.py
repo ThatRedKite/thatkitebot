@@ -1,5 +1,5 @@
 # Copyright (c) 2019-2021 ThatRedKite and contributors
-
+import asyncio
 import typing
 import re
 from io import BytesIO
@@ -44,7 +44,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         tenor = tenorpattern.findall(url)
         if not tenor:
             return
-        headers = {"User-Agent": "ThatKiteBot/3.4", "content-type": "application/json"}
+        headers = {"User-Agent": "ThatKiteBot/3.7", "content-type": "application/json"}
         payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
 
         async with self.aiohttp.get(url="https://api.tenor.com/v1/gifs", params=payload, headers=headers) as r:
@@ -66,129 +66,144 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     async def extract_imagehash(self, message):
         """
         Extracts the image hash from a message's attachments or embeds.
+        Yields the imagehash
         """
         if message.attachments:
             # if the file was uploaded directly, get the image data from the attachment directly
             for attachment in message.attachments:
-                return hasher(await attachment.read())
+                yield hasher(await attachment.read())
 
         elif message.embeds:
-            # links to images or GIFs are
+            # links to images or GIFs are embedded in the message
             for embed in message.embeds:
                 match embed.type:
                     case "rich":
-                        return None  # rich embeds do not contain any images that could be useful; just return
+                        yield None
                     case "image":
                         async with self.aiohttp.get(embed.url) as r:  # download the image
-                            return hasher(await r.read())  # generate the hash
+                            yield hasher(await r.read())  # generate the hash
                     case "gifv":
                         #  this feature *requires* a tenor API Token!
                         if self.tt:
-                            # download and hash the tenor gif
-                            return await self.get_tenor_image(message.content, self.tt)
+                            # download and hash the teno r gif
+                            yield await self.get_tenor_image(message.content, self.tt) or None
                     case "video":
-                        return None# video support might be added soon
+                        yield None
         else:
-            return None
+            yield None
 
-    async def check_distance(self, imghash, return_hash = False):
+    async def check_distance(self, imghash):
         """
         Checks the distance between the image hashes.
         """
-        imghash = imagehash.hex_to_hash(imghash)
-        hashes = [key async for key in self.repost_redis.scan_iter("*")] or None  # get all hashes
-        if not hashes:
-            return False
-        distances = [(imagehash.hex_to_hash(h.split(":")[1]) - imghash) <= 20 for h in hashes]
-        if return_hash:
-            return hashes[distances.index(True)] or False
-        else:
-            return any(distances)   # return if any hash is too similar
+        async for h in self.repost_redis.scan_iter("*"):
+            attrs = await self.repost_redis.hgetall(h)
+            yield (imagehash.hex_to_hash(h.split(":")[1]) - imagehash.hex_to_hash(imghash)), h, attrs
 
-    @commands.group()
-    async def repost(self, ctx: commands.Context):
+    @commands.group(aliases=["repc", "repostchannel"])
+    async def repost_channel(self, ctx: commands.Context):
         """
-        This is a command group for commands related to repost detection.
+        This is a command group for commands related adding and removing repost channels
         """
         if not ctx.subcommand_passed:
-            pass
+            # if no subcommand was passed check if the channel id is in the list of repost channels
+            not_enabled_string = "not " if not await self.channel_is_enabled(ctx.channel) else ""
+            await ctx.send(f"{ctx.channel.mention} is {not_enabled_string}enabled for repost detection.")
 
     @commands.check(can_change_settings)
-    @repost.command(name="add")
+    @repost_channel.command(name="add")
     async def _add(self, ctx, channel: typing.Optional[discord.TextChannel]):
         """
         Add a channel to the list of repost-activated channels.
-        Requires Administrator permissions.
+        Requires Administrator permissions. If no channel is specified, the current channel is used.
         """
         if not channel:
             channel = ctx.channel
-        # add the curent channel to the list of repost channels
+
+        # add the current channel to the list of repost channels
         await self.settings_redis.sadd("REPOST_CHANNELS", channel.id)
+        await ctx.send(f"{channel.mention} has been added to the repost-activated channels.")
 
     @commands.check(can_change_settings)
-    @repost.command(name="remove", aliases=["rm"])
+    @repost_channel.command(name="remove", aliases=["rm"])
     async def _remove(self, ctx, channel: typing.Optional[discord.TextChannel]):
         """
         Remove a channel from the list of repost-activated channels.
-        Requires Administrator permissions.
+        Requires Administrator permissions. If no channel is specified, the current channel is used.
         """
         if not channel:
             channel = ctx.channel
         # remove the current channel from the list of repost channels
         await self.settings_redis.srem("REPOST_CHANNELS", channel.id)
+        await ctx.send(f"{channel.mention} has been removed from the repost-activated channels.")
 
-    @repost.command(name="check")
-    async def _check(self, ctx: commands.Context, message: discord.Message = None):
-        """
-        Check if a message is a message is a repost.
-        Simply reply to a message or use its id or message link as a parameter.
-        """
-        if not await self.channel_is_enabled(ctx.channel):
-            return
-
-        if not message and ctx.message.reference:
+    @commands.command()
+    async def repost(self, ctx, *, message: typing.Optional[discord.Message]):
+        # set some default values
+        if ctx.message.reference:
             message_id = ctx.message.reference.message_id
-
-        elif message and not ctx.message.reference:
-            message_id = message.id
-
+            channel_id = ctx.message.reference.channel_id
         else:
-            await errormsg(ctx, "You need to reply to a message or specify its id!")
-            return
+            message_id = message.id
+            channel_id = message.channel.id
 
-        # forcefully load the message because discord.py's message cache cannot be trusted (it sucks) and get the hash
-        try:
-            imghash = await self.extract_imagehash(await ctx.channel.fetch_message(message_id))
-            original_key = await self.check_distance(imghash, return_hash=True)
-            if original_key:
-                original = await self.repost_redis.hget(str(original_key), "jump_url")
-                embed = discord.Embed(
-                    title="Repost Found!",
-                    description=f"Press [here]({original}) to jump to the original message.")
-                await ctx.send(embed=embed)
-            else:
-                raise TypeError
-        except TypeError:
-            await errormsg(ctx, "No repost was found!")
+        # load the message from the discord api
+        channel = await self.bot.fetch_channel(channel_id)
+        message = await channel.fetch_message(message_id)
+        # check if the message is a repost
+        async for imghash in self.extract_imagehash(message):
+            try:
+                async for distance, h, attrs in self.check_distance(imghash):
+                    if distance < 20 and (jump_url := attrs.get("jump_url")) != message.jump_url:
+                        repost_count = attrs.get("repost_count", 1)  # get the repost count, default to 1 if not set
+                        ms = "s" if int(repost_count) > 1 else ""  # pluralize the word "time"
+                        embed = discord.Embed(
+                            title="Repost Detected",
+                            description=f"This message is a repost of [this message]({jump_url}) it has been reposted {repost_count} time{ms}.",
+                        )
+                        await ctx.send(embed=embed)
+                        break
+                    else:
+                        # the message seems to be the original
+                        await ctx.send("This seems to be the original image.")
+                        break
+            except TypeError:
+                # the message is not an image
+                await ctx.send("This message is not an image.")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if not await self.channel_is_enabled(message.channel) or message.author.bot:
-            return
-        imghash = await self.extract_imagehash(message)
-        # check if the hash already exists or is close enough to another hash
-        # TODO: the repost counter has yet to be implemented
-        if imghash and (await self.repost_redis.exists(imghash) or await self.check_distance(imghash)):
-            await message.add_reaction("♻️")  # add repost reaction
-            # await self.repost_redis.hincrby(f"{message.id}:{imghash}", "repost_counter", 1)  # increment repost counter
+        if not await self.channel_is_enabled(message.channel) or message.author.bot and message.guild:
+            return  # return, if the channel is not enabled or the message is from a bot and not a DM
 
-        elif not imghash:
-            return
+        if not message.embeds and not message.attachments:
+            return  # return if the message does not contain an image
 
-        else:
-            mapping_dict = dict(repost_counter=0, jump_url=message.jump_url)  # create initial values
-            # add the image hash to the database
-            await self.repost_redis.hset(f"{message.id}:{imghash}", mapping=mapping_dict)
+        async for imagehash in self.extract_imagehash(message):
+            repost = False
+
+            pipe = self.repost_redis.pipeline()
+            async for distance, key, attrs in self.check_distance(imagehash):
+                # if the distance is less than 20, it's a repost
+                if distance <= 20:
+                    jump_url = attrs["jump_url"]
+                    # extract the guild id from the jump url
+                    guild_id = int(jump_url.split("/")[4])
+                    channel_id = int(jump_url.split("/")[5])
+                    # set the repost flag to true if the guild id and channel id
+                    # match the current message's guild id and channel id
+                    repost = True if message.guild.id == guild_id and message.channel.id == channel_id else False
+                    break
+
+            if repost:
+                await message.add_reaction("♻️")  # add the repost reaction
+                await pipe.hincrby(key, "repost_count", 1)  # increment the repost count
+            else:
+                # the message does not appear to be a repost, let's add it to the database
+                await pipe.hmset(f"{message.id}:{imagehash}", {"jump_url": message.jump_url, "repost_count": 0})
+
+            await pipe.execute()  # execute the pipeline to commit the changes
+            await pipe.close()  # close the pipeline
 
 
 def setup(bot):
