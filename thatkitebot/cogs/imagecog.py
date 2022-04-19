@@ -16,7 +16,7 @@ from thatkitebot.backend import util
 
 def magik(buf, fn):
     with WandImage(file=buf) as a:
-        if a.width > 3000 or a.height > 3000:
+        if a.width > 6000 or a.height > 6000:
             a.destroy()
             return None, -1
         a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
@@ -95,10 +95,10 @@ def reduce(buf, fn):
 
 def caption(blob, fn, ct, path):
     color_alias = {
-        "piss":"#f9fc12",
-        "cum":"#ededd5",
-        "pickle":"#12a612",
-        "white":"#ffffff",
+        "piss": "#f9fc12",
+        "cum": "#ededd5",
+        "pickle": "#12a612",
+        "white": "#ffffff",
     }
     in_str = str(ct)
     # find any emotes in the text
@@ -139,14 +139,14 @@ def caption(blob, fn, ct, path):
             b = image.make_blob()
             image.destroy()
     except:
-        fn = -3 # probably wrong color
+        fn = -3  # probably wrong color
         b = None
     return b, fn
 
 
 def wide(buf, fn):
     with WandImage(file=buf) as a:
-        if a.width > 3000 or a.height > 3000:
+        if a.width > 6000 or a.height > 6000:
             a.destroy()
             return None, -1
         a.resize(width=int(a.width * 3.3), height=int(a.height / 1.8))
@@ -170,17 +170,6 @@ def rotate(buf, fn, angle: int = 90):
         a.rotate(degree=angle, )
         b = a.make_blob(format="png")
         a.destroy()
-    return b, fn
-
-
-def overlay(background, fn, image):
-    with WandImage(file=background) as bg:
-        bg.sample(1024, 1024)
-        with WandImage(file=image) as img:
-            bg.composite(img, left=0, top=0)
-            b = bg.make_blob(format="png")
-            bg.destroy()
-            img.destroy()
     return b, fn
 
 
@@ -243,7 +232,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             # iterate over the last 30 messages
             async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
                 # get the url of the image and break the loop if it's not None
-                if url:= await self.get_image_url(msg):
+                if url := await self.get_image_url(msg):
                     break
                 else:
                     continue
@@ -269,15 +258,15 @@ class ImageStuff(commands.Cog, name="image commands"):
             try:
                 b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
             except asyncio.TimeoutError:
-
-                e = await util.errormsg(msg="Processing timed out",embed_only=True)
-                return e, None
+                e = await util.errormsg(msg="Processing timed out", embed_only=True)
+                return None, None
             if fn < 0 and fn != -3:
-                a = await util.errormsg("Your image is too large! Image should be smaller than 3000x3000", embed_only=True)
-                return a, None
+                e = await util.errormsg(msg="The image should be smaller than 6000x6000 pixels", embed_only=True)
+                return e, None
             elif fn == -3:
-                a = await util.errormsg("The color selected does not exist or is in the wrong format.", embed_only=True)
-                return a, None
+                e = await util.errormsg(msg="Selected color doesn't exist or is in the wrong format.", embed_only=True)
+                return e, None
+
         embed = discord.Embed(title="Processed image")
         embed.set_image(url=f"attachment://{name}.png")
         file = discord.File(BytesIO(b2), filename=f"{name}.png")
@@ -292,7 +281,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         async with ctx.channel.typing():
             embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=0), "magik")
             buf.close()
-        await ctx.send(file=file, embed=embed)
+            await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["swirlmagik", "smagic", "swirlmagic"])
