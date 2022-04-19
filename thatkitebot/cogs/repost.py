@@ -152,9 +152,11 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         message = await channel.fetch_message(message_id)
         # check if the message is a repost
         async for imghash in self.extract_imagehash(message):
+            repost = False
             try:
                 async for distance, h, attrs in self.check_distance(imghash):
                     if distance < 20 and (jump_url := attrs.get("jump_url")) != message.jump_url:
+                        repost = True
                         repost_count = attrs.get("repost_count", 1)  # get the repost count, default to 1 if not set
                         ms = "s" if int(repost_count) > 1 else ""  # pluralize the word "time"
                         embed = discord.Embed(
@@ -164,9 +166,10 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                         await ctx.send(embed=embed)
                         break
                     else:
-                        # the message seems to be the original
-                        await ctx.send("This seems to be the original image.")
-                        break
+                        repost = False
+                if not repost:
+                    # the message seems to be the original
+                    await ctx.send("This seems to be the original image.")
             except TypeError:
                 # the message is not an image
                 await ctx.send("This message is not an image.")
