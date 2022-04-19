@@ -15,7 +15,7 @@ RUN pip3 install --upgrade pip
 
 RUN pip3 install -r requirements.txt
 
-RUN git clone https://github.com/Pycord-Development/pycord
+RUN git clone https://github.com/Pycord-Development/pycord --depth 1
 
 WORKDIR /tmp/pycord/
 
