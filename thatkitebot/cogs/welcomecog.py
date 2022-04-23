@@ -9,6 +9,7 @@ import time
 import re
 from datetime import datetime
 from operator import itemgetter
+from typing import Optional
 
 import aioredis
 import discord
@@ -87,7 +88,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
     
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
-    async def welcome(self, ctx, *, args=None):
+    async def welcome(self, ctx, *, user: Optional[discord.Member] = None):
         """
         Displays the top 10 users with the most welcome count.
         """
@@ -101,7 +102,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             leaderboard[f"<@{author}>"] = await self.redis_welcomes.hgetall(i)
         sorted_lb = sorted(leaderboard.items(), key=lambda x: int(x[1]['welcome_count']), reverse=True)
 
-        if not args:
+        if not user:
             embed = discord.Embed(title="Welcome leaderboard")
             lb_str = ""
             number = 1
@@ -116,35 +117,71 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                             number_str = ":third_place: "
                         case _:
                             number_str = "​  **" + str(number) + "**. "
+                    delta = (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"])))
+                    if delta.days == 1:
+                        respStr = "1 day ago**\n"
+                    elif delta.days > 0:
+                        respStr = str(delta.days) + " days ago**\n"
+                    else:
+                        respStr = str(delta.seconds // 3600) + " hours ago**\n"
                     lb_str += number_str + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
-                              + str((current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
-                              + "** hours ago\n"
+                              + respStr
                     number += 1
                     continue
             last_join_dict = await self.redis_welcomes.hgetall(f"latest_join:{ctx.message.guild.id}")
             embed.add_field(name=":medal: Top 10:", value=lb_str, inline=False)
             if 'user_id' in last_join_dict:
+                delta = (current_time - datetime.utcfromtimestamp(int(last_join_dict['latest_join'])))
+                if delta.days == 1:
+                    respStr = "1 day ago**"
+                elif delta.days > 0:
+                    respStr = str(delta.days) + " days ago**"
+                else:
+                    respStr = str(delta.seconds // 3600) + " hours ago**"
                 footer = str(str(f"<@{last_join_dict['user_id']}>")
                              + " joined: **"
-                             + str((current_time - datetime.utcfromtimestamp(int(last_join_dict['latest_join']))).seconds // 3600))\
-                             + "** hours ago"
+                             + respStr)
                 embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
 
-        elif args.lower() == "me":
-            embed = discord.Embed(title="Personal welcome count")
-            target_user = ctx.message.author.id
-            lb_str = ""
+        else:
+            embed = discord.Embed(title="Personal welcome count") 
+            target_user = user.id
             number = 1
+            found = False
             for i in sorted_lb:
                 if str(target_user) in i[0]:
-                    lb_str += "**" + str(number) + "**. " + str(i[0]) \
+                    found = True
+                    delta = (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"])))
+                    if delta.days == 1:
+                        respStr = "1 day ago**\n"
+                    elif delta.days > 0:
+                        respStr = str(delta.days) + " days ago**\n"
+                    else:
+                        respStr = str(delta.seconds // 3600) + " hours ago**\n"
+                    lb_str = "**" + str(number) + "**. " + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
-                              + str((current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"]))).seconds // 3600) \
-                              + "** hours ago\n"
-                    embed.add_field(name=f"{str(ctx.message.author)}'s welcome count:", value=lb_str, inline=False)
+                              + respStr
+                    embed.add_field(name=f"{user.display_name}'s welcome count:", value=lb_str, inline=False)
                 number += 1
+            if not found:
+                embed.add_field(name=f"{user.display_name}'s welcome count:", value=f"**∞**. {user.mention} welcomes: **0**, last welcome: **Never**", inline=False)
         await ctx.send(embed=embed)
+        
+    @commands.is_owner()
+    @commands.command(aliases=["ewlb"])
+    async def editwelcomelb(self, ctx: commands.Context, user: discord.Member = None, newval: int = None):
+        """
+        Edits the welcome leaderboard.
+        """
+        if user != None and newval != None:
+            unixtime = time.mktime(ctx.message.created_at.timetuple())
+            key = f"leaderboard:{user.id}:{ctx.guild.id}"
+            await self.redis_welcomes.hset(key, "welcome_count", newval)
+            await self.redis_welcomes.hset(key, "latest_welcome", int(unixtime))
+            await ctx.send(f"{user.mention}'s welcome count has been set to {newval}.")
+        else:
+            await ctx.send(f"Please specify a user and a new value. eg. `{self.bot.command_prefix}ewlb @user 10`")
 
 
 def setup(bot):
