@@ -5,172 +5,12 @@ import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
 from io import BytesIO
-import discord
-from discord.ext import commands
 from typing import Optional
-from wand.image import Image as WandImage
-from wand.color import Color
-from wand.font import Font
-from thatkitebot.backend import util
 
+import discord
+from discord.ext import commands, bridge
 
-def magik(buf, fn):
-    with WandImage(file=buf) as a:
-        if a.width > 6000 or a.height > 6000:
-            a.destroy()
-            return None, -1
-        a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
-        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
-        a.sample(width=int(a.width * 2), height=int(a.height * 2))
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def swirlmagik(buf, fn):
-    with WandImage(file=buf) as a:
-        if a.width > 3000 or a.height > 3000:
-            a.destroy()
-            return None, -1
-        a.sample(width=int(a.width * 0.5), height=int(a.height * 0.5))
-        a.swirl(60)
-        a.liquid_rescale(width=int(a.width / 2), height=int(a.height / 1.5), delta_x=1, rigidity=0)
-        a.liquid_rescale(width=int(a.width * 2), height=int(a.height * 1.5), delta_x=2, rigidity=0)
-        a.swirl(-60)
-        a.sample(width=int(a.width * 2), height=int(a.height * 2))
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def swirl(buf, fn, angle: int = -60):
-    with WandImage(file=buf) as a:
-        a.swirl(degree=angle)
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def invert(buf, fn):
-    with WandImage(file=buf) as a:
-        a.negate()
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def implode(buf, fn):
-    with WandImage(file=buf) as a:
-        a.implode(0.6)
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def opacify(buf, fn):
-    with WandImage(file=buf) as a:
-        a.alpha_channel = "remove"
-        a.background_color = Color("white")
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def explode(buf, fn):
-    with WandImage(file=buf) as a:
-        a.implode(-4.0)
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def reduce(buf, fn):
-    with WandImage(file=buf) as a:
-        a.posterize(levels=2)
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def caption(blob, fn, ct, path):
-    color_alias = {
-        "piss": "#f9fc12",
-        "cum": "#ededd5",
-        "pickle": "#12a612",
-        "white": "#ffffff",
-    }
-    in_str = str(ct)
-    # find any emotes in the text
-    x = re.findall(r"[<]:\w{2,}:\d{15,}[>]", in_str)
-    for n in x: in_str = in_str.replace(str(n), re.findall(r":\w{2,}:", n)[0])
-    # find any parameters in the command
-    color = "white"
-    x = re.findall(r"color:\d{1,3},\d{1,3},\d{1,3}", in_str)
-    if len(x) > 0: 
-        color = x[0].lower().replace("color:", "rgb(") + ")"
-        in_str = in_str.replace(x[0], "")
-    x = re.findall(r"color:(?:\d{2}|[1-f]{2}){3}", in_str)
-    if len(x) > 0: 
-        color = x[0].lower().replace("color:", "#") 
-        in_str = in_str.replace(x[0], "")
-    x = re.findall(r"color:[\w]{3,30}", in_str)
-    if len(x) > 0: 
-        color = x[0].lower().replace("color:", "") 
-        in_str = in_str.replace(x[0], "").rstrip()
-        if color in color_alias:
-            color = color_alias[color]
-    try:
-        with WandImage(file=blob) as image:
-            # Calculate image parameters for the text to wrap and fit.
-            txt_top = int(0.70 * image.height)  # add text to the bottom 25% of the image
-            txt_left = int(0.10 * image.width)  # leave 10 % the image from the left
-            txt_width = image.width - (
-                        txt_left * 2)  # total width - 10% * 2 will leave 10% of with on the right side as well
-            txt_height = image.height - txt_top  # use the whole 15% for text
-            stroke_width = (txt_height * txt_width)/(10000 + (2500 * len(in_str)))
-            if stroke_width < 1.5 or color != "white":
-                font = Font(path + "OpenSansEmoji.ttf", color=color)
-            else:
-                font = Font(path + "OpenSansEmoji.ttf", color=color, stroke_color="black", stroke_width=stroke_width)
-            image.caption(in_str, left=txt_left, top=txt_top, width=txt_width, height=txt_height, font=font,
-                        gravity='center')
-            image.format = 'png'
-            b = image.make_blob()
-            image.destroy()
-    except:
-        fn = -3  # probably wrong color
-        b = None
-    return b, fn
-
-
-def wide(buf, fn):
-    with WandImage(file=buf) as a:
-        if a.width > 6000 or a.height > 6000:
-            a.destroy()
-            return None, -1
-        a.resize(width=int(a.width * 3.3), height=int(a.height / 1.8))
-        a.crop(left=int(a.width / 4), top=1, right=(a.width - (int(a.width / 4))), bottom=a.height)
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def deepfry(buf, fn):
-    with WandImage(file=buf) as a:
-        a.modulate(saturation=600.00)
-        a.noise("gaussian", attenuate=0.1)
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
-
-
-def rotate(buf, fn, angle: int = 90):
-    with WandImage(file=buf) as a:
-        a.rotate(degree=angle, )
-        b = a.make_blob(format="png")
-        a.destroy()
-    return b, fn
+from thatkitebot.backend import util, magik
 
 
 class ImageStuff(commands.Cog, name="image commands"):
@@ -273,13 +113,13 @@ class ImageStuff(commands.Cog, name="image commands"):
         return embed, file
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
-    @commands.command(aliases=["magic"])
+    @commands.command(aliases=["magic", "magick"])
     async def magik(self, ctx: commands.Context):
         # the GIF part is a lie btw
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(magik, buf=buf, fn=0), "magik")
+            embed, file = await self.image_worker(functools.partial(magik.magik, buf=buf, fn=0), "magik")
             buf.close()
             await ctx.send(file=file, embed=embed)
 
@@ -292,7 +132,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(swirlmagik, buf=buf, fn=1), "swirlmagik")
+            embed, file = await self.image_worker(functools.partial(magik.swirlmagik, buf=buf, fn=1), "swirlmagik")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -312,7 +152,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """'Deepfries' an image by oversaturating it and applying noise"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(deepfry, buf=buf, fn=2), "deepfry")
+            embed, file = await self.image_worker(functools.partial(magik.deepfry, buf=buf, fn=2), "deepfry")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -322,7 +162,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Horizontally stretch an image"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(wide, buf=buf, fn=3), "wide")
+            embed, file = await self.image_worker(functools.partial(magik.wide, buf=buf, fn=3), "wide")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -332,7 +172,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Remove the alpha channel and replace it with white"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(opacify, buf=buf, fn=4), "opacify")
+            embed, file = await self.image_worker(functools.partial(magik.opacify, buf=buf, fn=4), "opacify")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -342,7 +182,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Explodes an image"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(explode, buf=buf, fn=5), "explode")
+            embed, file = await self.image_worker(functools.partial(magik.explode, buf=buf, fn=5), "explode")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -352,7 +192,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Implodes an image"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(implode, buf=buf, fn=6), "implode")
+            embed, file = await self.image_worker(functools.partial(magik.implode, buf=buf, fn=6), "implode")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -362,7 +202,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Invert an image's colors"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(invert, buf=buf, fn=7), "inverted")
+            embed, file = await self.image_worker(functools.partial(magik.invert, buf=buf, fn=7), "inverted")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -372,7 +212,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Reduces an image's total colors"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(reduce, buf=buf, fn=8), "reduced")
+            embed, file = await self.image_worker(functools.partial(magik.reduce, buf=buf, fn=8), "reduced")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -382,7 +222,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Swirl an image"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(swirl, buf=buf, fn=9, angle=degree), "swirled")
+            embed, file = await self.image_worker(functools.partial(magik.swirl, buf=buf, fn=9, angle=degree), "swirled")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -396,7 +236,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(caption, buf, 10, text, self.dd), "captioned")
+            embed, file = await self.image_worker(functools.partial(magik.caption, buf, 10, text, self.dd), "captioned")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -466,7 +306,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Rotate an image clockwise 90 degrees by default, you can specify the degree value as an argument"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(rotate, buf=buf, fn=11, angle=degree), "rotated")
+            embed, file = await self.image_worker(functools.partial(magik.rotate, buf=buf, fn=11, angle=degree), "rotated")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
