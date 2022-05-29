@@ -1,9 +1,8 @@
 import re
-from typing import Union
 
 import aioredis
 import discord
-from discord.ext import commands, tasks, bridge
+from discord.ext import commands, bridge
 
 from thatkitebot.cogs.settings import can_change_settings
 from thatkitebot.cogs.imagecog import get_image_url
@@ -27,7 +26,6 @@ async def generate_embed(message: discord.message, count, star_emoji, return_fil
     except TypeError:
         url, embed_type = None, None
 
-    print(url)
     if url and ("image" in embed_type or embed_type == "rich"):
         embed.set_image(url=url)
     elif url and "video" in embed_type:
@@ -90,17 +88,6 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
             continue
 
     return None
-
-
-async def add_to_starboard_lookup_table(message: discord.Message, redis: aioredis.Redis):
-    """
-    Add the message to the starboard lookup table
-    """
-    # 249056455552925697
-    # (1) starboard_message_id
-
-    key = message.id
-    await redis.get()
 
 
 class StarBoard(commands.Cog):
@@ -194,7 +181,7 @@ class StarBoard(commands.Cog):
         message = await channel.fetch_message(payload.message_id)
 
         # make sure nothing in the starboard channel is starred and put onto the starboard
-        if star_channel == channel:
+        if star_channel == channel or not starboard_settings:
             return
 
         match mode:
