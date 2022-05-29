@@ -5,12 +5,34 @@ import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
 from io import BytesIO
-from typing import Optional
+from typing import Optional, Union
 
 import discord
 from discord.ext import commands, bridge
 
 from thatkitebot.backend import util, magik
+
+
+async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[tuple, None]:
+    # check if the message has an attachment or embed of the type "image"
+    if message.attachments:
+        return message.attachments[0].url, message.attachments[0].content_type
+    elif message.embeds and message.embeds[0].type == "image":
+        # if it does, return the embed's url
+        return message.embeds[0].url, "image"
+    # check if the message has an embed of the type "rich" and if it contains an image
+    elif message.embeds and message.embeds[0].type == "rich" and message.embeds[0].image:
+        # if it does, return the embed's url
+        return message.embeds[0].image.url, "rich"
+    # check if the message has a video if the :video: argument is true
+    elif message.embeds and message.embeds[0].type == "video" and video:
+        return message.embeds[0].url, "video"
+    # check if the message has a gif if the :gifv: argument is true
+    elif message.embeds and message.embeds[0].type == "gifv" and gifv:
+        return message.embeds[0].url, "gifv"
+    else:
+        # if it doesn't, return None
+        return None
 
 
 class ImageStuff(commands.Cog, name="image commands"):
@@ -31,7 +53,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def cog_command_error(self, ctx, error):
         await util.errormsg(ctx, error)
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE" if ctx.guild else True
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
@@ -41,38 +63,24 @@ class ImageStuff(commands.Cog, name="image commands"):
         # make sure to cancel all futures before unloading
         self.pp.shutdown(cancel_futures=True, wait=False)
 
-    async def get_image_url(self, message: discord.Message):
-        # check if the message has an attachment or embed of the type "image"
-        if message.attachments:
-            return message.attachments[0].url
-        elif message.embeds and message.embeds[0].type == "image":
-            # if it does, return the embed's url
-            return message.embeds[0].url
-        # check if the message has an embed of the type "rich" and if it contains an image
-        elif message.embeds and message.embeds[0].type == "rich" and message.embeds[0].image:
-            # if it does, return the embed's url
-            return message.embeds[0].image.url
-        else:
-            # if it doesn't, return None
-            return None
-
-    async def get_last_image(self, ctx, return_buffer=False):
+    async def get_last_image(self, ctx, return_buffer=False) -> Union[BytesIO, None]:
         # search past 30 messages for suitable media content, only search messages with an attachment or embed
         # first, get a suitable message
 
         if ctx.message.reference:
             # fetch the message from the reference
             message = await ctx.fetch_message(ctx.message.reference.message_id)
-            url = await self.get_image_url(message)
+            url, embed_type = await get_image_url(message)
 
         # check if the message has an attachment
         elif ctx.message.attachments or ctx.message.embeds:
-            url = await self.get_image_url(ctx.message)
+            url, embed_type = await get_image_url(ctx.message)
         else:
             # iterate over the last 30 messages
             async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
                 # get the url of the image and break the loop if it's not None
-                if url := await self.get_image_url(msg):
+                url, embed_type = await get_image_url(msg)
+                if url:
                     break
                 else:
                     continue
@@ -80,7 +88,6 @@ class ImageStuff(commands.Cog, name="image commands"):
         # if the url is None, return None because there is no suitable image in the last 30 messages
         if not url:
             raise commands.BadArgument("No suitable image found.")
-            return None
 
         # if the url is not None, download the image and return it
         async with self.session.get(url) as resp:
@@ -113,15 +120,15 @@ class ImageStuff(commands.Cog, name="image commands"):
         return embed, file
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
-    @commands.command(aliases=["magic", "magick"])
+    @bridge.bridge_command(name="magik", aliases=["magic", "magick"], guild_ids=[759419755253465188])
     async def magik(self, ctx: commands.Context):
         # the GIF part is a lie btw
         """Applies some content aware scaling to an image. When the image is a GIF, it takes the first frame"""
+        await ctx.defer()
         buf = await self.get_last_image(ctx, return_buffer=True)
-        async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(magik.magik, buf=buf, fn=0), "magik")
-            buf.close()
-            await ctx.send(file=file, embed=embed)
+        embed, file = await self.image_worker(functools.partial(magik.magik, buf=buf, fn=0), "magik")
+        buf.close
+        await ctx.respond(file=file, embed=embed)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["swirlmagik", "smagic", "swirlmagic"])

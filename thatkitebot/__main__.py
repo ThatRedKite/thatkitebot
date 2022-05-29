@@ -10,8 +10,11 @@ import psutil
 import discord
 import aioredis
 import json
-from discord.ext import commands
+from discord.ext import commands, bridge
 
+__name__ = "ThatKiteBot"
+__version__ = "3.9"
+__author__ = "ThatRedKite and contributors"
 
 enabled_ext = [
     "thatkitebot.cogs.funstuffcog",
@@ -27,7 +30,8 @@ enabled_ext = [
     "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser",
     "thatkitebot.cogs.welcomecog",
-    "thatkitebot.cogs.repost"
+    "thatkitebot.cogs.repost",
+    "thatkitebot.cogs.starboard",
 ]
 
 tempdir = "/tmp/tkb/"
@@ -68,8 +72,9 @@ with open(os.path.join(datadir, "init_settings.json"), "r") as f:
         print("init_settings.json is not valid json. Please fix it.")
         exit(1)
 
+
 # define the bot class
-class ThatKiteBot(commands.Bot, ABC):
+class ThatKiteBot(bridge.Bot, ABC):
     def __init__(self, command_prefix, dirname, tt, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
@@ -80,7 +85,7 @@ class ThatKiteBot(commands.Bot, ABC):
         self.tempdir = "/tmp/"
 
         # info
-        self.version = "3.7"
+        self.version = __version__
         self.starttime = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
@@ -101,11 +106,16 @@ class ThatKiteBot(commands.Bot, ABC):
         # 2: reposts
         # 3: welcome leaderboards
 
-        self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
-        self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
-        self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
-        self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
-
+        print("Connecting to redis...")
+        try:
+            self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
+            self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
+            self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
+            self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
+            print("Connection successful.")
+        except aioredis.ConnectionError:
+            print("Redis connection failed. Check if redis is running.")
+            exit(1)
         # bot status info
         self.cpu_usage = 0
         self.command_invokes_hour = 0
@@ -114,10 +124,10 @@ class ThatKiteBot(commands.Bot, ABC):
     async def aiohttp_start(self):
         self.aiohttp_session = aiohttp.ClientSession()
 
-# create the bot instance
-bot = ThatKiteBot(prefix, dirname, tt=tenor_token, intents=intents)
 
-print("Starting ThatKiteBot v" + bot.version + "...")
+# create the bot instance
+print(f"Starting ThatKiteBot v {__version__} ...")
+bot = ThatKiteBot(prefix, dirname, tt=tenor_token, intents=intents)
 print(f"Loading {len(enabled_ext)} extensions: \n")
 
 # load the cogs aka extensions
