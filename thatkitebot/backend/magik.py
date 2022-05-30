@@ -1,9 +1,11 @@
+import re
+
 from wand.image import Image as WandImage
 from wand.color import Color
 from wand.font import Font
 
 
-def magik(buf, fn):
+def magik(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         if a.width > 6000 or a.height > 6000:
             a.destroy()
@@ -17,7 +19,7 @@ def magik(buf, fn):
     return b, fn
 
 
-def swirlmagik(buf, fn):
+def swirlmagik(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         if a.width > 3000 or a.height > 3000:
             a.destroy()
@@ -33,7 +35,7 @@ def swirlmagik(buf, fn):
     return b, fn
 
 
-def swirl(buf, fn, angle: int = -60):
+def swirl(buf, fn, angle: int = -60) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.swirl(degree=angle)
         b = a.make_blob(format="png")
@@ -41,7 +43,7 @@ def swirl(buf, fn, angle: int = -60):
     return b, fn
 
 
-def invert(buf, fn):
+def invert(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.negate()
         b = a.make_blob(format="png")
@@ -49,7 +51,7 @@ def invert(buf, fn):
     return b, fn
 
 
-def implode(buf, fn):
+def implode(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.implode(0.6)
         b = a.make_blob(format="png")
@@ -57,7 +59,7 @@ def implode(buf, fn):
     return b, fn
 
 
-def opacify(buf, fn):
+def opacify(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.alpha_channel = "remove"
         a.background_color = Color("white")
@@ -66,7 +68,7 @@ def opacify(buf, fn):
     return b, fn
 
 
-def explode(buf, fn):
+def explode(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.implode(-4.0)
         b = a.make_blob(format="png")
@@ -74,7 +76,7 @@ def explode(buf, fn):
     return b, fn
 
 
-def reduce(buf, fn):
+def reduce(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.posterize(levels=2)
         b = a.make_blob(format="png")
@@ -82,7 +84,7 @@ def reduce(buf, fn):
     return b, fn
 
 
-def caption(blob, fn, ct, path):
+def caption(blob, fn, ct, path) -> (bytes, int):
     color_alias = {
         "piss": "#f9fc12",
         "cum": "#ededd5",
@@ -133,7 +135,7 @@ def caption(blob, fn, ct, path):
     return b, fn
 
 
-def wide(buf, fn):
+def wide(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         if a.width > 6000 or a.height > 6000:
             a.destroy()
@@ -145,7 +147,7 @@ def wide(buf, fn):
     return b, fn
 
 
-def deepfry(buf, fn):
+def deepfry(buf, fn) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.modulate(saturation=600.00)
         a.noise("gaussian", attenuate=0.1)
@@ -154,7 +156,7 @@ def deepfry(buf, fn):
     return b, fn
 
 
-def rotate(buf, fn, angle: int = 90):
+def rotate(buf, fn, angle: int = 90) -> (bytes, int):
     with WandImage(file=buf) as a:
         a.rotate(degree=angle, )
         b = a.make_blob(format="png")
