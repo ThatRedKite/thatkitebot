@@ -129,6 +129,9 @@ class StarBoard(commands.Cog):
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="starboard", aliases=["sb"], description="Set the starboard settings for this guild")
     async def starboard(self, ctx: bridge.BridgeContext, threshold: int, channel: discord.TextChannel, emoji: str):
+        if not can_change_settings(ctx):
+            return
+
         if not await check_permissions(ctx, channel):
             return
 
