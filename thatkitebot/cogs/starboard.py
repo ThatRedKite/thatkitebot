@@ -146,6 +146,8 @@ class StarBoard(commands.Cog):
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"], description="Set the starboard blacklist for this guild")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
+        if not can_change_settings(ctx):
+            return
         """
         Add or remove a channel from the blacklist. Blacklisted channels will be ignored by the starboard.
         **Only usable by guild administrators or the bot owner.**
