@@ -19,8 +19,8 @@ def check_emoji(emoji):
 
 
 async def generate_embed(message: discord.message, count, star_emoji, return_file=False, aiohttp_session=None):
-
-    embed = discord.Embed(title=f"{message.author.name}", description=f"**Click [here]({message.jump_url}) to Jump to the message**")
+    embed = discord.Embed(title=f"{message.author.name}",
+                          description=f"**Click [here]({message.jump_url}) to Jump to the message**")
     try:
         url, embed_type = await get_image_url(message, video=False, gifv=True)
     except TypeError:
@@ -76,11 +76,13 @@ async def check_permissions(ctx, channel: discord.TextChannel):
     return True
 
 
-async def check_if_already_posted(message: discord.Message, starboard_channel: discord.TextChannel):
+async def check_if_already_posted(message: discord.Message, starboard_channel: discord.TextChannel, bot_id: int):
     """
     Check if the message has already been posted to the starboard
     """
     async for starmsg in starboard_channel.history().filter(lambda m: m.embeds and m.author.bot):
+        if not starmsg.author == bot_id:
+            continue
         if message.jump_url in starmsg.embeds[0].description:
             starboard_message = starmsg  # the starboard message id
             return starboard_message
@@ -141,10 +143,12 @@ class StarBoard(commands.Cog):
 
         assert check_emoji(emoji)
         await set_starboard(self.redis, channel.id, 1, threshold, emoji, ctx.guild.id, [])
-        await ctx.respond(f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}.")
+        await ctx.respond(
+            f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}.")
 
     @commands.check(can_change_settings)
-    @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"], description="Set the starboard blacklist for this guild")
+    @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
+                           description="Set the starboard blacklist for this guild")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
         if not can_change_settings(ctx):
             return
