@@ -5,13 +5,13 @@ from math import log10, sqrt
 import matplotlib.pyplot as plt
 from io import BytesIO
 import discord
-import discord.commands as scmd
 from discord.ext import commands
 import si_prefix
 from random import randint
 
 from thatkitebot.backend import util
 from thatkitebot.backend import pcb_mod
+
 
 class InputDifferenceError(Exception):
     pass
@@ -50,12 +50,13 @@ class conversion:
     """
     Conversion commands for PCB components.
     """
+
     def __init__(self, d: dict):
         self.mm = si_prefix.si_parse(d.get("mm")) if d.get("mm") else None
         self.mil = si_prefix.si_parse(d.get("mil")) if d.get("mil") else None
         self.oz = si_prefix.si_parse(d.get("oz")) if d.get("oz") else None
         self.mode = "length"
-        
+
     def calculate(self):
         if self.mm is not None and self.mil is None and self.oz is None:
             self.mil = round(pcb_mod.mm2mil(self.mm), 3)
@@ -69,16 +70,16 @@ class conversion:
             self.mode = "oz"
         else:
             raise TooFewArgsError()
-        
+
     def gen_embed(self):
         try:
             self.calculate()
         except TooFewArgsError:
             self.mode = None
-                            
-        embed = discord.Embed(title="PCB Unit Conversions")    
+
+        embed = discord.Embed(title="PCB Unit Conversions")
         match self.mode:
-            case None:    
+            case None:
                 embed.add_field(
                     name="How to use this?",
                     value=f"""With this command you can convert between millimeters and mils for PCB applications
@@ -96,14 +97,14 @@ class conversion:
                 return embed
             case "mm":
                 embed.add_field(name="Result:",
-                    value=f"{self.mil}mil(s) = __{self.mm}mm__")
+                                value=f"{self.mil}mil(s) = __{self.mm}mm__")
             case "mil":
                 embed.add_field(name="Result:",
-                    value=f"{self.mm}mm = __{self.mil}mil(s)__")
+                                value=f"{self.mm}mm = __{self.mil}mil(s)__")
             case "oz":
                 embed.add_field(name="Result:",
-                    value=f"{self.oz}oz/ft² = __{self.mil}mil(s)__ or __{self.mm}μm__")
-                
+                                value=f"{self.oz}oz/ft² = __{self.mil}mil(s)__ or __{self.mm}μm__")
+
         if embed:
             return embed
 
@@ -112,45 +113,34 @@ class PCB_calc:
     """
     PCB calculations commands.
     """
-    def __init__(self, d: dict, internal = False, limit = False):
+
+    def __init__(self, d: dict, internal=False, limit=False):
         self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
         self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None
         self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else None
-        self.temp = si_prefix.si_parse(d.get("temp")) if d.get("temp") else None
+        self.temp = si_prefix.si_parse(d.get("temp")) if d.get("temp") else 10
         self.internal = internal
-        self.limit = limit
-        self.mode = None
+        self.mode = "limit" if limit else None
+        self.thicc = 0.5 if internal and not self.thicc else 1
+
+        if not self.limit:
+            raise ImpossibleValueError("Get real")
 
     def calculate(self):
-        if self.limit:
-            self.mode = "limit"
-        if self.temp is not None and (self.temp < 10 or self.temp > 100):
+        if (self.temp and (10 > self.temp > 100)) or (self.thicc and 0.5 < self.thicc > 3):
             raise ImpossibleValueError("Get real")
-        if self.thicc is not None and (self.thicc < 0.5 or self.thicc > 3):
-            raise ImpossibleValueError("Get real")
-        
-        if self.current is not None and self.width is None:
-            if self.current <= 0 or self.current > 35:
-                raise ImpossibleValueError("Get real")
-            self.width = round(pcb_mod.width(self.current, int(0 if self.temp is None else self.temp), int(0 if self.thicc is None else self.thicc), self.internal), 3)
+
+        if self.current and not self.width and not (0 >= self.current > 35):
+            self.width = round(pcb_mod.width(self.current, int(0 or self.temp), int(0 or self.thicc), self.internal), 3)
             self.mode = "succ"
-        elif self.current is None and self.width is not None:
-            if self.width < 0 or self.width > 400:
-                raise ImpossibleValueError("Get real")
-            self.current = round(pcb_mod.current(int(0 if self.temp is None else self.temp), self.width, int(0 if self.thicc is None else self.thicc), self.internal), 3)
+
+        elif not self.current and self.width and not (0 > self.width > 400):
+            self.current = round(pcb_mod.current(0 or int(self.temp), self.width, 0 or int(self.thicc), self.internal), 3)
             self.mode = "succ"
-        elif not self.limit:
+
+        else:
             raise ImpossibleValueError("Get real")
-        
-        if self.thicc is None:
-            if self.internal:
-                self.thicc = 0.5
-            else:
-                self.thicc = 1  
-        
-        if self.temp is None:
-            self.temp = 10
-                                                  
+
     def draw(self):
         if self.mode != "succ":
             return f"""
@@ -177,13 +167,13 @@ Width = {self.width}mils
 ───┴──┴───
         ```
         """
-        
+
     def randomize(self):
-        self.current = randint(1,10)
+        self.current = randint(1, 10)
         self.temp = randint(1, 100)
         self.thicc = 1
         self.temp = 10
-        
+
     def gen_embed(self):
         try:
             self.calculate()
@@ -193,7 +183,7 @@ Width = {self.width}mils
             self.mode = None
 
         embed = discord.Embed(title="PCB Trace Calculator")
-        
+
         if self.mode != "limit":
             embed.add_field(name="Drawing", value=self.draw(), inline=False)
 
@@ -232,7 +222,7 @@ Max Current: 0 to 35A
                     Because who really needs a trace that cant carry any current? <:schmuck:900445607888551947>
                     """,
                     inline=True)
-            case "succ":                        
+            case "succ":
                 embed.add_field(
                     name="Values",
                     value=f"Width = {self.width}mils\nCopper weight = {self.thicc}oz/ft²\nMax Current = {self.current}A\nΔTemperature = {self.temp}°C\nInternal layer? {self.internal}\n")
@@ -247,6 +237,7 @@ class VoltageDivider:
         self.vout = si_prefix.si_parse(d.get("vout")) if d.get("vout") else None
         self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
         self.r2 = si_prefix.si_parse(d.get("r2")) if d.get("r2") else None
+        self.e = int(d.get("e")) if d.get("e") else 12
         self.mode = None
 
     def calculate(self):
@@ -319,7 +310,7 @@ R2 = {self.r2}Ω
         self.vin = si_prefix.si_format(self.vin)
 
     def randomize(self):
-        self.r1 = randint(1,1000000)
+        self.r1 = randint(1, 1000000)
         self.r2 = randint(1, 1000000)
         self.vin = randint(1, 100)
 
@@ -346,15 +337,18 @@ R2 = {self.r2}Ω
                     as it just confuses the bot (don't use R either).
                     """,
                     inline=True)
+
                 embed.set_footer(text="Note: the above voltage divider is randomly generated")
                 return embed
             case "succ":
                 embed.add_field(
                     name="Values",
                     value=f"R1 =  {self.r1}Ω\nR2 = {self.r2}Ω\nVin = {self.vin}V\nVout = {self.vout}V")
+                """
                 embed.add_field(
-                    name=f"Closest E{(12 if self.e is None or 0 else self.e)} resistor values",
-                    value=f"R1 = {si_prefix.si_format(pcb_mod.e_resistor(self.r1, (12 if self.e is None or 0 else self.e)))}Ω\nR2 = {si_prefix.si_format(pcb_mod.e_resistor(self.r2, int(12 if self.e is None or 0 else self.e)))}Ω")
+                    name=f"Closest E{self.e} resistor values",
+                    value=f"R1 = {si_prefix.si_format(int(pcb_mod.e_resistor(self.r1, self.e)))}Ω\nR2 = {si_prefix.si_format(int(pcb_mod.e_resistor(self.r2, self.e)))}Ω")
+                """
 
         if embed:
             return embed
@@ -362,13 +356,13 @@ R2 = {self.r2}Ω
 
 class LM317:
     def __init__(self, d: dict):
-        self.r1 = si_prefix.si_parse(d.get("r1")) if d.get("r1") else None
+        self.r1 = int(si_prefix.si_parse(d.get("r1"))) if d.get("r1") else 240
         self.r2 = si_prefix.si_parse(d.get("r2")) if d.get("r2") else None
         self.vout = si_prefix.si_parse(d.get("vout")) if d.get("vout") else None
         self.vin = si_prefix.si_parse(d.get("vin")) if d.get("vin") else None
         self.iout = si_prefix.si_parse(d.get("iout")) if d.get("iout") else None
         self.e = si_prefix.si_parse(d.get("e")) if d.get("e") else None
-            
+
     def calculate(self):
         if self.e is not None and pcb_mod.check_series(int(self.e)) == 0:
             raise ImpossibleValueError("Get real")
@@ -397,26 +391,33 @@ class LM317:
             specificVin = True
         else:
             specificVin = False
-        if self.r1 is None:
-            self.r1 = 240
-        if self.vout is None and self.r2 is None:
+
+        # this really needs an overhaul lol
+
+        if not self.vout and not self.r2:
             raise TooFewArgsError("Too few arguments")
-        if self.vout is None and self.r2 is not None:
+
+        elif not self.vout and not self.r2:
             self.vout = 1.25 * (1 + (self.r2 / self.r1))
-        if self.r2 is None:
+
+        elif not self.r2:
             self.r2 = ((self.vout / 1.25) - 1) * self.r1
-        if self.vout is not None and self.r2 is not None:
+
+        elif self.vout and self.r2:
             self.r1 = self.r2 / ((self.vout / 1.25) - 1)
-        if not specificVin:
+
+        elif not specificVin:
             self.vin = round(self.vout + 3, 1)
-        if self.vin - self.vout > 40 or self.vin - self.vout < 3:
-            raise InputDifferenceError(
-                "In-Out difference out of Range")  # Input-to-output differential voltage out of range
-        if not specificVin:
+
+        elif 3 > (self.vin - self.vout) > 40:
+            raise InputDifferenceError("In-Out difference out of Range")
+            # Input-to-output differential voltage out of range
+        elif not specificVin:
             self.vin = str(self.vin) + "V to 40.0"
-        if self.vout < 0 or self.r1 < 0 or self.r2 < 0:
+
+        elif self.vout < 0 or self.r1 < 0 or self.r2 < 0:
             raise ImpossibleValueError("Negative voltage")
-        
+
     def draw(self):
         if self.iout is not None:
             return f"""
@@ -458,7 +459,7 @@ Vin = {self.vin}V
 Vout = {self.vout}V
 ```
             """
-            
+
     def gen_embed(self):
         try:
             self.calculate()
@@ -485,7 +486,6 @@ Vout = {self.vout}V
             self.calculate()
             embed = discord.Embed()
             if self.iout is not None:
-                
                 embed.add_field(name="Schematic", value=self.draw(), inline=False)
                 embed.add_field(
                     name="Values",
@@ -527,7 +527,7 @@ class RCFilter:
             self.mode = "c1"
         else:
             raise TooFewArgsError()
-    
+
     def draw(self):
         if self.mode is None:
             return f"""
@@ -563,7 +563,7 @@ IN  ┌───────┐          OUT
         """
 
     def randomize(self):
-        self.r1 = randint(1,1000000)
+        self.r1 = randint(1, 1000000)
         self.c1 = randint(0, 1000000) / 10 ** 6
 
     def plot(self):
@@ -583,11 +583,11 @@ IN  ┌───────┐          OUT
             gainlist.append(gain)
             f = f * 1.1
         plt.vlines(x=fcut,
-                ymin=-60,
-                ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
-                color="orange",
-                label="Cutoff frequency: {}Hz".format(si_prefix.si_format(self.fcut))
-                )
+                   ymin=-60,
+                   ymax=gainlist[freqlist.index(min(freqlist, key=lambda x: abs(x - fcut)))],
+                   color="orange",
+                   label="Cutoff frequency: {}Hz".format(si_prefix.si_format(self.fcut))
+                   )
         plt.plot(freqlist, gainlist, color="b")
         plt.grid()
         plt.xlabel('Frequency in Hz')
@@ -610,9 +610,9 @@ IN  ┌───────┐          OUT
             self.randomize()
             self.calculate()
             self.mode = None
-        
+
         embed = discord.Embed(title="RC filter")
-        embed.add_field(name="Schematic", value=self.draw(), inline=False)   
+        embed.add_field(name="Schematic", value=self.draw(), inline=False)
         match self.mode:
             case None:
                 embed.add_field(
@@ -648,10 +648,10 @@ IN  ┌───────┐          OUT
                 embed.add_field(
                     name="Values",
                     value=f"R1 = {si_prefix.si_format(self.r1)}Ω\nC1 = {si_prefix.si_format(self.c1)}F\nFcut = {si_prefix.si_format(self.fcut)}Hz")
-        
+
         if self.doPlot:
             embed.set_image(url="attachment://rc.png")
-        
+
         if embed:
             return embed
 
@@ -673,38 +673,36 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             prefix = ctx.prefix
         alist = [f"`{prefix + command.name}`"] + [f'`{prefix + cmd}`' for cmd in command.aliases]
         return ", ".join(alist)
-    
-    @commands.command(name = "conversion", aliases = ["mm2mil", "mil2mm", "conv"])
-    async def conversion(self, ctx, *, args = None):
+
+    @commands.command(name="conversion", aliases=["mm2mil", "mil2mm", "conv"])
+    async def conversion(self, ctx, *, args=None):
         """
         Convert between mils and millimeters, or oz/ft² to mils and millimeters
         """
         try:
-            conv = conversion(d = parse_input(args))
+            conv = conversion(d=parse_input(args))
         except:
             conv = conversion(d={})
-        await ctx.send(embed = conv.gen_embed())
-        
+        await ctx.send(embed=conv.gen_embed())
 
-    @commands.command(name = "pcbcalculator", aliases = ["pcbtrace", "trace", "pcb", "tracewidth", "tracecurrent"])
-    async def pcbtrace(self, ctx, *, args = ""):
+    @commands.command(name="pcbcalculator", aliases=["pcbtrace", "trace", "pcb", "tracewidth", "tracecurrent"])
+    async def pcbtrace(self, ctx, *, args=""):
         """
         Calculate the PCB trace width or the maximum current it can handle using the IPC2221 standard.
         """
         try:
             if args.endswith("internal"):
-                pcb = PCB_calc(d = parse_input(args), internal = True)
-                await ctx.send(embed = pcb.gen_embed())
+                pcb = PCB_calc(d=parse_input(args), internal=True)
+                await ctx.send(embed=pcb.gen_embed())
             elif args.endswith("limit"):
-                pcb = PCB_calc(d = parse_input(args), limit = True)
-                await ctx.send(embed = pcb.gen_embed())
+                pcb = PCB_calc(d=parse_input(args), limit=True)
+                await ctx.send(embed=pcb.gen_embed())
             else:
-                pcb = PCB_calc(d = {})
-                await ctx.send(embed = pcb.gen_embed())
+                pcb = PCB_calc(d={})
+                await ctx.send(embed=pcb.gen_embed())
         except ImpossibleValueError:
             await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
             return
-        
 
     @commands.command()
     async def divider(self, ctx, *, args=None):
@@ -750,8 +748,9 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     async def lm317(self, ctx, *, args=""):
         """
         Calculate resistor values for an LM317 in CV and CC mode. Run the command for more details.
-        """    
+        """
         args_parsed = parse_input(args)
+
         try:
             lm = LM317(d=args_parsed)
             await ctx.send(embed=lm.gen_embed())
@@ -759,7 +758,8 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await util.errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
             return
         except InputDifferenceError:
-            await util.errormsg(ctx,"Difference between input and output voltage is outside of datasheet recommended values.")
+            await util.errormsg(ctx,
+                                "Difference between input and output voltage is outside of datasheet recommended values.")
             return
         except TooFewArgsError:
             await util.errormsg(ctx, "Not enough arguments to compute anything.")
