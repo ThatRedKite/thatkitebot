@@ -5,7 +5,7 @@ from aioredis import Redis
 import base64
 
 
-async def add_message_to_cache(redis: Redis, message: Message):
+async def add_message_to_cache(redis: Redis, message: Message) -> Message:
     """
     Adds a message to the cache. The message is stored in the following format: guild_id:channel_id:user_id:message_id
     """
@@ -20,7 +20,7 @@ async def add_message_to_cache(redis: Redis, message: Message):
     return message
 
 
-async def get_contents(redis: Redis, gid, cid, uid):
+async def get_contents(redis: Redis, gid, cid, uid) -> list:
     """
     Gets the contents all the messages in a channel from a user. Returns a list of messages.,
     """
