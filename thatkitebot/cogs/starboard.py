@@ -206,7 +206,7 @@ class StarBoard(commands.Cog):
                     if not count >= threshold:
                         return
 
-                    already_posted = await check_if_already_posted(message, star_channel)
+                    already_posted = await check_if_already_posted(message, star_channel, self.bot.user.id)
 
                     if not already_posted:
                         await star_channel.send(embed=await generate_embed(message, count, star_emoji))
