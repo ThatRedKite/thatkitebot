@@ -36,7 +36,7 @@ async def generate_embed(message: discord.message, count, star_emoji, return_fil
         embed.description += f"\n\n{content}"
 
     embed.set_thumbnail(url=message.author.avatar.url)
-    embed.set_footer(text=f"{count} {star_emoji}")
+    embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
     embed.color = discord.Color.gold()
     embed.timestamp = message.created_at
     if return_file and aiohttp_session:
@@ -81,7 +81,7 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
     Check if the message has already been posted to the starboard
     """
     async for starmsg in starboard_channel.history().filter(lambda m: m.embeds and m.author.bot):
-        if not starmsg.author == bot_id:
+        if not starmsg.author.id == bot_id:
             continue
         if message.jump_url in starmsg.embeds[0].description:
             starboard_message = starmsg  # the starboard message id
@@ -131,7 +131,7 @@ class StarBoard(commands.Cog):
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="starboard", aliases=["sb"], description="Set the starboard settings for this guild")
     async def starboard(self, ctx: bridge.BridgeContext, threshold: int, channel: discord.TextChannel, emoji: str):
-        if not can_change_settings(ctx):
+        if not await can_change_settings(ctx):
             return
 
         if not await check_permissions(ctx, channel):
