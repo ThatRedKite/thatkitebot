@@ -21,6 +21,7 @@ enabled_ext = [
     "thatkitebot.cogs.imagecog",
     "thatkitebot.cogs.nsfwcog",
     "thatkitebot.cogs.listenercog",
+    "thatkitebot.cogs.uwucog",
     "thatkitebot.cogs.sudocog",
     "thatkitebot.cogs.utilitiescog",
     "thatkitebot.cogs.settings",
