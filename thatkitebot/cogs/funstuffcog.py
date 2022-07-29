@@ -2,15 +2,12 @@
 
 import discord
 import markovify
-from discord.ext import commands, bridge
-import aioredis
+from discord.ext import commands
 import typing
 import glob
 from random import choice, Random
 from thatkitebot.backend import url, util, cache
 from datetime import datetime
-from thatkitebot.cogs.settings import can_change_settings
-
 
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
@@ -291,27 +288,6 @@ class FunStuff(commands.Cog, name="fun commands"):
         trans_table = msg.maketrans({"l": "w", "L": "W", "r": "w", "R": "W"})
         uwuified_text = msg.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo")
         await ctx.send(uwuified_text)
-
-    # Sorry mom
-    @commands.check(can_change_settings)
-    @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
-                           description="Make a channel automatically UwU every message")
-    async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
-        if not can_change_settings(ctx):
-            return await ctx.respond("You don't have permission to change settings.")
-        
-        key = f"uwu_channels:{ctx.guild.id}"
-        if add:
-            await self.redis.sadd(key, channel.id)
-            await ctx.respond(f"{channel.mention} is now an UwU channel.")
-        else:
-            try:
-                await self.redis.srem(key, channel.id)
-            except aioredis.ResponseError:
-                await ctx.respond(f"{channel.mention} is not an UwU channel.")
-                return
-
-            await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))

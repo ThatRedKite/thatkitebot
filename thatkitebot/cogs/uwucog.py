@@ -4,6 +4,7 @@ import re
 import aioredis
 import discord
 from discord.ext import commands, bridge
+from thatkitebot.cogs.settings import can_change_settings
 
 
 async def uwuify(message: str):
@@ -39,6 +40,27 @@ class UwuCog(commands.Cog, name=""):
             await webhook.send(content=await uwuify(message.content),
                                username=message.author.display_name,
                                avatar_url=message.author.avatar.url)
+    
+    # Sorry mom
+    @commands.check(can_change_settings)
+    @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
+                           description="Make a channel automatically UwU every message")
+    async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
+        if not can_change_settings(ctx):
+            return await ctx.respond("You don't have permission to change settings.")
+        
+        key = f"uwu_channels:{ctx.guild.id}"
+        if add:
+            await self.redis.sadd(key, channel.id)
+            await ctx.respond(f"{channel.mention} is now an UwU channel.")
+        else:
+            try:
+                await self.redis.srem(key, channel.id)
+            except aioredis.ResponseError:
+                await ctx.respond(f"{channel.mention} is not an UwU channel.")
+                return
+
+            await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
 
 def setup(bot):
     bot.add_cog(UwuCog(bot))
