@@ -17,3 +17,4 @@ aioredis
 matplotlib
 xkcd
 imagehash
+uwuipy
