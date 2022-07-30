@@ -9,7 +9,10 @@ from thatkitebot.cogs.settings import can_change_settings
 
 async def uwuify(message: str):
     trans_table = message.maketrans({"l": "w", "L": "W", "r": "w", "R": "W"})
-    return message.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo").lower()+' uwu'
+    message = message.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo").lower()
+    if not message.endswith("uwu"):
+        message += " uwu"
+    return message
 
 # Yes this definately needs its own cog shut the fuck up kite (Jk I love you)
 class UwuCog(commands.Cog, name="UwU Commands"):
@@ -37,9 +40,15 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             if not webhook:
                 webhook = await message.channel.create_webhook(name='uwuhook', reason='uwuhook is for uwu channel uwu')
 
+            embeds = []
+            for attachment in message.attachments:
+                if attachment.content_type.startswith('image'):
+                    embeds.append(discord.Embed().set_image(url=attachment.url))
+
             await webhook.send(content=await uwuify(message.content),
                                username=message.author.display_name,
-                               avatar_url=message.author.avatar.url)
+                               avatar_url=message.author.avatar.url,
+                               embeds=embeds)
     
     # Sorry mom
     @commands.check(can_change_settings)
