@@ -64,15 +64,15 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         key = f"uwu_channels:{ctx.guild.id}"
         if add:
             await self.redis.sadd(key, channel.id)
-            await ctx.respond(f"{channel.mention} is now an UwU channel.")
+            await ctx.respond(f"{channel.name} is now an UwU channel.")
         else:
             try:
                 await self.redis.srem(key, channel.id)
             except aioredis.ResponseError:
-                await ctx.respond(f"{channel.mention} is not an UwU channel.")
+                await ctx.respond(f"{channel.name} is not an UwU channel.")
                 return
 
-            await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
+            await ctx.respond(f"{channel.name} is no longer an UwU channel.")
     
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
@@ -84,15 +84,15 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         key = f"uwu_users:{ctx.guild.id}"
         if add:
             await self.redis.sadd(key, user.id)
-            await ctx.respond(f"{user.mention} is now fucked.")
+            await ctx.respond(f"{user.name} is now fucked.")
         else:
             try:
                 await self.redis.srem(key, user.id)
             except aioredis.ResponseError:
-                await ctx.respond(f"{user.mention} is not fucked.")
+                await ctx.respond(f"{user.name} is not fucked.")
                 return
 
-            await ctx.respond(f"{user.mention} is now unfucked.")
+            await ctx.respond(f"{user.name} is now unfucked.")
 
 def setup(bot):
     bot.add_cog(UwuCog(bot))
