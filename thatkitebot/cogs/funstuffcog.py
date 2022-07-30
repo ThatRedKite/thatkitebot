@@ -9,7 +9,6 @@ from random import choice, Random
 from thatkitebot.backend import url, util, cache
 from datetime import datetime
 
-
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
         return ctx.channel.id in [864194488797102091, 424397590214344704]
@@ -289,7 +288,6 @@ class FunStuff(commands.Cog, name="fun commands"):
         trans_table = msg.maketrans({"l": "w", "L": "W", "r": "w", "R": "W"})
         uwuified_text = msg.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo")
         await ctx.send(uwuified_text)
-
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
