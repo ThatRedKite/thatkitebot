@@ -3,6 +3,8 @@ import re
 
 import aioredis
 import discord
+import aiohttp
+import io
 from discord.ext import commands, bridge
 from thatkitebot.cogs.settings import can_change_settings
 
@@ -27,7 +29,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             return
 
         # Check if the message is in an UwU channel
-        if not await self.redis.sismember(f"uwu_channels:{message.guild.id}", message.channel.id):
+        if not await self.redis.sismember(f"uwu_channels:{message.guild.id}", message.channel.id) and not await self.redis.sismember(f"uwu_users:{message.guild.id}", message.author.id):
             return
 
         # Carter's code (Updated)
@@ -40,15 +42,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             if not webhook:
                 webhook = await message.channel.create_webhook(name='uwuhook', reason='uwuhook is for uwu channel uwu')
 
-            embeds = []
+            files = []
             for attachment in message.attachments:
-                if attachment.content_type.startswith('image'):
-                    embeds.append(discord.Embed().set_image(url=attachment.url))
+                async with self.bot.aiohttp_session.get(attachment.url) as resp:
+                    fp = io.BytesIO(await resp.read())
+                    files.append(discord.File(fp, filename=attachment.filename))
 
             await webhook.send(content=await uwuify(message.content),
                                username=message.author.display_name,
                                avatar_url=message.author.avatar.url,
-                               embeds=embeds)
+                               files=files)
     
     # Sorry mom
     @commands.check(can_change_settings)
@@ -70,6 +73,26 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 return
 
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
+    
+    @commands.check(can_change_settings)
+    @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
+                           description="Make a user automatically UwU every message")
+    async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User, add: bool = True):
+        if not await can_change_settings(ctx):
+            return await ctx.respond("You don't have permission to change settings.")
+        
+        key = f"uwu_users:{ctx.guild.id}"
+        if add:
+            await self.redis.sadd(key, user.id)
+            await ctx.respond(f"{user.mention} is now fucked.")
+        else:
+            try:
+                await self.redis.srem(key, user.id)
+            except aioredis.ResponseError:
+                await ctx.respond(f"{user.mention} is not fucked.")
+                return
+
+            await ctx.respond(f"{user.mention} is now unfucked.")
 
 def setup(bot):
     bot.add_cog(UwuCog(bot))
