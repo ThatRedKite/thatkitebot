@@ -57,6 +57,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
     async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
+        """
+        uwuifies an entire channel by deleting the original messages
+        and replacing them with bot clones.
+        
+        Usage: 
+        `+uwu_channel #channel True` - turns it on for #channel. 
+        `+uwu_channel #channel False` - turns it off. 
+               
+        Only admins can use this command.
+        """
         if not await can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
@@ -77,6 +87,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
     async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User, add: bool = True):
+        """
+        uwuifies all messages sent by a specific person by deleting
+        their original messages and replacing them with a bot clone.
+        
+        Usage: 
+        `+uwu_user @user True` - turns it on for @user. 
+        `+uwu_user @user False` - turns it off. 
+               
+        Only admins can use this command.
+        """
         if not await can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
