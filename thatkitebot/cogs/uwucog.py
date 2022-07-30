@@ -12,7 +12,7 @@ async def uwuify(message: str):
     return message.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo").lower()+' uwu'
 
 # Yes this definately needs its own cog shut the fuck up kite (Jk I love you)
-class UwuCog(commands.Cog, name=""):
+class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot = bot
         self.redis: aioredis.Redis = bot.redis
