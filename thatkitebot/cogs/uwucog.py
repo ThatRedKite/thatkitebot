@@ -55,7 +55,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
     async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
-        if not can_change_settings(ctx):
+        if not await can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
         key = f"uwu_channels:{ctx.guild.id}"
