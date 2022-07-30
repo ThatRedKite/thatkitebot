@@ -49,7 +49,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     files.append(discord.File(fp, filename=attachment.filename))
 
             await webhook.send(content=await uwuify(message.content),
-                               username=message.author.display_name,
+                               username=message.author.name + "#" + message.author.discriminator,
                                avatar_url=message.author.avatar.url,
                                files=files)
     
@@ -64,15 +64,15 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         key = f"uwu_channels:{ctx.guild.id}"
         if add:
             await self.redis.sadd(key, channel.id)
-            await ctx.respond(f"{channel.name} is now an UwU channel.")
+            await ctx.respond(f"{channel.mention} is now an UwU channel.")
         else:
             try:
                 await self.redis.srem(key, channel.id)
             except aioredis.ResponseError:
-                await ctx.respond(f"{channel.name} is not an UwU channel.")
+                await ctx.respond(f"{channel.mention} is not an UwU channel.")
                 return
 
-            await ctx.respond(f"{channel.name} is no longer an UwU channel.")
+            await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
     
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
