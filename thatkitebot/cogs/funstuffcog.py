@@ -283,7 +283,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             return
         await ctx.send(embed=embed)
 
-    #@commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
     async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
         """UwUify your text (now even more cursed)"""
