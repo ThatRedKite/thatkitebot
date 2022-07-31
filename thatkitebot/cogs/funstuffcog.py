@@ -282,11 +282,11 @@ class FunStuff(commands.Cog, name="fun commands"):
             await util.errormsg(ctx, "Invalid arguments")
             return
         await ctx.send(embed=embed)
-
+    """
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
     async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
-        """UwUify your text (now even more cursed)"""
+        '''UwUify your text (now even more cursed'''
         # fetch the message from the reference
         if ctx.message.reference:
             seed = ctx.message.reference.message_id
@@ -312,6 +312,6 @@ class FunStuff(commands.Cog, name="fun commands"):
             # if the message is under the limit, just send it as usual
             else:
                 await ctx.send(msg)
-
+    """
 def setup(bot):
     bot.add_cog(FunStuff(bot))
