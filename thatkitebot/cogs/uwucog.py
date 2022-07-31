@@ -7,13 +7,12 @@ import aiohttp
 import io
 from discord.ext import commands, bridge
 from thatkitebot.cogs.settings import can_change_settings
+from uwuipy import uwuipy
 
 
-async def uwuify(message: str):
-    trans_table = message.maketrans({"l": "w", "L": "W", "r": "w", "R": "W"})
-    message = message.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo").lower()
-    if not message.endswith("uwu"):
-        message += " uwu"
+async def uwuify(message: str, id: int):
+    uwu = uwuipy(id)
+    message = uwu.uwuify(message)
     return message
 
 # Yes this definately needs its own cog shut the fuck up kite (Jk I love you)
@@ -48,8 +47,10 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
 
-            await webhook.send(content=await uwuify(message.content),
+
+            await webhook.send(content=await uwuify(message.content, message.id),
                                username=message.author.name + "#" + message.author.discriminator,
+
                                avatar_url=message.author.avatar.url,
                                files=files)
     
@@ -58,6 +59,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
     async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
+        """
+        uwuifies an entire channel by deleting the original messages
+        and replacing them with bot clones.
+        
+        Usage: 
+        `+uwu_channel #channel True` - turns it on for #channel. 
+        `+uwu_channel #channel False` - turns it off. 
+               
+        Only admins can use this command.
+        """
         if not await can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
@@ -78,6 +89,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
     async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User, add: bool = True):
+        """
+        uwuifies all messages sent by a specific person by deleting
+        their original messages and replacing them with a bot clone.
+        
+        Usage: 
+        `+uwu_user @user True` - turns it on for @user. 
+        `+uwu_user @user False` - turns it off. 
+               
+        Only admins can use this command.
+        """
         if not await can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         

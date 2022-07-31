@@ -8,6 +8,8 @@ import glob
 from random import choice, Random
 from thatkitebot.backend import url, util, cache
 from datetime import datetime
+from uwuipy import uwuipy
+import textwrap
 
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
@@ -283,11 +285,33 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
-    async def _uwuify(self, ctx: commands.Context, *, msg: str):
-        """UwUify your text (i'm sorry mom)"""
-        trans_table = msg.maketrans({"l": "w", "L": "W", "r": "w", "R": "W"})
-        uwuified_text = msg.replace('na', 'nya').translate(trans_table).replace("no", "yo").replace("mo", "yo")
-        await ctx.send(uwuified_text)
+    async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
+        """UwUify your text (now even more cursed)"""
+        # fetch the message from the reference
+        if ctx.message.reference:
+            seed = ctx.message.reference.message_id
+            message = await ctx.fetch_message(seed)
+            msg = message.content
+        # if not, grab the seed by using the original message id
+        else:
+            seed = ctx.message.id
+        # if the message content is empty, return
+        if not msg:
+            return
+        async with ctx.channel.typing():
+            # declare a new uwu object using the message id as seed
+            uwu = uwuipy(seed)
+            msg = uwu.uwuify(msg)
+            # if the message is longer than 2 000 characters
+            if len(msg) > 2000:
+                # split it up while maintaining whole words
+                output = textwrap.wrap(msg, 2000)
+                # for each new "message" send it in the channel
+                for _msg in output:
+                    await ctx.send(_msg)
+            # if the message is under the limit, just send it as usual
+            else:
+                await ctx.send(msg)
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
