@@ -13,7 +13,7 @@ import json
 from discord.ext import commands, bridge
 
 __name__ = "ThatKiteBot"
-__version__ = "3.9"
+__version__ = "3.10"
 __author__ = "ThatRedKite and contributors"
 
 enabled_ext = [
