@@ -47,8 +47,10 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
 
+
             await webhook.send(content=await uwuify(message.content, message.id),
-                               username=message.author.display_name,
+                               username=message.author.name + "#" + message.author.discriminator,
+
                                avatar_url=message.author.avatar.url,
                                files=files)
     
@@ -103,15 +105,15 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         key = f"uwu_users:{ctx.guild.id}"
         if add:
             await self.redis.sadd(key, user.id)
-            await ctx.respond(f"{user.mention} is now fucked.")
+            await ctx.respond(f"{user.name} is now fucked.")
         else:
             try:
                 await self.redis.srem(key, user.id)
             except aioredis.ResponseError:
-                await ctx.respond(f"{user.mention} is not fucked.")
+                await ctx.respond(f"{user.name} is not fucked.")
                 return
 
-            await ctx.respond(f"{user.mention} is now unfucked.")
+            await ctx.respond(f"{user.name} is now unfucked.")
 
 def setup(bot):
     bot.add_cog(UwuCog(bot))
