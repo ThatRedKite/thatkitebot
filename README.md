@@ -1,4 +1,4 @@
-## KiteBot
+## ThatKiteBot
 A Discord bot focused on science commands and fun stuff. No moderation features for now.
 
 ## Installation and first run
@@ -25,13 +25,15 @@ After it finishes starting hit `ctrl+c` to stop it and wait until it finishes.
 
 ### Set API keys
 ```
-nano ./data/init_settings.yml 
+nano ./data/init_settings.json 
 ```
 This will open nano editor where you will see something like this:
-```
-discord_token: ''
-prefix: ''
-tenor_token: ''
+```json
+{
+    "discord_token": "",
+    "prefix": "",
+    "tenor_token": "",
+}
 ```
 The tenor token is optional. `discord_token` is the discord bot API token you can get from [discord](https://discord.com/developers/). `prefix` is what the bot will use as a command prefix for example `+` or `ex` or any other string or character. Don't forger to turn on `Privileged Gateway Intents` in the discord bot panel (next to the bot API token).
 
