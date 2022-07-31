@@ -134,6 +134,82 @@ class UtilityCommands(commands.Cog, name="utility commands"):
 
         await ctx.send(embed=embed)
 
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.command(pass_context=True)
+    async def gdpr(self, ctx):
+        """
+        This command shows you what data the bot collects and how it is used.
+        """
+        embed = discord.Embed(
+            color=ec.purple_violet,
+            title="ThatKiteBot Privacy Policy",
+            description="""ThatKiteBot is run by ThatRedKite#4842. This privacy policy will
+            explain how this bot uses the personal data collected from you when you use it."""
+        )
+        embed.add_field(
+            name="What data does the bot collect?",
+            value="""
+            The bot collects the following data:
+            - Your Discord ID
+            - Your Discord username
+            - Your Discord avatar
+            - Reactions you add to messages
+            - Messages sent by you
+            - Any other data you provide the bot with while using it's commands"""
+        )
+        embed.add_field(
+            name="How is the data collected?",
+            value="""
+            The bot collects the data it needs to function. It does this only by using the Discord API.
+            You directly provide the bot with most of the data we collect. The bot collects and processes the data when you:
+            - Send a messages
+            - Use a command
+            - Use a reaction
+            """
+        )
+        embed.add_field(
+            name="How will your data be used?",
+            value="""
+            The bot collects so that it can:
+            - Process your commands
+            - Provide Markov functionality
+            - Understand the context of commands
+            The data is not transferred to any third parties.
+            """
+        )
+        embed.add_field(
+            name="How is your data stored?",
+            value="""
+            The bot securely stores the data on a server in Nuremberg (Germany).
+            - The bot does not permanently store message content it is only used for the Markov chain and thus stays in RAM only.
+            - The RAM data is wiped whenever the bot is rebooted.
+            - The only data that is permanently stored are Discord IDs.
+            """
+        )
+        embed.add_field(
+            name="What are your data protection rights?",
+            value="""
+            We would like to make sure you are fully aware of all of your data protection rights. Every user is entitled to the following:
+            If you make a request, we have one month to respond to you. If you would like to exercise any of these rights, please contact ThatRedKite#4842 on Discord.
+            """
+        )
+        embed.add_field(
+            name="Your rights listed below:",
+            inline=False,
+            value="""
+            The right to access – You have the right to request us for copies of your personal data. We may charge you a small fee for this service.
+            The right to rectification – You have the right to request that we correct any information you believe is inaccurate. You also have the right to request us to complete the information you believe is incomplete.
+            The right to erasure – You have the right to request that we erase your personal data, under certain conditions.
+            The right to restrict processing – You have the right to request that we restrict the processing of your personal data, under certain conditions.
+            The right to object to processing – You have the right to object to our processing of your personal data, under certain conditions.
+            The right to data portability – You have the right to request that we transfer the data that we have collected to another organization, or directly to you, under certain conditions.
+            """
+        )
+        embed.set_thumbnail(url=str(self.bot.user.avatar.url))
+        embed.set_footer(text="ThatKiteBot v{} this policy was last updated: ".format(self.bot.version))
+        embed.timestamp = datetime(2022, 7, 30, 23, 55, 14, 0)
+        await ctx.send(embed=embed)
+
     @commands.command()
     async def invite(self, ctx):
         """This sends you an invite for the bot if you want to add it to one of your servers."""
