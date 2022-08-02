@@ -1,6 +1,5 @@
 from ast import alias
 import re
-
 import aioredis
 import discord
 import aiohttp
@@ -14,6 +13,7 @@ async def uwuify(message: str, id: int):
     uwu = uwuipy(id)
     message = uwu.uwuify(message)
     return message
+
 
 # Yes this definately needs its own cog shut the fuck up kite (Jk I love you)
 class UwuCog(commands.Cog, name="UwU Commands"):
@@ -36,7 +36,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             await message.delete()
 
             webhooks = await message.channel.webhooks()
-            webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
+            webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
 
             if not webhook:
                 webhook = await message.channel.create_webhook(name='uwuhook', reason='uwuhook is for uwu channel uwu')
@@ -47,14 +47,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
 
-
-            await webhook.send(content=await uwuify(message.content, message.id),
-                               username=message.author.name + "#" + message.author.discriminator,
-
-                               avatar_url=message.author.avatar.url,
-                               files=files)
+            await webhook.send(
+                content=await uwuify(message.content, message.id),
+                allowed_mentions=discord.AllowedMentions.none(),
+                username=message.author.name + "#" + message.author.discriminator,
+                avatar_url=message.author.avatar.url,
+                files=files
+            )
     
     # Sorry mom
+    # I told her that you were sorry
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
