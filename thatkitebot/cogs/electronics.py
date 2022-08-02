@@ -58,14 +58,12 @@ class conversion:
         self.mode = "length"
 
     def calculate(self):
-        if self.mm is not None and self.mil is None and self.oz is None:
+        if self.mm and not self.mil and not self.oz:
             self.mil = round(pcb_mod.mm2mil(self.mm), 3)
             self.mode = "mil"
-        elif self.mm is None and self.mil is not None and self.oz is None:
+        elif not self.mm and self.mil and not self.oz:
             self.mm = round(pcb_mod.mil2mm(self.mil), 3)
             self.mode = "mm"
-        elif self.mm is None and self.mil is None and self.oz is not None:
-            self.mil = round(pcb_mod.weight2mil(self.oz), 3)
             self.mm = round(pcb_mod.mil2mm(self.mil) * 1000, 1)
             self.mode = "oz"
         else:
