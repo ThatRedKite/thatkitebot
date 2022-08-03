@@ -9,7 +9,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
     """
     def __init__(self, bot):
         self.bot: commands.Bot = bot
-        self.dirname = bot.dirname
+        self.dirname = bot.dir_name
 
     @commands.is_owner()
     @commands.command()

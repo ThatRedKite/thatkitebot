@@ -36,14 +36,14 @@ enabled_ext = [
 ]
 
 tempdir = "/tmp/tkb/"
-datadir = "/app/data"
-dirname = "/app/thatkitebot"
+data_dir = "/app/data"
+dir_name = "/app/thatkitebot"
 
 # this is a pretty dumb way of doing things, but it works
 intents = discord.Intents.all()
 
 # check if the init_settings.json file exists and if not, create it
-if not Path(os.path.join(datadir, "init_settings.json")).exists():
+if not Path(os.path.join(data_dir, "init_settings.json")).exists():
     print("No init_settings.json file found. Creating one now.")
     settings_dict_empty = {
         "discord token": "",
@@ -51,17 +51,17 @@ if not Path(os.path.join(datadir, "init_settings.json")).exists():
         "prefix": "+",
     }
     # write the dict as json to the init_settings.json file with the json library
-    with open(os.path.join(datadir, "init_settings.json"), "w") as f:
+    with open(os.path.join(data_dir, "init_settings.json"), "w") as f:
         # dump the dict as json to the file with an indent of 4 and support for utf-8
         json.dump(settings_dict_empty, f, indent=4, ensure_ascii=False)
     # make the user 1000 the owner of the file, so they can edit it
-    os.chown(os.path.join(datadir, "init_settings.json"), 1000, 1000)
+    os.chown(os.path.join(data_dir, "init_settings.json"), 1000, 1000)
 
     # exit the program
     exit(1)
 
 # load the init_settings.json file with the json library
-with open(os.path.join(datadir, "init_settings.json"), "r") as f:
+with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
     try:
         settings_dict = json.load(f)
         # get the discord token, the tenor api key, and the prefix from the dict
@@ -76,26 +76,26 @@ with open(os.path.join(datadir, "init_settings.json"), "r") as f:
 
 # define the bot class
 class ThatKiteBot(bridge.Bot, ABC):
-    def __init__(self, command_prefix, dirname, tt, help_command=None, description=None, **options):
+    def __init__(self, command_prefix, dir_name, tt, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
         # ---static values---
         self.prefix = command_prefix
         # paths
-        self.dirname = dirname
-        self.datadir = "/app/data/"
-        self.tempdir = "/tmp/"
+        self.dir_name = dir_name
+        self.data_dir = "/app/data/"
+        self.temp_dir = "/tmp/"
 
         # info
         self.version = __version__
-        self.starttime = datetime.now()
+        self.start_time = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
 
         # ---dynamic values---
 
         # settings
-        self.debugmode = False
-        self.tenortoken = tt
+        self.debug_mode = False
+        self.tenor_token = tt
         # sessions
         self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
@@ -128,7 +128,7 @@ class ThatKiteBot(bridge.Bot, ABC):
 
 # create the bot instance
 print(f"Starting ThatKiteBot v {__version__} ...")
-bot = ThatKiteBot(prefix, dirname, tt=tenor_token, intents=intents)
+bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents)
 print(f"Loading {len(enabled_ext)} extensions: \n")
 
 # load the cogs aka extensions

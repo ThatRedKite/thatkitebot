@@ -7,7 +7,8 @@ import discord
 from discord.ext import commands
 from thatkitebot.backend import util
 
-def pp(a):
+
+def preprocessor(a):
     if type(a) is str:
         return a.upper()
     else:
@@ -19,9 +20,9 @@ async def can_change_settings(ctx: commands.Context):
     Checks if the user has the permission to change settings.
     """
     channel: discord.TextChannel = ctx.channel
-    isowner = await ctx.bot.is_owner(ctx.author)
-    isadmin = channel.permissions_for(ctx.author).administrator
-    return isowner or isadmin
+    is_owner = await ctx.bot.is_owner(ctx.author)
+    is_admin = channel.permissions_for(ctx.author).administrator
+    return is_owner or is_admin
 
 
 class SettingsCog(commands.Cog, name="settings"):
@@ -59,15 +60,15 @@ class SettingsCog(commands.Cog, name="settings"):
             if m.channel == channel and m.author is author:
                 return m.content.lower() in yes_choices
 
-        if not pp(name) in self.possible_settings:
+        if not preprocessor(name) in self.possible_settings:
             await util.errormsg(
                 ctx,
                 f"This seems to be an invalid setting! Execute {ctx.prefix}settings help to see all availible settings")
             return
-        await ctx.send(f"Add the setting `{pp(name)}` with the value `{pp(arg)}` to the settings? (y/n)")
+        await ctx.send(f"Add the setting `{preprocessor(name)}` with the value `{preprocessor(arg)}` to the settings? (y/n)")
         msg = await self.bot.wait_for("message", timeout=10, check=check)
         if msg.content in yes_choices:
-            await self.redis.hset(ctx.guild.id, pp(name), pp(arg))
+            await self.redis.hset(ctx.guild.id, preprocessor(name), preprocessor(arg))
             await ctx.send("Okay, done.", delete_after=5.0)
         else:
             await ctx.send("Cancelled.", delete_after=5.0)
@@ -128,7 +129,7 @@ class SettingsCog(commands.Cog, name="settings"):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         # this initializes the settings for the guild the bot joins
-        initdict = {
+        init_dict = {
             "NSFW": "FALSE",
             "IMAGE": "TRUE",
             "REPOST": "FALSE",
@@ -136,8 +137,8 @@ class SettingsCog(commands.Cog, name="settings"):
         }
         # check if there already are settings for the guild present
         if not await self.redis.hexists(guild.id, "IMAGE"):
-            # set the settings that were defined in initdict
-            await self.redis.hmset(guild.id, initdict)
+            # set the settings that were defined in init_dict
+            await self.redis.hmset(guild.id, init_dict)
 
 
 def setup(bot):

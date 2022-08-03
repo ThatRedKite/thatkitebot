@@ -147,6 +147,38 @@ class StarBoard(commands.Cog):
             f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}.")
 
     @commands.check(can_change_settings)
+    @bridge.bridge_command(name="channel_specific_starboard", aliases=["sbcs"],
+                           description="A starboard that will only listen in specific channels")
+    async def _starboard_channel_specific(self,
+                                          ctx,
+                                          threshold: int,
+                                          emoji,
+                                          starboard_channel: discord.TextChannel,
+                                          listen_channel: discord.TextChannel
+                                          ):
+
+        if not await can_change_settings(ctx):
+            return
+
+        if not await check_permissions(ctx, listen_channel):
+            return
+
+        if threshold < 1:
+            await ctx.respond("The threshold must be at least 1.")
+            return
+
+        if not listen_channel:
+            await ctx.respond("You need to specify a channel to listen in!")
+            return
+
+        assert check_emoji(emoji)
+
+        await set_starboard(self.redis, starboard_channel.id, 2, threshold, emoji, ctx.guild.id, [str(listen_channel.id)])
+        await ctx.respond(
+            f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
+        )
+
+    @commands.check(can_change_settings)
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
                            description="Set the starboard blacklist for this guild")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
@@ -184,18 +216,21 @@ class StarBoard(commands.Cog):
         star_emoji = starboard_settings["star_emoji"]
         threshold = int(starboard_settings["threshold"])
         star_channel = await self.bot.fetch_channel(starboard_settings["channel_id"])
+        channels = starboard_settings["channels"].split(";")
         reaction_emoji = str(payload.emoji)
 
         # load the message into the internal cache
         message = await channel.fetch_message(payload.message_id)
 
-        # make sure nothing in the starboard channel is starred and put onto the starboard
-        if star_channel == channel or not starboard_settings:
-            return
-
         match mode:
-            case 1:
-                # threshold mode
+            case 1 | 2:
+                # make sure nothing in the starboard channel is starred and put onto the starboard
+                if star_channel == channel or not starboard_settings:
+                    return
+
+                if mode == 2 and str(message.channel.id) not in channels:
+                    return
+
                 # check if the star emoji is the same as the starboard emoji
                 if reaction_emoji == star_emoji:
                     # sort the reactions to get the reaction count for the star emoji
@@ -215,7 +250,6 @@ class StarBoard(commands.Cog):
                         await already_posted.edit(embed=await generate_embed(message, count, star_emoji))
                 else:
                     return
-
             case _:
                 return
 

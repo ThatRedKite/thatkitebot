@@ -13,7 +13,7 @@ from PIL import Image as PILImage
 from thatkitebot.cogs.settings import can_change_settings
 from thatkitebot.backend.util import errormsg
 
-tenorpattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
+tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 otherpattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 
 
@@ -34,14 +34,14 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.aiohttp = bot.aiohttp_session
         self.settings_redis: aioredis.Redis = bot.redis
         self.repost_redis: aioredis.Redis = bot.redis_repost
-        self.tt = bot.tenortoken
+        self.tt = bot.tenor_token
 
     async def get_tenor_image(self, url, token):
         """
         Downloads a tenor gif and returns the hash of the image.
         """
         # define the header and the payload:
-        tenor = tenorpattern.findall(url)
+        tenor = tenor_pattern.findall(url)
         if not tenor:
             return
         headers = {"User-Agent": "ThatKiteBot/3.7", "content-type": "application/json"}
@@ -182,11 +182,11 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         if not message.embeds and not message.attachments:
             return  # return if the message does not contain an image
 
-        async for imagehash in self.extract_imagehash(message):
+        async for image_hash in self.extract_imagehash(message):
             repost = False
 
             pipe = self.repost_redis.pipeline()
-            async for distance, key, attrs in self.check_distance(imagehash):
+            async for distance, key, attrs in self.check_distance(image_hash):
                 # if the distance is less than 20, it's a repost
                 if distance <= 20:
                     jump_url = attrs["jump_url"]
@@ -203,7 +203,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                 await pipe.hincrby(key, "repost_count", 1)  # increment the repost count
             else:
                 # the message does not appear to be a repost, let's add it to the database
-                await pipe.hmset(f"{message.id}:{imagehash}", {"jump_url": message.jump_url, "repost_count": 0})
+                await pipe.hmset(f"{message.id}:{image_hash}", {"jump_url": message.jump_url, "repost_count": 0})
 
             await pipe.execute()  # execute the pipeline to commit the changes
             await pipe.close()  # close the pipeline

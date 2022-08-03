@@ -43,11 +43,11 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.bot = bot
         self.sep = asyncio.Semaphore(12)
         self.pp = ProcessPoolExecutor(max_workers=4)
-        self.td = bot.tempdir  # temp directory
-        self.dd = bot.datadir  # data directory
+        self.td = bot.temp_dir  # temp directory
+        self.dd = bot.data_dir  # data directory
         self.ll = asyncio.get_event_loop()
         self.session = self.bot.aiohttp_session
-        self.tt = self.bot.tenortoken
+        self.tt = self.bot.tenor_token
         self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
     async def cog_command_error(self, ctx, error):

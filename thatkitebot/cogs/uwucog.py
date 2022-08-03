@@ -117,5 +117,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
             await ctx.respond(f"{user.name} is now unfucked.")
 
+
 def setup(bot):
     bot.add_cog(UwuCog(bot))

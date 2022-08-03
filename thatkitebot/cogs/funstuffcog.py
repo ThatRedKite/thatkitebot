@@ -31,7 +31,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self._last_member = None
-        self.dirname = bot.dirname
+        self.dirname = bot.dir_name
         self.redis = bot.redis_cache
 
     @commands.command()
@@ -47,7 +47,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
         """
-        if self.bot.debugmode:
+        if self.bot.debug_mode:
             try:
                 print("Markov debug")
                 print("user", user.name)
@@ -62,7 +62,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             
         guild = channel.guild
         
-        if self.bot.debugmode:
+        if self.bot.debug_mode:
             print("username 2:", user.name)
             print("user id 2:", user.id)
             print("channel name: 2", channel.name)
@@ -72,32 +72,32 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.channel.typing():
             try:
                 # try to get the messages from the cache
-                messagelist = await cache.get_contents(self.redis, guild.id, channel.id, user.id)
-                if not len(messagelist) > 300:
+                message_list = await cache.get_contents(self.redis, guild.id, channel.id, user.id)
+                if not len(message_list) > 300:
                     # populate the cache if there are less than 300 messages
                     async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
                         await cache.add_message_to_cache(self.redis, message)  # add the message to the cache
-                        messagelist.append(str(message.clean_content))  # add the message to the messagelist
+                        message_list.append(str(message.clean_content))  # add the message to the message_list
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
             try:
-                gen1 = markovify.NewlineText("\n".join(messagelist))  # generate the model from the messages
+                gen1 = markovify.NewlineText("\n".join(message_list))  # generate the model from the messages
             except KeyError:
                 await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
                 return
 
-            genlist = set()  # create a set to avoid duplicate messages (only works sometimes)
+            gen_set = set()  # create a set to avoid duplicate messages (only works sometimes)
             for i in range(10):
                 a = gen1.make_sentence(tries=30)
                 if a:
-                    genlist.add(a)  # add the string a to the genlist
+                    gen_set.add(a)  # add the string :a: to the gen_set
                 else:
                     a = gen1.make_short_sentence(5)  # try to make a short sentence instead
-                    genlist.add(a)  # add the string to the genlist
+                    gen_set.add(a)  # add the string to the gen_set
 
-            if len(genlist) > 0:
-                out = ". ".join([a for a in genlist if a])  # join the strings together with periods
+            if len(gen_set) > 0:
+                out = ". ".join([a for a in gen_set if a])  # join the strings together with periods
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
@@ -163,26 +163,8 @@ class FunStuff(commands.Cog, name="fun commands"):
             "baller", "chad", "I don't think so"
         ]
         user = ctx.message.author.id
-        if user == 454210418592841740 and args.lower() == "my ass":
-            await ctx.send("🍑")
-            return
-        elif "ferracult" in args.lower():
-            await ctx.send("cringe")
-            return
-        elif "geckult" in args.lower():
-            await ctx.send("cringe")
-            return
-        elif "piss" in args.lower():
-            await ctx.send("cringe")
-            return
-        elif "femboy" in args.lower():
-            await ctx.send("femboy cult best cult")
-            return
-        elif "furri" in args.lower():
-            await ctx.send("cringe")
-            return
-            
-        if ctx.message.reference is not None:
+
+        if ctx.message.reference:
             str_seed = ctx.message.reference.message_id
         else:
             str_seed = abs(hash(str(user) + str(args) + str(datetime.today().strftime('%Y-%m-%d')))) % (10 ** 8)
@@ -313,5 +295,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             else:
                 await ctx.send(msg)
     """
+
+
 def setup(bot):
     bot.add_cog(FunStuff(bot))

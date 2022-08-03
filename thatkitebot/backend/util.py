@@ -30,18 +30,3 @@ async def errormsg(ctx=None, msg: str="", exc="", embed_only=False):
         embed.color = EmbedColors.traffic_red
         embed.set_footer(text=exc)
         return embed
-
-
-def clear_temp_folder():
-    """
-        a simple function to clear the temp data folder of the bot+
-    """
-    cleanupfiles = glob.glob(os.path.join("/tmp/", "*.png"))
-    cleanupfiles += glob.glob(os.path.join("/tmp/", "*.webp"))
-    cleanupfiles += glob.glob(os.path.join("/tmp/", "*.gif"))
-    cleanupfiles += glob.glob(os.path.join("/tmp/", "*.mp3"))
-    for file in cleanupfiles:
-        os.remove(file)
-
-
-

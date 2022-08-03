@@ -10,11 +10,11 @@ async def add_message_to_cache(redis: Redis, message: Message) -> Message:
     Adds a message to the cache. The message is stored in the following format: guild_id:channel_id:user_id:message_id
     """
     key = f"{message.guild.id}:{message.channel.id}:{message.author.id}:{message.id}"
-    msgdict = dict(
+    msg_dict = dict(
         content=base64.b64encode(message.clean_content.encode("UTF-8")),
         created_at=int(message.created_at.timestamp())
     )
-    await redis.hmset(key, msgdict)
+    await redis.hmset(key, msg_dict)
     # set the expiration time of the message in the cache to 1 week
     await redis.expire(key, 604800)
     return message

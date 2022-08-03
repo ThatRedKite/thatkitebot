@@ -12,23 +12,23 @@ import xkcd
 from bs4 import BeautifulSoup
 from thatkitebot.backend.util import EmbedColors as ec
 
-gifpattern = re.compile(r"(^https?://\S+.(?i)(gif))")  # only gif images
+gif_pattern = re.compile(r"(^https?://\S+.(?i)(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-otherpattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
+other_pattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
-tenorpattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
+tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
 emoji_pattern = re.compile(r"<:\S+:\n+>")
 
 
-async def imageurlgetter(session: aiohttp.ClientSession, history, token=None, gif=False):
+async def get_image_url(session: aiohttp.ClientSession, history, token=None, gif=False):
     """
     Deprecated.
     """
     if gif:
-        pattern = gifpattern
+        pattern = gif_pattern
     else:
-        pattern = otherpattern
+        pattern = other_pattern
 
     async for message in history:
         attachments = message.attachments
@@ -42,7 +42,7 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token=None, gi
             # this should only be one value, or no value at all
             found_url = pattern.findall(message.clean_content)
             # the tenor ID of the GIF.It only contains anything, if there actually is a tenor GIF
-            tenor = tenorpattern.findall(message.clean_content)
+            tenor = tenor_pattern.findall(message.clean_content)
             if found_url and not tenor:  # unpack the url and the file extension
                 url, fe = found_url[0]
                 break  # break the loop, a valid url has been found
@@ -59,7 +59,7 @@ async def imageurlgetter(session: aiohttp.ClientSession, history, token=None, gi
     return str(url)
 
 
-async def imagedownloader(session: aiohttp.ClientSession, url: str):
+async def download_image(session: aiohttp.ClientSession, url: str):
     """
     Downloads an image from a given URL. Deprecated.
     """
@@ -119,9 +119,9 @@ async def monosodiumglutamate(session, tags):
     return urls
 
 
-async def yanurlget(session, islist: bool = False, tags=None):
+async def get_yan_url(session, islist: bool = False, tags=None):
     """
-    Gets a random image from yande.re based on the tags.
+    Gets a random image from yande.re, based on the tags.
     """
     if tags is None:
         tags = list()
@@ -299,6 +299,7 @@ async def _xkcd(args=None):
     embed.set_image(url=f"{comic.imageLink}")
     embed.color = ec.blood_orange
     return embed
+
 
 async def _contributorjson(session: aiohttp.ClientSession):
     headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "text/html"}

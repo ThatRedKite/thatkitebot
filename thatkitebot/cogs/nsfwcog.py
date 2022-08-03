@@ -26,9 +26,9 @@ class NSFW(commands.Cog, name="NSFW commands"):
     @commands.command(hidden=True, aliases=["rule34"])
     async def r34(self, ctx, *, tags):
         with ctx.channel.typing():
-            myurl = await url.r34url(session=self.bot.aiohttp_session, tags=tags)
-            if myurl:
-                await ctx.send(embed=myurl)
+            chosen_url = await url.r34url(session=self.bot.aiohttp_session, tags=tags)
+            if chosen_url:
+                await ctx.send(embed=chosen_url)
             else:
                 await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__")
 
@@ -37,10 +37,10 @@ class NSFW(commands.Cog, name="NSFW commands"):
     async def yan(self, ctx, *, tags):
         #  only proceed if nsfw is enabled in the bot's settings
         with ctx.channel.typing():
-            myurl = await url.yanurlget(session=self.bot.aiohttp_session, tags=tags)
-            embed = discord.Embed(title="Link To picture", url=myurl)
+            chosen_url = await url.get_yan_url(session=self.bot.aiohttp_session, tags=tags)
+            embed = discord.Embed(title="Link To picture", url=chosen_url)
             embed.color = ec.telemagenta
-            embed.set_image(url=myurl)
+            embed.set_image(url=chosen_url)
             await ctx.send(embed=embed)
 
     @commands.is_nsfw()  # only proceed when in an nsfw channel
@@ -51,9 +51,9 @@ class NSFW(commands.Cog, name="NSFW commands"):
         #  only proceed if count is below 10, otherwise send an error message
         else:
             with ctx.channel.typing():
-                urllist = await url.yanurlget(session=self.bot.aiohttp_session, islist=True, tags=tags )
-                outlist = set(choices(urllist, k=count + 2))
-                for x in outlist:
+                url_list = await url.get_yan_url(session=self.bot.aiohttp_session, islist=True, tags=tags)
+                output_list = set(choices(url_list, k=count + 2))
+                for x in output_list:
                     await ctx.send(x)
                     await asyncio.sleep(0.2)
 
@@ -65,23 +65,23 @@ class NSFW(commands.Cog, name="NSFW commands"):
         else:
             #  only proceed if count is below 10
             with ctx.channel.typing():
-                urllist = await url.r34url(session=self.bot.aiohttp_session, tags=tags, islist=True, count=count)
-                if urllist == ["__Nothing Found! Please check your tags and try again!__"]:
-                    await errormsg(ctx, urllist[0])
+                url_list = await url.r34url(session=self.bot.aiohttp_session, tags=tags, islist=True, count=count)
+                if url_list == ["__Nothing Found! Please check your tags and try again!__"]:
+                    await errormsg(ctx, url_list[0])
                 else:
-                    for embed in urllist:
+                    for embed in url_list:
                         await ctx.send(embed=embed)
 
     @commands.is_nsfw()  # only proceed when in an nsfw channel
     @commands.command(hidden=True)
     async def e621(self, ctx, *, tags):
         async with ctx.channel.typing():
-            urllist = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
+            url_list = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
             try:
-                id, myurl = choice(urllist)
-                embed = discord.Embed(title="link to original post", url=f"https://e621.net/posts/{id}")
+                post_id, chosen_id = choice(url_list)
+                embed = discord.Embed(title="link to original post", url=f"https://e621.net/posts/{post_id}")
                 embed.color = ec.telemagenta
-                embed.set_image(url=myurl)
+                embed.set_image(url=chosen_id)
             except IndexError:
                 embed = await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__", embed_only=True)
             finally:
@@ -91,13 +91,13 @@ class NSFW(commands.Cog, name="NSFW commands"):
     @commands.command(hidden=True)
     async def e621spam(self, ctx, *, tags):
         async with ctx.channel.typing():
-            urllist = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
+            url_list = await url.monosodiumglutamate(self.bot.aiohttp_session, tags)
             for x in range(5):
                 try:
-                    id, myurl = choice(urllist)
-                    embed = discord.Embed(title="link to original post", url=f"https://e621.net/posts/{id}")
+                    post_id, chosen_url = choice(url_list)
+                    embed = discord.Embed(title="link to original post", url=f"https://e621.net/posts/{post_id}")
                     embed.color = ec.telemagenta
-                    embed.set_image(url=myurl)
+                    embed.set_image(url=chosen_url)
                 except IndexError:
                     embed = await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__", embed_only=True)
                 finally:

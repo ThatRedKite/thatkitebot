@@ -13,7 +13,7 @@ class ListenerCog(commands.Cog):
     The perfect place to put random listeners in.
     """
     def __init__(self, bot):
-        self.dirname = bot.dirname
+        self.dir_name = bot.dir_name
         self.redis_cache: aioredis.Redis = bot.redis_cache
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.repost_redis: aioredis.Redis = bot.redis_repost
@@ -33,7 +33,7 @@ class ListenerCog(commands.Cog):
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
             case commands.NotOwner:
-                await errormsg(ctx, "Only the bot owner can do this! Contact them if needed.")
+                await errormsg(ctx, f"Only the bot owner can do this! Contact them if needed.")
 
     @tasks.loop(hours=1.0)
     async def reset_invoke_counter(self):

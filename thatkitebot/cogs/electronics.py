@@ -30,6 +30,9 @@ class ImpossibleValueError(Exception):
 
 
 def parse_input(s):
+    """
+    Simple function that parses a string to extract values
+    """
     s = s.replace("=", " ").split(" ")
     s_dict = dict(zip(s[::2], s[1::2]))
     for key in s_dict.keys():
@@ -46,7 +49,7 @@ def slash_preprocessor(a: str):
     return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
 
 
-class conversion:
+class PCBConversion:
     """
     Conversion commands for PCB components.
     """
@@ -678,9 +681,9 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         Convert between mils and millimeters, or oz/ft² to mils and millimeters
         """
         try:
-            conv = conversion(d=parse_input(args))
+            conv = PCBConversion(d=parse_input(args))
         except:
-            conv = conversion(d={})
+            conv = PCBConversion(d={})
         await ctx.send(embed=conv.gen_embed())
 
     @commands.command(name="pcbcalculator", aliases=["pcbtrace", "trace", "pcb", "tracewidth", "tracecurrent"])

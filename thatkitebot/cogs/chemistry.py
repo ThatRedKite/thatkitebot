@@ -22,9 +22,9 @@ class ChemCog(commands.Cog, name="Chemistry commands"):
         Calculates the molar mass of a chemical formula.
         """
         try:
-            masspattern = re.compile("mass: (\S+)\n")
+            mass_pattern = re.compile(r"mass: (\S+)\n")
             mass_analyzed = molmass.analyze(formula)
-            avg, mono, nom, mean = re.findall(masspattern, mass_analyzed)
+            avg, mono, nom, mean = re.findall(mass_pattern, mass_analyzed)
             embed = discord.Embed(
                 title=f"Molar mass for {formula} (in g/mol)",
                 description=f"Average mass: `{avg}`\nMonoisotopic mass: `{mono}`\nNominal mass: `{nom}`\nMean mass: `{mean}`")

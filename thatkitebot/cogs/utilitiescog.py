@@ -26,7 +26,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         """
         process = psutil.Process(self.bot.pid)
         mem = process.memory_info()[0]
-        redismem = (await self.redis.info())["used_memory"] + (await self.bot.redis_cache.info())["used_memory"]
+        redis_memory = (await self.redis.info())["used_memory"] + (await self.bot.redis_cache.info())["used_memory"]
 
         cpu = psutil.cpu_percent(interval=None)
         ping = round(self.bot.latency * 1000, 1)
@@ -36,7 +36,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
 
         embed = discord.Embed()
         embed.add_field(name="System status",
-                        value=f"""RAM usage: **{si_prefix.si_format(mem + redismem)}B**
+                        value=f"""RAM usage: **{si_prefix.si_format(mem + redis_memory)}B**
                                 CPU usage: **{cpu} %**
                                 uptime: **{uptime}**
                                 ping: **{ping} ms**""")
@@ -79,14 +79,14 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         )
         embed.set_thumbnail(url=str(self.bot.user.avatar.url))
         
-        # dictionary for discord username lookup from github username
+        # dictionary for discord username lookup from GitHub username
         # format: "githubusername":"discordID"
         authordict = {
-            "ThatRedKite":"<@249056455552925697>",
-            "diminDDL":"<@312591385624576001>", 
-            "Cuprum77":"<@323502550340861963>",
-            "laserpup":"<@357258808105500674>",
-            "woo200":"<@881362093427814440>"
+            "ThatRedKite": "<@249056455552925697>",
+            "diminDDL": "<@312591385624576001>",
+            "Cuprum77": "<@323502550340861963>",
+            "laserpup": "<@357258808105500674>",
+            "woo200": "<@881362093427814440>"
         }
         jsonData = await url._contributorjson(self.bot.aiohttp_session)
         # get a list of "login" field values from json string variable jsonData

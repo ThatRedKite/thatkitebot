@@ -22,8 +22,8 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
     """
     if "welcome" in message.content.lower():
         write = True
-        guild, channel, author  = message.guild.id, message.channel.id, message.author.id
-        unixtime = time.mktime(message.created_at.timetuple())
+        guild, channel, author = message.guild.id, message.channel.id, message.author.id
+        unix_time = time.mktime(message.created_at.timetuple())
         join_key = f"latest_join:{guild}"
         assert await redis.exists(join_key)  # make sure there is a last_joined key
         joined_dict = await redis.hgetall(join_key)
@@ -41,7 +41,7 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
             await redis.hset(usr_key, "welcome_count", 1)
 
         if write:
-            await redis.hset(usr_key, "latest_welcome", int(unixtime))
+            await redis.hset(usr_key, "latest_welcome", int(unix_time))
 
 
 class WelcomeCog(commands.Cog, name="Welcome counter"):
@@ -72,20 +72,19 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         """
         Updates the latest_join key for the given member. This is called by the bot on every member join.
         """
-        welcomechannel = joinedmember.guild.system_channel.id
-        lastjoined = joinedmember.joined_at
-        unixtime = time.mktime(lastjoined.timetuple())
+        welcome_channel = joinedmember.guild.system_channel.id
+        last_joined = joinedmember.joined_at
+        unix_time = time.mktime(last_joined.timetuple())
         guild = joinedmember.guild.id
         key = f"latest_join:{guild}"
         datadict = dict(
-            latest_join=int(unixtime),
+            latest_join=int(unix_time),
             user_id=int(joinedmember.id),
-            join_channel=int(welcomechannel)
+            join_channel=int(welcome_channel)
         )
         await self.redis_welcomes.hmset(key, datadict)
         await joinedmember.guild.system_channel.send("welcome")
             
-    
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
     async def welcome(self, ctx, *, user: Optional[discord.Member] = None):
@@ -119,14 +118,14 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                             number_str = "​  **" + str(number) + "**. "
                     delta = (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"])))
                     if delta.days == 1:
-                        respStr = "1 day ago**\n"
+                        resp_str = "1 day ago**\n"
                     elif delta.days > 0:
-                        respStr = str(delta.days) + " days ago**\n"
+                        resp_str = str(delta.days) + " days ago**\n"
                     else:
-                        respStr = str(delta.seconds // 3600) + " hours ago**\n"
+                        resp_str = str(delta.seconds // 3600) + " hours ago**\n"
                     lb_str += number_str + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
-                              + respStr
+                              + resp_str
                     number += 1
                     continue
             last_join_dict = await self.redis_welcomes.hgetall(f"latest_join:{ctx.message.guild.id}")
@@ -134,14 +133,14 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             if 'user_id' in last_join_dict:
                 delta = (current_time - datetime.utcfromtimestamp(int(last_join_dict['latest_join'])))
                 if delta.days == 1:
-                    respStr = "1 day ago**"
+                    resp_str = "1 day ago**"
                 elif delta.days > 0:
-                    respStr = str(delta.days) + " days ago**"
+                    resp_str = str(delta.days) + " days ago**"
                 else:
-                    respStr = str(delta.seconds // 3600) + " hours ago**"
+                    resp_str = str(delta.seconds // 3600) + " hours ago**"
                 footer = str(str(f"<@{last_join_dict['user_id']}>")
                              + " joined: **"
-                             + respStr)
+                             + resp_str)
                 embed.add_field(name=":partying_face: Latest join:", value=footer, inline=False)
 
         else:
@@ -154,14 +153,14 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
                     found = True
                     delta = (current_time - datetime.utcfromtimestamp(int(i[1]["latest_welcome"])))
                     if delta.days == 1:
-                        respStr = "1 day ago**\n"
+                        resp_str = "1 day ago**\n"
                     elif delta.days > 0:
-                        respStr = str(delta.days) + " days ago**\n"
+                        resp_str = str(delta.days) + " days ago**\n"
                     else:
-                        respStr = str(delta.seconds // 3600) + " hours ago**\n"
+                        resp_str = str(delta.seconds // 3600) + " hours ago**\n"
                     lb_str = "**" + str(number) + "**. " + str(i[0]) \
                               + " welcomes: **" + str(i[1]["welcome_count"]) + "**, last welcome: **" \
-                              + respStr
+                              + resp_str
                     embed.add_field(name=f"{user.display_name}'s welcome count:", value=lb_str, inline=False)
                 number += 1
             if not found:
@@ -170,16 +169,16 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         
     @commands.is_owner()
     @commands.command(aliases=["ewlb"])
-    async def editwelcomelb(self, ctx: commands.Context, user: discord.Member = None, newval: int = None):
+    async def editwelcomelb(self, ctx: commands.Context, user: discord.Member = None, new_value: int = None):
         """
         Edits the welcome leaderboard.
         """
-        if user != None and newval != None:
-            unixtime = time.mktime(ctx.message.created_at.timetuple())
+        if user and new_value:
+            unix_time = time.mktime(ctx.message.created_at.timetuple())
             key = f"leaderboard:{user.id}:{ctx.guild.id}"
-            await self.redis_welcomes.hset(key, "welcome_count", newval)
-            await self.redis_welcomes.hset(key, "latest_welcome", int(unixtime))
-            await ctx.send(f"{user.mention}'s welcome count has been set to {newval}.")
+            await self.redis_welcomes.hset(key, "welcome_count", new_value)
+            await self.redis_welcomes.hset(key, "latest_welcome", int(unix_time))
+            await ctx.send(f"{user.mention}'s welcome count has been set to {new_value}.")
         else:
             await ctx.send(f"Please specify a user and a new value. eg. `{self.bot.command_prefix}ewlb @user 10`")
 
