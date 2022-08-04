@@ -49,8 +49,10 @@ class UtilityCommands(commands.Cog, name="utility commands"):
                                 total command invokes: **{self.bot.command_invokes_total}**
                                 commands invoked this hour: **{self.bot.command_invokes_hour}**
                                 """, inline=False)
-
-        embed.set_thumbnail(url=str(self.bot.user.avatar.url))
+        try:
+            embed.set_thumbnail(url=str(self.bot.user.avatar.url))
+        except AttributeError:
+            print("Bot has no avatar, not setting it for embed.")
 
         if not self.bot.debugmode:
             if cpu >= 90.0:

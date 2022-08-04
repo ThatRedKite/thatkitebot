@@ -73,14 +73,13 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
-    async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
+    async def add_uwu_channel(self, ctx: bridge.BridgeContext, channel: discord.TextChannel):
         """
         uwuifies an entire channel by deleting the original messages
         and replacing them with bot clones.
         
         Usage: 
-        `+uwu_channel #channel True` - turns it on for #channel. 
-        `+uwu_channel #channel False` - turns it off. 
+        `+uwu_channel #channel` - toggles the setting for a channel
                
         Only admins can use this command.
         """
@@ -88,7 +87,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             return await ctx.respond("You don't have permission to change settings.")
         
         key = f"uwu_channels:{ctx.guild.id}"
-        if add:
+        if not await self.redis.sismember(key, channel.id):
             await self.redis.sadd(key, channel.id)
             await ctx.respond(f"{channel.mention} is now an UwU channel.")
         else:
@@ -103,14 +102,14 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
-    async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User, add: bool = True):
+
+    async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User):
         """
         uwuifies all messages sent by a specific person by deleting
         their original messages and replacing them with a bot clone.
         
         Usage: 
-        `+uwu_user @user True` - turns it on for @user. 
-        `+uwu_user @user False` - turns it off. 
+        `+uwu_user @user True` - toggle the setting for a user
                
         Only admins can use this command.
         """
@@ -118,7 +117,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             return await ctx.respond("You don't have permission to change settings.")
         
         key = f"uwu_users:{ctx.guild.id}"
-        if add:
+        if not await self.redis.sismember(key, user.id):
             await self.redis.sadd(key, user.id)
             await ctx.respond(f"{user.name} is now fucked.")
         else:
@@ -129,6 +128,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 return
 
             await ctx.respond(f"{user.name} is now unfucked.")
+
 
 def setup(bot):
     bot.add_cog(UwuCog(bot))
