@@ -10,7 +10,6 @@ from thatkitebot.cogs.settings import can_change_settings
 from uwuipy import uwuipy
 import textwrap
 from unidecode import unidecode
-from emoji import UNICODE_EMOJI
 
 
 async def uwuify(message: str, id: int):
