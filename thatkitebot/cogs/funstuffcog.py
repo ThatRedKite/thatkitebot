@@ -10,6 +10,8 @@ from thatkitebot.backend import url, util, cache
 from datetime import datetime
 from uwuipy import uwuipy
 import textwrap
+from unidecode import unidecode
+
 
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
@@ -282,7 +284,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             await util.errormsg(ctx, "Invalid arguments")
             return
         await ctx.send(embed=embed)
-    """
+
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
     async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
@@ -301,7 +303,8 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.channel.typing():
             # declare a new uwu object using the message id as seed
             uwu = uwuipy(seed)
-            msg = uwu.uwuify(msg)
+            # convert the input string to ascii
+            msg = uwu.uwuify(unidecode(msg))
             # if the message is longer than 2 000 characters
             if len(msg) > 2000:
                 # split it up while maintaining whole words
@@ -312,6 +315,6 @@ class FunStuff(commands.Cog, name="fun commands"):
             # if the message is under the limit, just send it as usual
             else:
                 await ctx.send(msg)
-    """
+
 def setup(bot):
     bot.add_cog(FunStuff(bot))

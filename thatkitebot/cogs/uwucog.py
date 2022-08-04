@@ -8,6 +8,9 @@ import io
 from discord.ext import commands, bridge
 from thatkitebot.cogs.settings import can_change_settings
 from uwuipy import uwuipy
+import textwrap
+from unidecode import unidecode
+from emoji import UNICODE_EMOJI
 
 
 async def uwuify(message: str, id: int):
@@ -15,12 +18,13 @@ async def uwuify(message: str, id: int):
     message = uwu.uwuify(message)
     return message
 
+
 # Yes this definately needs its own cog shut the fuck up kite (Jk I love you)
 class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot = bot
         self.redis: aioredis.Redis = bot.redis
-        
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # Check if the user is a bot 
@@ -47,13 +51,25 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
 
+            # convert the input string to ascii
+            msg = unidecode(message.content)
+            msg = await uwuify(msg, message.id)
+            # if the message is longer than 2 000 characters
+            if len(msg) > 2000:
+                # split it up while maintaining whole words
+                output = textwrap.wrap(msg, 2000)
+                # for each new "message" send it in the channel
+                for _msg in output:
+                    await webhook.send(content=_msg,
+                                       username=message.author.name + "#" + message.author.discriminator,
+                                       avatar_url=message.author.display_avatar.url,
+                                       files=files)
+            else:
+                await webhook.send(content=msg,
+                                   username=message.author.name + "#" + message.author.discriminator,
+                                   avatar_url=message.author.display_avatar.url,
+                                   files=files)
 
-            await webhook.send(content=await uwuify(message.content, message.id),
-                               username=message.author.name + "#" + message.author.discriminator,
-
-                               avatar_url=message.author.avatar.url,
-                               files=files)
-    
     # Sorry mom
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
@@ -84,7 +100,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 return
 
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
-    
+
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
