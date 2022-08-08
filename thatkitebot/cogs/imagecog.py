@@ -317,6 +317,25 @@ class ImageStuff(commands.Cog, name="image commands"):
             buf.close()
         await ctx.send(file=file, embed=embed)
 
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["bw", "blackwhite"])
+    async def grey(self, ctx: commands.Context):
+        """Make an image black and white"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(functools.partial(magik.blackwhite, buf=buf, fn=12), "black_and_white")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["piss"])
+    async def sepia(self, ctx: commands.Context, threshold: float = 0.8):
+        """Add a sepia filter to an image"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(functools.partial(magik.makesepia, buf=buf, fn=13, threshold=threshold), "sepia")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
 
 def setup(bot):
     bot.add_cog(ImageStuff(bot))
