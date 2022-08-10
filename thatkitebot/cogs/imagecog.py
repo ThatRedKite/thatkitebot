@@ -13,26 +13,30 @@ from discord.ext import commands, bridge
 from thatkitebot.backend import util, magik
 
 
-async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[tuple, None]:
+async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[tuple[str, str], tuple[None, None]]:
     # check if the message has an attachment or embed of the type "image"
     if message.attachments:
         return message.attachments[0].url, message.attachments[0].content_type
-    elif message.embeds and message.embeds[0].type == "image":
+
+    if not message.embeds:
+        return None, None
+
+    if message.embeds[0].type == "image":
         # if it does, return the embed's url
         return message.embeds[0].url, "image"
     # check if the message has an embed of the type "rich" and if it contains an image
-    elif message.embeds and message.embeds[0].type == "rich" and message.embeds[0].image:
+    elif message.embeds[0].type == "rich" and message.embeds[0].image:
         # if it does, return the embed's url
         return message.embeds[0].image.url, "rich"
     # check if the message has a video if the :video: argument is true
-    elif message.embeds and message.embeds[0].type == "video" and video:
+    elif message.embeds[0].type == "video" and video:
         return message.embeds[0].url, "video"
     # check if the message has a gif if the :gifv: argument is true
-    elif message.embeds and message.embeds[0].type == "gifv" and gifv:
+    elif message.embeds[0].type == "gifv" and gifv:
         return message.embeds[0].url, "gifv"
     else:
         # if it doesn't, return None
-        return None
+        return None, None
 
 
 class ImageStuff(commands.Cog, name="image commands"):
@@ -336,6 +340,7 @@ class ImageStuff(commands.Cog, name="image commands"):
             embed, file = await self.image_worker(functools.partial(magik.makesepia, buf=buf, fn=13, threshold=threshold), "sepia")
             buf.close()
         await ctx.send(file=file, embed=embed)
+
 
 def setup(bot):
     bot.add_cog(ImageStuff(bot))
