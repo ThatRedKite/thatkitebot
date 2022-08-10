@@ -10,6 +10,8 @@ from thatkitebot.backend import url, util, cache
 from datetime import datetime
 from uwuipy import uwuipy
 import textwrap
+from unidecode import unidecode
+
 
 async def is_trainpost_channel(ctx):
     if ctx.guild.id == 424394851170385921:
@@ -163,8 +165,26 @@ class FunStuff(commands.Cog, name="fun commands"):
             "baller", "chad", "I don't think so"
         ]
         user = ctx.message.author.id
-
-        if ctx.message.reference:
+        if user == 454210418592841740 and args.lower() == "my ass":
+            await ctx.send("🍑")
+            return
+        elif "ferracult" in args.lower():
+            await ctx.send("cringe")
+            return
+        elif "geckult" in args.lower():
+            await ctx.send("cringe")
+            return
+        elif "piss" in args.lower():
+            await ctx.send("cringe")
+            return
+        elif "femboy" in args.lower():
+            await ctx.send("femboy cult best cult")
+            return
+        elif "furri" in args.lower():
+            await ctx.send("cringe")
+            return
+            
+        if ctx.message.reference is not None:
             str_seed = ctx.message.reference.message_id
         else:
             str_seed = abs(hash(str(user) + str(args) + str(datetime.today().strftime('%Y-%m-%d')))) % (10 ** 8)
@@ -264,7 +284,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             await util.errormsg(ctx, "Invalid arguments")
             return
         await ctx.send(embed=embed)
-    """
+
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
     async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
@@ -283,7 +303,8 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.channel.typing():
             # declare a new uwu object using the message id as seed
             uwu = uwuipy(seed)
-            msg = uwu.uwuify(msg)
+            # convert the input string to ascii
+            msg = uwu.uwuify(unidecode(msg))
             # if the message is longer than 2 000 characters
             if len(msg) > 2000:
                 # split it up while maintaining whole words
@@ -294,8 +315,6 @@ class FunStuff(commands.Cog, name="fun commands"):
             # if the message is under the limit, just send it as usual
             else:
                 await ctx.send(msg)
-    """
-
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
