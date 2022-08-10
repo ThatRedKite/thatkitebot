@@ -1,9 +1,5 @@
-from ast import alias
-import re
-
 import aioredis
 import discord
-import aiohttp
 import io
 from discord.ext import commands, bridge
 from thatkitebot.cogs.settings import can_change_settings
@@ -18,7 +14,7 @@ async def uwuify(message: str, id: int):
     return message
 
 
-# Yes this definately needs its own cog shut the fuck up kite (Jk I love you)
+# Yes this definitely needs its own cog shut the fuck up kite (Jk I love you)
 class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot = bot
@@ -102,7 +98,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
-
     async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User):
         """
         uwuifies all messages sent by a specific person by deleting
@@ -126,7 +121,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             except aioredis.ResponseError:
                 await ctx.respond(f"{user.name} is not fucked.")
                 return
-
             await ctx.respond(f"{user.name} is now unfucked.")
 
 

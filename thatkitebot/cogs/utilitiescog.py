@@ -14,7 +14,6 @@ class UtilityCommands(commands.Cog, name="utility commands"):
     Utility commands for the bot. These commands are basically informational commands.
     """
     def __init__(self, bot: commands.Bot):
-        self.dirname = bot.dirname
         self.redis = bot.redis
         self.bot = bot
 
@@ -30,7 +29,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
 
         cpu = psutil.cpu_percent(interval=None)
         ping = round(self.bot.latency * 1000, 1)
-        uptime = str(datetime.now() - self.bot.starttime).split(".")[0]
+        uptime = str(datetime.now() - self.bot.start_time).split(".")[0]
         total_users = sum([users.member_count for users in self.bot.guilds])
         guilds = len(self.bot.guilds)
 
@@ -54,7 +53,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         except AttributeError:
             print("Bot has no avatar, not setting it for embed.")
 
-        if not self.bot.debugmode:
+        if not self.bot.debug_mode:
             if cpu >= 90.0:
                 embed.color = ec.traffic_red
                 embed.set_footer(text="Warning: CPU usage over 90%")

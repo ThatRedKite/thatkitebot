@@ -25,7 +25,7 @@ class ListenerCog(commands.Cog):
             case commands.CommandOnCooldown:
                 await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
             case commands.CommandInvokeError:
-                if self.bot.debugmode:
+                if self.bot.debug_mode:
                     await errormsg(ctx, repr(error))
                 raise error
             case commands.CheckFailure:
@@ -63,30 +63,6 @@ class ListenerCog(commands.Cog):
             await cache.add_message_to_cache(self.redis_cache, message)
         except:
             print("could not add message to cache!")
-
-    """
-    @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        try:
-            key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
-            if await self.redis_cache.exists(key):
-                await self.redis_cache.delete(key)
-
-            # delete the associated repost if it exists
-            if len(rkeys := [rkey async for rkey in self.repost_redis.scan_iter(match=f"{payload.message_id}:*")]) > 0:
-                await self.repost_redis.delete(rkeys[0])
-        except:
-            pass 
-
-    @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload):
-        try:
-            key = f"{hex(payload.guild_id)}:{hex(payload.channel_id)}:{hex(payload.cached_message.author.id)}:{hex(payload.message_id)}"
-            if await self.redis_cache.exists(key):
-                await cache.add_message_to_cache(self.redis_cache, payload.cached_message)
-        except:
-            print("could not edit cached message")
-    """
 
 
 def setup(bot):

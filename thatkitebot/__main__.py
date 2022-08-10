@@ -143,6 +143,7 @@ for ext in enabled_ext:
 # try to start the bot with the token from the init_settings.json file catch any login errors
 try:
     bot.run(discord_token)
+    bot.is_owner()
 except discord.LoginFailure:
     print("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
