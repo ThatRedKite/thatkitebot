@@ -162,3 +162,18 @@ def rotate(buf, fn, angle: int = 90) -> (bytes, int):
         b = a.make_blob(format="png")
         a.destroy()
     return b, fn
+
+
+def blackwhite(buf, fn) -> (bytes, int):
+    with WandImage(file=buf) as a:
+        a.transform_colorspace('gray')
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
+
+def makesepia(buf, fn, threshold: float = 0.8) -> (bytes, int):
+    with WandImage(file=buf) as a:
+        a.sepia_tone(threshold)
+        b = a.make_blob(format="png")
+        a.destroy()
+    return b, fn
