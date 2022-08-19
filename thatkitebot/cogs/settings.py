@@ -29,6 +29,7 @@ async def can_change_settings(ctx: commands.Context):
         for r in roles:
             if await ctx.bot.redis.sismember(key, r.id):
                 is_mod = True
+                break
     return is_owner or is_admin or is_mod
 
 
@@ -90,7 +91,7 @@ class SettingsCog(commands.Cog, name="settings"):
             await ctx.respond("You do not have permission to do this.")
             return
         
-        key = f"mod_roles:{ctx.guild.id}"
+        key = f"mod_roles:{ctx.guild.id}"   # I wanted to call them snowflakes :troll: but that would result in bad readability
         if not await self.redis.sismember(key, role.id):
             await self.redis.sadd(key, role.id)
             await ctx.respond(f"{role.name} is now a moderator role")
