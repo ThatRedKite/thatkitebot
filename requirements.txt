@@ -18,3 +18,4 @@ matplotlib
 xkcd
 imagehash
 uwuipy
+py-cord[speed]
