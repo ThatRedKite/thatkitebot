@@ -2,7 +2,7 @@ import aioredis
 import discord
 import io
 from discord.ext import commands, bridge
-from thatkitebot.cogs.settings import can_change_settings
+from thatkitebot.cogs.settings import mods_can_change_settings
 from uwuipy import uwuipy
 import textwrap
 from unidecode import unidecode
@@ -66,7 +66,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                                    files=files)
 
     # Sorry mom
-    @commands.check(can_change_settings)
+    @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
     async def add_uwu_channel(self, ctx: commands.Context, channel: discord.TextChannel):
@@ -79,7 +79,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                
         Only admins can use this command.
         """
-        if not await can_change_settings(ctx):
+        if not await mods_can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
         key = f"uwu_channels:{ctx.guild.id}"
@@ -97,7 +97,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
             print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} de-uwuified #{channel.name}")
 
-    @commands.check(can_change_settings)
+    @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
     async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User):
@@ -110,7 +110,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                
         Only admins can use this command.
         """
-        if not await can_change_settings(ctx):
+        if not await mods_can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
         key = f"uwu_users:{ctx.guild.id}"

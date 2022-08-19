@@ -4,7 +4,7 @@ import aioredis
 import discord
 from discord.ext import commands, bridge
 
-from thatkitebot.cogs.settings import can_change_settings
+from thatkitebot.cogs.settings import can_change_settings, mods_can_change_settings
 from thatkitebot.cogs.imagecog import get_image_url
 
 
@@ -178,7 +178,7 @@ class StarBoard(commands.Cog):
             f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
         )
 
-    @commands.check(can_change_settings)
+    @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
                            description="Set the starboard blacklist for this guild")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
