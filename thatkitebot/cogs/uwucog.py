@@ -86,7 +86,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         if not await self.redis.sismember(key, channel.id):
             await self.redis.sadd(key, channel.id)
             await ctx.respond(f"{channel.mention} is now an UwU channel.")
-            print(f"{ctx.author.name}#{ctx.author.discriminator} uwuified #{channel.name}")
+            print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} uwuified #{channel.name}")
         else:
             try:
                 await self.redis.srem(key, channel.id)
@@ -95,7 +95,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 return
 
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
-            print(f"{ctx.author.name}#{ctx.author.discriminator} de-uwuified #{channel.name}")
+            print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} de-uwuified #{channel.name}")
 
     @commands.check(can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
@@ -117,7 +117,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         if not await self.redis.sismember(key, user.id):
             await self.redis.sadd(key, user.id)
             await ctx.respond(f"{user.name} is now fucked.")
-            print(f"{ctx.author.name}#{ctx.author.discriminator} uwuified {user.name}#{user.discriminator}")
+            print(f"{ctx.guild.name}: {ctx.author.name}#{ctx.author.discriminator} uwuified {user.name}#{user.discriminator}")
         else:
             try:
                 await self.redis.srem(key, user.id)
@@ -125,7 +125,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 await ctx.respond(f"{user.name} is not fucked.")
                 return
             await ctx.respond(f"{user.name} is now unfucked.")
-            print(f"{ctx.author.name}#{ctx.author.discriminator} de-uwuified {user.name}#{user.discriminator}")
+            print(f"{ctx.guild.name}: {ctx.author.name}#{ctx.author.discriminator} de-uwuified {user.name}#{user.discriminator}")
 
 
 def setup(bot):
