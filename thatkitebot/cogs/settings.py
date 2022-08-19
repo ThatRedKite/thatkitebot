@@ -4,7 +4,7 @@ import asyncio
 import aioredis
 import discord
 
-from discord.ext import commands
+from discord.ext import commands, bridge
 from thatkitebot.backend import util
 
 
@@ -19,10 +19,17 @@ async def can_change_settings(ctx: commands.Context):
     """
     Checks if the user has the permission to change settings.
     """
+    key = f"mod_roles:{ctx.guild.id}"
     channel: discord.TextChannel = ctx.channel
     is_owner = await ctx.bot.is_owner(ctx.author)
     is_admin = channel.permissions_for(ctx.author).administrator
-    return is_owner or is_admin
+    is_mod = False
+    if ctx.bot.redis:
+        roles = ctx.author.roles
+        for r in roles:
+            if await ctx.bot.redis.sismember(key, r.id):
+                is_mod = True
+    return is_owner or is_admin or is_mod
 
 
 class SettingsCog(commands.Cog, name="settings"):
@@ -72,6 +79,28 @@ class SettingsCog(commands.Cog, name="settings"):
             await ctx.send("Okay, done.", delete_after=5.0)
         else:
             await ctx.send("Cancelled.", delete_after=5.0)
+
+    #@settings.command(name="add_mod", hidden=True)
+    @bridge.bridge_command(name="add_mod", description="Add a moderator role. All the admin commands will be available to this role (except this one).")
+    async def _add_mod(self, ctx: commands.Context, role: discord.Role):
+        """
+        Allows an admin to add a moderator role. Anyone with this role will be able to access all the admin features of KiteBot. Except this one. 
+        """
+        if not ctx.channel.permissions_for(ctx.author).administrator:
+            await ctx.respond("You do not have permission to do this.")
+            return
+        
+        key = f"mod_roles:{ctx.guild.id}"
+        if not await self.redis.sismember(key, role.id):
+            await self.redis.sadd(key, role.id)
+            await ctx.respond(f"{role.name} is now a moderator role")
+        else:
+            try:
+                await self.redis.srem(key, role.id)
+            except aioredis.ResponseError:
+                await ctx.respond(f"{role.name} is not a moderator role")
+                return
+            await ctx.respond(f"{role.name} is no longer a moderator role")
 
     @settings.command(name="list", aliases=["ls"])
     async def _list(self, ctx):
