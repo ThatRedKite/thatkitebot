@@ -2,6 +2,8 @@ import aioredis
 import discord
 import io
 from discord.ext import commands, bridge
+
+import thatkitebot
 from thatkitebot.cogs.settings import mods_can_change_settings
 from uwuipy import uwuipy
 import textwrap
@@ -17,11 +19,15 @@ async def uwuify(message: str, id: int):
 # Yes this definitely needs its own cog shut the fuck up kite (Jk I love you)
 class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
 
     async def _uwu_enabled(self, ctx):
-        return await self.redis.hget(str(ctx.guild.id), "UWU") == "TRUE"
+        if not await self.redis.hexists(str(ctx.guild.id), "UWU"):
+            await self.redis.hset(str(ctx.guild.id), "UWU", "TRUE")
+            return
+        else:
+            return await self.redis.hget(str(ctx.guild.id), "UWU") == "TRUE"
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -38,6 +44,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         # Carter's code (Updated)
         if not message.webhook_id:
+            await self.bot.pro
             await message.delete()
 
             webhooks = await message.channel.webhooks()
