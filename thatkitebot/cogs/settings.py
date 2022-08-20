@@ -41,8 +41,7 @@ async def mods_can_change_settings(ctx: commands.Context):
             await pipe.sismember(key, role.id)
         is_mod = any(await pipe.execute())
         await pipe.close()
-    #return is_owner or is_admin or is_mod
-    return is_admin or is_mod
+    return is_owner or is_admin or is_mod
 
 
 class SettingsCog(commands.Cog, name="settings"):
