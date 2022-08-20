@@ -47,23 +47,18 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     files.append(discord.File(fp, filename=attachment.filename))
 
             # convert the input string to ascii
+            msg_len = len(message.content) + 20
             msg = unidecode(message.content)
-            msg = await uwuify(msg, message.id)
-            # if the message is longer than 2 000 characters
-            if len(msg) > 2000:
-                # split it up while maintaining whole words
-                output = textwrap.wrap(msg, 2000)
-                # for each new "message" send it in the channel
-                for _msg in output:
-                    await webhook.send(content=_msg,
-                                       username=message.author.name + "#" + message.author.discriminator,
-                                       avatar_url=message.author.display_avatar.url,
-                                       files=files)
-            else:
-                await webhook.send(content=msg,
-                                   username=message.author.name + "#" + message.author.discriminator,
-                                   avatar_url=message.author.display_avatar.url,
-                                   files=files)
+            msg_small = textwrap.wrap(msg, msg_len)
+            msg = await uwuify(msg_small[0], message.id)
+            # split it up while maintaining whole words
+            output = textwrap.wrap(msg, 2000)
+            # for each new "message" send it in the channel
+            # thanks paradox for breaking the >2000 msg limit
+            await webhook.send(content=output[0],
+                               username=message.author.name + "#" + message.author.discriminator,
+                               avatar_url=message.author.display_avatar.url,
+                               files=files)
 
     # Sorry mom
     @commands.check(mods_can_change_settings)
