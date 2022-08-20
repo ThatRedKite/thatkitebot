@@ -52,7 +52,7 @@ class SettingsCog(commands.Cog, name="settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
         self.redis: aioredis.Redis = self.bot.redis
-        self.possible_settings = ["NSFW", "IMAGE", "REPOST", "WELCOME"]
+        self.possible_settings = ["NSFW", "IMAGE", "REPOST", "WELCOME", "UWU"]
 
     @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
     @commands.check(can_change_settings)
@@ -163,6 +163,14 @@ class SettingsCog(commands.Cog, name="settings"):
              Standard value: `TRUE`
              """
         )
+        e.add_field(
+            name="UWU",
+            value="""
+            Enable or disable the uwuify function for the server.\n
+            Possible values: `TRUE`, `FALSE`\n
+            Standard value: `TRUE`
+            """
+        )
         await ctx.send(embed=e, delete_after=10)
         await asyncio.sleep(10)
         await ctx.message.delete()
@@ -174,7 +182,8 @@ class SettingsCog(commands.Cog, name="settings"):
             "NSFW": "FALSE",
             "IMAGE": "TRUE",
             "REPOST": "FALSE",
-            "WELCOME": "FALSE"
+            "WELCOME": "FALSE",
+            "UWU": "TRUE"
         }
         # check if there already are settings for the guild present
         if not await self.redis.hexists(guild.id, "IMAGE"):
