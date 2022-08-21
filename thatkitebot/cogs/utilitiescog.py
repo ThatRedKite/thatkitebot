@@ -71,7 +71,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         """
         embed = discord.Embed(
             color=ec.purple_violet,
-            title="About ThatKiteBot",
+            title=f"About {self.bot.user.name}",
             description="""This bot licensed under the MIT license is open source and free to use for everyone.
                   I put a lot of my time into this bot and I really hope you enjoy it.
                   The source code is available [here](https://github.com/ThatRedKite/thatkitebot), feel free to contribute!
@@ -207,7 +207,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
             """
         )
         embed.set_thumbnail(url=str(self.bot.user.avatar.url))
-        embed.set_footer(text="ThatKiteBot v{} this policy was last updated: ".format(self.bot.version))
+        embed.set_footer(text=f"{self.bot.user.name} v{self.bot.version} this policy was last updated: ")
         embed.timestamp = datetime(2022, 7, 30, 23, 55, 14, 0)
         await ctx.send(embed=embed)
 
@@ -215,7 +215,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
     async def invite(self, ctx):
         """This sends you an invite for the bot if you want to add it to one of your servers."""
         await ctx.author.send(
-            f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=412317247552&scope=bot%20applications.commands"
+            f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=275418311744&scope=bot%20applications.commands"
         )
 
 
