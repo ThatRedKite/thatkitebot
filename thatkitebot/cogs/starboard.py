@@ -180,7 +180,7 @@ class StarBoard(commands.Cog):
 
     @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
-                           description="Set the starboard blacklist for this guild")
+                           description="Blacklist or unblacklist a channel from the starboard")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
         if not can_change_settings(ctx):
             return

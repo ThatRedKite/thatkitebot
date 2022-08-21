@@ -2,6 +2,8 @@ import aioredis
 import discord
 import io
 from discord.ext import commands, bridge
+
+import thatkitebot
 from thatkitebot.cogs.settings import mods_can_change_settings
 from uwuipy import uwuipy
 import textwrap
@@ -17,13 +19,23 @@ async def uwuify(message: str, id: int):
 # Yes this definitely needs its own cog shut the fuck up kite (Jk I love you)
 class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
+
+    async def _uwu_enabled(self, ctx):
+        if not await self.redis.hexists(str(ctx.guild.id), "UWU"):
+            await self.redis.hset(str(ctx.guild.id), "UWU", "TRUE")
+            return
+        else:
+            return await self.redis.hget(str(ctx.guild.id), "UWU") == "TRUE"
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # Check if the user is a bot 
         if message.author.bot:
+            return
+
+        if not await self._uwu_enabled(message):
             return
 
         # Check if the message is in an UwU channel
@@ -32,6 +44,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         # Carter's code (Updated)
         if not message.webhook_id:
+            await self.bot.pro
             await message.delete()
 
             webhooks = await message.channel.webhooks()
@@ -72,8 +85,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         Usage: 
         `+uwu_channel #channel` - toggles the setting for a channel
                
-        Only admins can use this command.
+        Only administrators and moderators can use this command.
         """
+        if not await self._uwu_enabled(ctx):
+            return await ctx.respond("This command is disabled on this server (setting `UWU` is set `FALSE`)")
+
         if not await mods_can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
@@ -105,6 +121,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                
         Only admins can use this command.
         """
+        if not await self._uwu_enabled(ctx):
+            return await ctx.respond("This command is disabled on this server (setting `UWU` is set `FALSE`)")
+
         if not await mods_can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
         
