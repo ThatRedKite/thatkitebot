@@ -19,3 +19,4 @@ xkcd
 imagehash
 uwuipy
 py-cord[speed]==2.0.1
+dulwich

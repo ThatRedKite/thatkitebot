@@ -8,6 +8,7 @@ services:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/
       - ./trains/:/app/data/trains/
+      - ./.git/:/app/.git
     restart:  "no"
     environment:
       - PYTHONUNBUFFERED=1
