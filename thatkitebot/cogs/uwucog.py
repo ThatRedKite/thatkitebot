@@ -44,7 +44,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         # Carter's code (Updated)
         if not message.webhook_id:
-            await self.bot.pro
+            await self.bot.process_commands(message)
             await message.delete()
 
             webhooks = await message.channel.webhooks()
