@@ -107,7 +107,8 @@ class ImageStuff(commands.Cog, name="image commands"):
     async def image_worker(self, func, name):
         async with self.sep:
             try:
-                b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
+                # for some reason it never runs the function if you use an actual executor, so this is a temporary workaround
+                b2, fn = await asyncio.wait_for(self.ll.run_in_executor(executor=None, func=func), timeout=30.0)
             except asyncio.TimeoutError:
                 e = await util.errormsg(msg="Processing timed out", embed_only=True)
                 return None, None
@@ -117,7 +118,6 @@ class ImageStuff(commands.Cog, name="image commands"):
             elif fn == -3:
                 e = await util.errormsg(msg="Selected color doesn't exist or is in the wrong format.", embed_only=True)
                 return e, None
-
         embed = discord.Embed(title="Processed image")
         embed.set_image(url=f"attachment://{name}.png")
         file = discord.File(BytesIO(b2), filename=f"{name}.png")
