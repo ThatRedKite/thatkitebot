@@ -14,7 +14,7 @@ from discord.ext import commands, bridge
 from dulwich.repo import Repo
 
 __name__ = "ThatKiteBot"
-__version__ = "3.10"
+__version__ = "3.11"
 __author__ = "ThatRedKite and contributors"
 
 enabled_ext = [
