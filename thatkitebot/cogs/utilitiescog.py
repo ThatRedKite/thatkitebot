@@ -45,13 +45,14 @@ class UtilityCommands(commands.Cog, name="utility commands"):
                                 extensions loaded: **{len(self.bot.extensions)}**
                                 total users: **{total_users}**
                                 bot version: **{self.bot.version}**
+                                Running commit: **[{self.bot.git_hash[0:7]}](https://github.com/ThatRedKite/thatkitebot/tree/{self.bot.git_hash})**
                                 total command invokes: **{self.bot.command_invokes_total}**
                                 commands invoked this hour: **{self.bot.command_invokes_hour}**
                                 """, inline=False)
         try:
             embed.set_thumbnail(url=str(self.bot.user.avatar.url))
-        except AttributeError:
-            print("Bot has no avatar, not setting it for embed.")
+        except:
+            pass
 
         if not self.bot.debug_mode:
             if cpu >= 90.0:
@@ -78,8 +79,10 @@ class UtilityCommands(commands.Cog, name="utility commands"):
                   If you like it, consider [giving me a donation](https://www.buymeacoffee.com/ThatRedKite) to keep the server running.
                 """
         )
-        embed.set_thumbnail(url=str(self.bot.user.avatar.url))
-        
+        try:
+            embed.set_thumbnail(url=str(self.bot.user.avatar.url))
+        except:
+            pass
         # dictionary for discord username lookup from GitHub username
         # format: "githubusername":"discordID"
         authordict = {
@@ -129,6 +132,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
             [python-xkcd](https://github.com/TC01/python-xkcd)
             [imagehash](https://github.com/JohannesBuchner/imagehash)
             """
+            # [dulwich](https://github.com/jelmer/dulwich)
         )
 
         embed.set_footer(text="ThatKiteBot v{}".format(self.bot.version))

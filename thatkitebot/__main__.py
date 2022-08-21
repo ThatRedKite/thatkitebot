@@ -11,9 +11,10 @@ import discord
 import aioredis
 import json
 from discord.ext import commands, bridge
+from dulwich.repo import Repo
 
 __name__ = "ThatKiteBot"
-__version__ = "3.10"
+__version__ = "3.11"
 __author__ = "ThatRedKite and contributors"
 
 enabled_ext = [
@@ -90,6 +91,10 @@ class ThatKiteBot(bridge.Bot, ABC):
         self.start_time = datetime.now()
         self.pid = os.getpid()
         self.process = psutil.Process(os.getpid())
+        r = Repo('.')
+        self.git_hash = r.head().decode("utf-8")
+        r.close()
+        print(f"Running on commit: {self.git_hash}")
 
         # ---dynamic values---
 
