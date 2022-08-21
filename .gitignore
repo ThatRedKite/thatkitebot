@@ -2,7 +2,7 @@
 *.webp
 *.jpeg
 *.jpg
-*.png
+#*.png
 *.mp3
 *.gif
 #other files

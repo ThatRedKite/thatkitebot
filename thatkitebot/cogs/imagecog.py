@@ -104,10 +104,12 @@ class ImageStuff(commands.Cog, name="image commands"):
             else:
                 return await resp.read()
 
-    async def image_worker(self, func, name):
+    async def image_worker(self, func, name, gif: bool = False):
         async with self.sep:
             try:
-                b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
+                # for some reason it never runs the function if you use an actual executor, so this is a temporary workaround
+                b2, fn = await asyncio.wait_for(self.ll.run_in_executor(executor=None, func=func), timeout=30.0)
+                #b2, fn = await asyncio.wait_for(self.ll.run_in_executor(self.pp, func), timeout=30.0)
             except asyncio.TimeoutError:
                 e = await util.errormsg(msg="Processing timed out", embed_only=True)
                 return None, None
@@ -119,8 +121,9 @@ class ImageStuff(commands.Cog, name="image commands"):
                 return e, None
 
         embed = discord.Embed(title="Processed image")
-        embed.set_image(url=f"attachment://{name}.png")
-        file = discord.File(BytesIO(b2), filename=f"{name}.png")
+        extension = 'png' if not gif else 'gif'
+        embed.set_image(url=f"attachment://{name}.{extension}")
+        file = discord.File(BytesIO(b2), filename=f"{name}.{extension}")
         return embed, file
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
@@ -267,7 +270,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Make an image black and white"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(magik.blackwhite, buf=buf, fn=12), "black_and_white")
+            embed, file = await self.image_worker(functools.partial(magik.black_white, buf=buf, fn=12), "black_and_white")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
@@ -277,7 +280,141 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Add a sepia filter to an image"""
         buf = await self.get_last_image(ctx, return_buffer=True)
         async with ctx.channel.typing():
-            embed, file = await self.image_worker(functools.partial(magik.makesepia, buf=buf, fn=13, threshold=threshold), "sepia")
+            embed, file = await self.image_worker(functools.partial(magik.make_sepia, buf=buf, fn=13, threshold=threshold), "sepia")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def polaroid(self, ctx: commands.Context):
+        """Add a polaroid filter to an image"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.make_polaroid, buf=buf, fn=14), "polaroid")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["coal"])
+    async def charcoal(self, ctx: commands.Context, radius: float = 1.5, sigma: float = 0.5):
+        """Add a charcoal filter to an image, making it look like a charcoal drawing"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.charcoal, buf=buf, fn=15, radius=radius, sigma=sigma), "charcoal")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def vignette(self, ctx: commands.Context, sigma: int = 3, x: int = 10, y: int = 10):
+        """Tries to emulate old school 3d effect"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.make_vignette, buf=buf, fn=16, sigma=sigma, x=x, y=y), "vignette")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["bubble"])
+    async def speech_bubble(self, ctx: commands.Context):
+        """Create a speech bubble like those memes"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.bubble, buf=buf, fn=17), "speech_bubble", gif=True)
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["scale"])
+    async def resize(self, ctx: commands.Context, scale: float = 0.5):
+        """Resizes an image to a set factor"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.scale, buf=buf, fn=18, factor=scale), "resized")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3):
+        """Applies blur"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.blur, buf=buf, fn=19, radius=radius, sigma=sigma), "blur")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["ablur"])
+    async def adaptive_blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3):
+        """Applies blur, but tries to utilize edge detect for a better result"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.adaptive_blur, buf=buf, fn=20, radius=radius, sigma=sigma), "adaptive_blur")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["mblur"])
+    async def motion_blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3, angle: int = -45):
+        """Applies motion blur"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.motion_blur, buf=buf, fn=21, radius=radius, sigma=sigma, angle=angle),
+                "motion_blur")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def edge(self, ctx: commands.Context, radius: int = 1):
+        """Returns a black and white image with edges in white and the rest in black"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.edge, buf=buf, fn=22, radius=radius), "edge")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def emboss(self, ctx: commands.Context, radius: float = 3.0, sigma: float = 1.75):
+        """Creates an embossed image"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.emboss, buf=buf, fn=23, radius=radius, sigma=sigma), "emboss")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command(aliases=["smooth"])
+    async def kuwahara(self, ctx: commands.Context, radius: int = 1, sigma: float = 1.5):
+        """Attempts to smooth the image while preserving edges"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.kuwahara, buf=buf, fn=24, radius=radius, sigma=sigma), "kuwahara")
+            buf.close()
+        await ctx.send(file=file, embed=embed)
+
+    @commands.cooldown(5, 10, commands.BucketType.user)
+    @commands.command()
+    async def shade(self, ctx: commands.Context, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
+        """Attempts to smooth the image while preserving edges"""
+        buf = await self.get_last_image(ctx, return_buffer=True)
+        async with ctx.channel.typing():
+            embed, file = await self.image_worker(
+                functools.partial(magik.shade, buf=buf, fn=25, gray=gray, azimuth=azimuth, elevation=elevation),
+                "shade")
             buf.close()
         await ctx.send(file=file, embed=embed)
 
