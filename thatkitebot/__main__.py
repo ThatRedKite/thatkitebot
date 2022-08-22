@@ -34,6 +34,7 @@ enabled_ext = [
     "thatkitebot.cogs.welcomecog",
     "thatkitebot.cogs.repost",
     "thatkitebot.cogs.starboard",
+    "thatkitebot.cogs.music",
 ]
 
 tempdir = "/tmp/tkb/"
@@ -117,7 +118,9 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
+
             self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
+            self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
             print("Connection successful.")
         except aioredis.ConnectionError:
             print("Redis connection failed. Check if redis is running.")
@@ -148,7 +151,6 @@ for ext in enabled_ext:
 # try to start the bot with the token from the init_settings.json file catch any login errors
 try:
     bot.run(discord_token)
-    bot.is_owner()
 except discord.LoginFailure:
     print("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
