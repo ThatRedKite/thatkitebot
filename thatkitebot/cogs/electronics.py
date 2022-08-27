@@ -800,16 +800,19 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 [Electronoobs](https://www.youtube.com/c/ELECTRONOOBS)
                 Good source of entertainment and education:
                 [Electroboom](https://www.youtube.com/c/Electroboom/)
+                [Big Clive](https://www.youtube.com/c/Bigclive)
                 [DiodeGoneWild](https://www.youtube.com/c/DiodeGoneWild/)
+                [Marco Reps](https://www.youtube.com/c/MarcoReps)
+                [Afrotechmods](https://www.youtube.com/c/Afrotechmods)
                  """)
         e.add_field(name="Youtube",
         value="""Definitely worth your time:
                 [Digi-Key](https://www.youtube.com/c/digikey)
                 [EEVBlog](https://www.youtube.com/c/EevblogDave/)
-                [Afrotechmods](https://www.youtube.com/c/Afrotechmods)
                 Embedded:
                 [Mitch Davis](https://www.youtube.com/c/MitchDavis2/)
                 CNC and others:
+                [This Old Tony](https://www.youtube.com/c/ThisOldTony)
                 [Stephen Hawes](https://www.youtube.com/c/StephenHawesVideo)
                 [Stuff Made Here](https://www.youtube.com/c/StuffMadeHere)""")
         e.add_field(name="Free simulators, books, software and documents",
