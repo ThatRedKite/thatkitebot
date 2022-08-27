@@ -48,6 +48,40 @@ def slash_preprocessor(a: str):
     """
     return a.replace("v", "").replace("V", "").replace("u", "µ").replace("F", "").strip() if a else None
 
+def FAQ():
+    embed = discord.Embed(title = "How can I start learning electronics?", color = discord.Color.gold())
+    embed.add_field(name="Youtube", 
+        value="""You should start here:
+                [RSD Academy](https://www.youtube.com/c/RSDAcademy)
+                [Leo's Bag of Tricks](https://www.youtube.com/channel/UCe1bjEcBichpiAMhExh0NiQ)
+                DIY projects with good explanations:
+                [GreatScott!](https://www.youtube.com/c/greatscottlab)
+                [Electronoobs](https://www.youtube.com/c/ELECTRONOOBS)
+                Good source of entertainment and education:
+                [Electroboom](https://www.youtube.com/c/Electroboom/)
+                [DiodeGoneWild](https://www.youtube.com/c/DiodeGoneWild/)
+                 """)
+    embed.add_field(name="Youtube",
+        value="""Definitely worth your time:
+                [Digi-Key](https://www.youtube.com/c/digikey)
+                [EEVBlog](https://www.youtube.com/c/EevblogDave/)
+                [Afrotechmods](https://www.youtube.com/c/Afrotechmods)
+                Embedded:
+                [Digi-Key](https://www.youtube.com/c/digikey)
+                [Mitch Davis](https://www.youtube.com/c/MitchDavis2/)
+                CNC and others:
+                [Stephen Hawes](https://www.youtube.com/c/StephenHawesVideo)
+                [Stuff Made Here](https://www.youtube.com/c/StuffMadeHere)""")
+    embed.set_footer(text="Note: You should checkout all of those YT channels")
+    embed.add_field(name="Free simulators, books, software and documents",
+        value="""[The Art of Electronics 3rd editon](https://cdn.discordapp.com/attachments/426054145645215756/783850352487170078/The_Art_of_Electronics_3rd_ed_2015.pdf)
+                [Designing Electronics that Work](http://designingelectronics.com/#preview)
+                [KiCad](https://www.kicad.org/)
+                [Fastald](https://www.falstad.com/circuit/)
+                [LTspice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html)
+                [EasyEDA](https://i.imgur.com/zwzOBfV.png)""",  inline=False)
+
+    return embed
 
 class PCBConversion:
     """
@@ -788,6 +822,10 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         except ImpossibleValueError:
             await util.errormsg(ctx, "Get real. <:troll:910540961958989934>")
             return
+
+    @commands.command(name="faq", aliases=["wheretostart", "efaq"])
+    async def faq_for_electronics(self, ctx):
+        await ctx.send(embed=FAQ())
 
 
 def setup(bot):
