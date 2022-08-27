@@ -72,7 +72,6 @@ def FAQ():
                 CNC and others:
                 [Stephen Hawes](https://www.youtube.com/c/StephenHawesVideo)
                 [Stuff Made Here](https://www.youtube.com/c/StuffMadeHere)""")
-    embed.set_footer(text="Note: You should checkout all of those YT channels")
     embed.add_field(name="Free simulators, books, software and documents",
         value="""[The Art of Electronics 3rd editon](https://cdn.discordapp.com/attachments/426054145645215756/783850352487170078/The_Art_of_Electronics_3rd_ed_2015.pdf)
                 [Designing Electronics that Work](http://designingelectronics.com/#preview)
