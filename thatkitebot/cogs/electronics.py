@@ -805,7 +805,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 [Marco Reps](https://www.youtube.com/c/MarcoReps)
                 [Afrotechmods](https://www.youtube.com/c/Afrotechmods)
                  """)
-        e.add_field(name="Youtube",
+        e.add_field(name="** **",
         value="""Definitely worth your time:
                 [Digi-Key](https://www.youtube.com/c/digikey)
                 [EEVBlog](https://www.youtube.com/c/EevblogDave/)
