@@ -811,10 +811,14 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 [EEVBlog](https://www.youtube.com/c/EevblogDave/)
                 Embedded:
                 [Mitch Davis](https://www.youtube.com/c/MitchDavis2/)
+                Radio:
+                [Charlie Morris](https://www.youtube.com/c/CharlieMorrisZL2CTM)
+                [W2AEW](https://www.youtube.com/user/w2aew)
                 CNC and others:
                 [This Old Tony](https://www.youtube.com/c/ThisOldTony)
                 [Stephen Hawes](https://www.youtube.com/c/StephenHawesVideo)
-                [Stuff Made Here](https://www.youtube.com/c/StuffMadeHere)""")
+                [Stuff Made Here](https://www.youtube.com/c/StuffMadeHere)
+                [Sam Ben-Yaakov](https://www.youtube.com/user/sambenyaakov)""")
         e.add_field(name="Free simulators, books, software and documents",
         value="""[The Art of Electronics 3rd editon](https://cdn.discordapp.com/attachments/426054145645215756/783850352487170078/The_Art_of_Electronics_3rd_ed_2015.pdf)
                 [Designing Electronics that Work](http://designingelectronics.com/#preview)
