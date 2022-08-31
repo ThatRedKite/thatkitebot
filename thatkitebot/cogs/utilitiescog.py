@@ -90,7 +90,8 @@ class UtilityCommands(commands.Cog, name="utility commands"):
             "diminDDL": "<@312591385624576001>",
             "Cuprum77": "<@323502550340861963>",
             "laserpup": "<@357258808105500674>",
-            "woo200": "<@881362093427814440>"
+            "woo200": "<@881362093427814440>",
+            "Caraffa-git": "<@303227573121449994>"
         }
         jsonData = await url._contributorjson(self.bot.aiohttp_session)
         # get a list of "login" field values from json string variable jsonData

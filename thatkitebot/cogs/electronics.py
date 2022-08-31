@@ -804,6 +804,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
                 [DiodeGoneWild](https://www.youtube.com/c/DiodeGoneWild/)
                 [Marco Reps](https://www.youtube.com/c/MarcoReps)
                 [Afrotechmods](https://www.youtube.com/c/Afrotechmods)
+                [Ben Eater](https://www.youtube.com/c/BenEater)
                  """)
         e.add_field(name="** **",
         value="""Definitely worth your time:
