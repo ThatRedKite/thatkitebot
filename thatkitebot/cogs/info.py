@@ -409,14 +409,15 @@ def electronics_embed():
             [Stephen Hawes](https://www.youtube.com/c/StephenHawesVideo)"""
     )
     embed.add_field(
-        name="Free simulators, books, software and documents",
+        name="Free simulators, books, software, documents and useful websites",
         value="""
             [The Art of Electronics 3rd edition](https://cdn.discordapp.com/attachments/426054145645215756/783850352487170078/The_Art_of_Electronics_3rd_ed_2015.pdf)
             [Designing Electronics that Work](http://designingelectronics.com/#preview)
             [KiCad](https://www.kicad.org/)
             [Falstad](https://www.falstad.com/circuit/)
             [LTspice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html)
-            [SimulIDE](https://www.simulide.com/p/home.html)""", inline=False
+            [SimulIDE](https://www.simulide.com/p/home.html)
+            [All about circuits textbook](https://www.allaboutcircuits.com/textbook/)""", inline=False
     )
     
     embed.set_footer(text="Note: You should check out all of those YT channels")
