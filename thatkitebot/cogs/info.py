@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ui import Select, View, Button
 from discord.commands import Option
 
-class FaqCog(commands.Cog, name="FAQ"):
+class InfoCog(commands.Cog, name="Info"):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
         self.current_embed = None
@@ -80,8 +80,8 @@ class FaqCog(commands.Cog, name="FAQ"):
         return [section for section in self.section_names if section.lower().startswith(ctx.value.lower())]
 
 
-    @commands.slash_command(name="faq")
-    async def faq(self, ctx, section: Option(str, "Pick a section!", required = False, autocomplete=get_sections) = None):
+    @commands.slash_command(name="info")
+    async def info(self, ctx, section: Option(str, "Pick a section!", required = False, autocomplete=get_sections) = None):
         """
         Sends YT channels, documents, books etc related to chosen science topic arranged in convenient way.
         """
@@ -487,4 +487,4 @@ def it_embed():
 
 
 def setup(bot):
-    bot.add_cog(FaqCog(bot))
+    bot.add_cog(InfoCog(bot))
