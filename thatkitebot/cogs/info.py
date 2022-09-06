@@ -299,6 +299,14 @@ def astronomy_embed():
             [Dr. Becky ](https://www.youtube.com/channel/UCYNbYGl89UUowy8oXkipC-Q)
             """
     )
+    embed.add_field(
+        name="Books",
+        value="""
+            [An Introduction to Modern Astrophysics](https://www.academia.edu/42881683/An_Introduction_to_Modern_Astrophysics)
+            [Turn Left at Orion](https://www.pdfdrive.com/turn-left-at-orion-a-hundred-night-sky-objects-to-see-in-a-small-telescope-and-how-to-find-them-e175402242.html)
+            The Dobsonian Telescope - David Kriege, Richard Berry
+            """
+    )
     return embed
 
 
