@@ -425,7 +425,8 @@ def electronics_embed():
             [Falstad](https://www.falstad.com/circuit/)
             [LTspice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html)
             [SimulIDE](https://www.simulide.com/p/home.html)
-            [All about circuits textbook](https://www.allaboutcircuits.com/textbook/)""", inline=False
+            [All about circuits textbook](https://www.allaboutcircuits.com/textbook/)
+            [Simon Bramble Designs and Tutorials](http://www.simonbramble.co.uk/index.htm)""", inline=False
     )
     
     embed.set_footer(text="Note: You should check out all of those YT channels")
