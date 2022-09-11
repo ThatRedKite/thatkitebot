@@ -385,6 +385,7 @@ def electronics_embed():
             [RSD Academy](https://www.youtube.com/c/RSDAcademy)
             [Leo's Bag of Tricks](https://www.youtube.com/channel/UCe1bjEcBichpiAMhExh0NiQ)
             [Element14](https://www.youtube.com/c/element14presents/)
+            [The Offset Volt](https://www.youtube.com/c/TheOffsetVolt/)
             DIY projects with good explanations:
             [GreatScott!](https://www.youtube.com/c/greatscottlab)
             [Electronoobs](https://www.youtube.com/c/ELECTRONOOBS)
