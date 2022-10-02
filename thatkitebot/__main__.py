@@ -35,7 +35,8 @@ enabled_ext = [
     "thatkitebot.cogs.repost",
     "thatkitebot.cogs.starboard",
     "thatkitebot.cogs.music",
-    "thatkitebot.cogs.info"
+    "thatkitebot.cogs.info",
+    "thatkitebot.cogs.detrack"
 ]
 
 tempdir = "/tmp/tkb/"
