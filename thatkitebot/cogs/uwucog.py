@@ -8,7 +8,7 @@ from thatkitebot.cogs.settings import mods_can_change_settings
 from uwuipy import uwuipy
 import textwrap
 from unidecode import unidecode
-
+import re
 
 async def uwuify(message: str, id: int):
     uwu = uwuipy(id)
@@ -62,6 +62,12 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             # convert the input string to ascii
             msg_len = len(message.content) + 20
             msg = unidecode(message.content)
+
+            # if the user cant embed links, make links not embed by surrounding them with <>
+            if not message.channel.permissions_for(message.author).embed_links:
+                links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
+                msg = re.sub(links, r"<\1>" , msg)
+
             msg_small = textwrap.wrap(msg, msg_len)
             msg = await uwuify(msg_small[0], message.id)
             # split it up while maintaining whole words

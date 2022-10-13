@@ -10,6 +10,7 @@ from thatkitebot.backend import url, util, cache
 from datetime import datetime
 from uwuipy import uwuipy
 import textwrap
+import re
 from unidecode import unidecode
 
 
@@ -285,7 +286,16 @@ class FunStuff(commands.Cog, name="fun commands"):
             # declare a new uwu object using the message id as seed
             uwu = uwuipy(seed)
             # convert the input string to ascii
-            msg = uwu.uwuify(unidecode(msg))
+            msg = unidecode(msg)
+
+            # if the user cant send images, make links not embed by surrounding them with <>
+            if not can_send_image(ctx):
+                links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
+                msg = re.sub(links, r"<\1>" , msg)
+
+            # do the deed
+            msg = uwu.uwuify(msg)
+
             # if the message is longer than 2 000 characters
             if len(msg) > 2000:
                 # split it up while maintaining whole words
