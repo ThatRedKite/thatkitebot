@@ -23,13 +23,23 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             except json.decoder.JSONDecodeError:
                 print("detrackparams.json is not valid json. Please fix it.")
 
+    def process_dom_spec(self, filter, query):
+        if "*" in filter:
+            # wildcard filter
+            for k in list(query):
+                if filter.strip("*") in k:
+                    query.pop(k)
+        else:
+            if filter in query:
+                query.pop(filter)
+        # now reconstruct the url
+        return query
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         # Check if the user is a bot 
         if message.author.bot:
             return
-
-        #print(self.detrack_data["categories"][0]["name"])
 
         key = f"detrack:{message.guild.id}"
 
@@ -42,63 +52,29 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                 url = urlparse(p)
                 if url.scheme in ["http", "https"]:
                     domain = url.hostname
-                    print(f"url: {url}")
-                    print(f"domain: {domain}")
                     #check if domain has subdomains
                     subs = domain.split(".")
-                    for sub in subs:
-                        print(f"subs: {sub}")
                     for category in self.detrack_data["categories"]:
-                        #print(f"category: {category}")
                         rawFilter = category["params"]
-                        #print(f"rawFilter: {rawFilter}")
                         for rF in rawFilter:
                             # parse the filter string into separate variables, @ - domain specific, * - wildcard
                             if "@" in rF:
                                 filter = rF.split("@")[0]
                                 forDomain = rF.split("@")[1]
-                                #print(f"forDomain: {forDomain.strip('*').strip('.')}")
                                 if "*" in forDomain:
                                     if forDomain.strip("*").strip(".") in domain:
                                         # now we parse the query to detrack it
                                         query = parse_qs(url.query, keep_blank_values=True)
-                                        print(f"detracking {p} because it matches {forDomain}")
-                                        print(f"applying filter: {filter}")
-                                        if "*" in filter:
-                                            # wildcard filter
-                                            for k in list(query):
-                                                if filter.strip("*") in k:
-                                                    print(f"removing {k}")
-                                                    query.pop(k)
-                                        else:
-                                            if filter in list(query):
-                                                print(f"removing {filter}")
-                                                query.pop(filter)
+                                        query = self.process_dom_spec(filter, query)
                                         # now reconstruct the url
                                         url = url._replace(query=urlencode(query, True))
-                                        print(f"newUrl: {url.geturl()}")
                                 else:
-                                    #print(f"forDomain: {forDomain}")
                                     if forDomain == domain.strip("www."):
                                         # now we parse the query to detrack it
                                         query = parse_qs(url.query, keep_blank_values=True)
-                                        print(f"detracking {p} because it matches {forDomain}")
-                                        print(f"applying filter: {filter}")
-                                        if "*" in filter:
-                                            # wildcard filter
-                                            for k in list(query):
-                                                if filter.strip("*") in k:
-                                                    print(f"removing {k}")
-                                                    query.pop(k)
-                                        else:
-                                            if filter in query:
-                                                print(f"removing {filter}")
-                                                query.pop(filter)
+                                        query = self.process_dom_spec(filter, query)
                                         # now reconstruct the url
                                         url = url._replace(query=urlencode(query, True))
-                                        print(f"newUrl: {url.geturl()}")
-                                #print(f"filter: {filter}")
-                                #print(f"forDomain: {forDomain}")
                             else:
                                 # if we landed here means we need to apply the filter to all domains
                                 filter = rF
@@ -107,20 +83,15 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                     query = parse_qs(url.query, keep_blank_values=True)
                                     for k in list(query):
                                         if filter.strip("*") in k:
-                                            print(f"removing {k}")
                                             query.pop(k)
                                     # now reconstruct the url
                                     url = url._replace(query=urlencode(query, True))
-                                    print(f"newUrl: {url.geturl()}")
                                 else:
                                     query = parse_qs(url.query, keep_blank_values=True)
                                     if filter in query:
-                                        print(f"removing {filter}")
                                         query.pop(filter)
                                     # now reconstruct the url
                                     url = url._replace(query=urlencode(query, True))
-                                    print(f"newUrl: {url.geturl()}")
-                                #print(f"filter: {filter}")
                 # return the untracked url
                 if url.geturl() != p:
                     await message.channel.send(url.geturl())
