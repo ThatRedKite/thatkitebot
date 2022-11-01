@@ -43,7 +43,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         key = f"detrack:{message.guild.id}"
 
-        detrackedStr = ""
+        detrackedStrs = []
         if await self.redis.exists(key):
             # find all urls in the message
             urls = re.findall(r"(?P<url>https?://[^\s]+)", message.content)
@@ -95,12 +95,16 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                     url = url._replace(query=urlencode(query, True))
                 # return the untracked url
                 if url.geturl() != p:
-                    detrackedStr += (url.geturl() + "\n\n")
+                    detrackedStrs.append(url.geturl())
         else:
             return
         # return the detracted message
-        if detrackedStr != "":
-            await message.channel.send(detrackedStr)
+        if detrackedStrs != []:
+            embed = discord.Embed()
+            embed.add_field(name="Auto link Detrack", value="Tracking links were detected, below are the detracked versions of the links.", inline=False)
+            for i in detrackedStrs:
+                embed.add_field(name="​", value=i, inline=False)
+            await message.reply(embed=embed)
 
     @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="detrack", aliases=["urlclean"],
