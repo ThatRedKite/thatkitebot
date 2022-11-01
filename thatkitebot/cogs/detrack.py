@@ -66,12 +66,12 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                         print(f"applying filter: {filter}")
                                         if "*" in filter:
                                             # wildcard filter
-                                            for k in query:
+                                            for k in list(query):
                                                 if filter.strip("*") in k:
                                                     print(f"removing {k}")
                                                     query.pop(k)
                                         else:
-                                            if filter in query:
+                                            if filter in list(query):
                                                 print(f"removing {filter}")
                                                 query.pop(filter)
                                         # now reconstruct the url
@@ -86,7 +86,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                         print(f"applying filter: {filter}")
                                         if "*" in filter:
                                             # wildcard filter
-                                            for k in query:
+                                            for k in list(query):
                                                 if filter.strip("*") in k:
                                                     print(f"removing {k}")
                                                     query.pop(k)
