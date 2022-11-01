@@ -7,7 +7,7 @@ import thatkitebot
 import json
 import os
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode
 from discord.ext import commands, bridge
 from thatkitebot.cogs.settings import mods_can_change_settings
 
@@ -40,12 +40,91 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                 return
             for p in urls:
                 url = urlparse(p)
-                domain = url.hostname
-                print(domain)
-                #check if domain has subdomains
-                subs = domain.split(".")
-                for sub in subs:
-                    print(sub)
+                if url.scheme in ["http", "https"]:
+                    domain = url.hostname
+                    print(f"url: {url}")
+                    print(f"domain: {domain}")
+                    #check if domain has subdomains
+                    subs = domain.split(".")
+                    for sub in subs:
+                        print(f"subs: {sub}")
+                    for category in self.detrack_data["categories"]:
+                        #print(f"category: {category}")
+                        rawFilter = category["params"]
+                        #print(f"rawFilter: {rawFilter}")
+                        for rF in rawFilter:
+                            # parse the filter string into separate variables, @ - domain specific, * - wildcard
+                            if "@" in rF:
+                                filter = rF.split("@")[0]
+                                forDomain = rF.split("@")[1]
+                                #print(f"forDomain: {forDomain.strip('*').strip('.')}")
+                                if "*" in forDomain:
+                                    if forDomain.strip("*").strip(".") in domain:
+                                        # now we parse the query to detrack it
+                                        query = parse_qs(url.query, keep_blank_values=True)
+                                        print(f"detracking {p} because it matches {forDomain}")
+                                        print(f"applying filter: {filter}")
+                                        if "*" in filter:
+                                            # wildcard filter
+                                            for k in query:
+                                                if filter.strip("*") in k:
+                                                    print(f"removing {k}")
+                                                    query.pop(k)
+                                        else:
+                                            if filter in query:
+                                                print(f"removing {filter}")
+                                                query.pop(filter)
+                                        # now reconstruct the url
+                                        url = url._replace(query=urlencode(query, True))
+                                        print(f"newUrl: {url.geturl()}")
+                                else:
+                                    #print(f"forDomain: {forDomain}")
+                                    if forDomain == domain.strip("www."):
+                                        # now we parse the query to detrack it
+                                        query = parse_qs(url.query, keep_blank_values=True)
+                                        print(f"detracking {p} because it matches {forDomain}")
+                                        print(f"applying filter: {filter}")
+                                        if "*" in filter:
+                                            # wildcard filter
+                                            for k in query:
+                                                if filter.strip("*") in k:
+                                                    print(f"removing {k}")
+                                                    query.pop(k)
+                                        else:
+                                            if filter in query:
+                                                print(f"removing {filter}")
+                                                query.pop(filter)
+                                        # now reconstruct the url
+                                        url = url._replace(query=urlencode(query, True))
+                                        print(f"newUrl: {url.geturl()}")
+                                #print(f"filter: {filter}")
+                                #print(f"forDomain: {forDomain}")
+                            else:
+                                # if we landed here means we need to apply the filter to all domains
+                                filter = rF
+                                if "*" in filter:
+                                    # wildcard filter
+                                    query = parse_qs(url.query, keep_blank_values=True)
+                                    for k in list(query):
+                                        if filter.strip("*") in k:
+                                            print(f"removing {k}")
+                                            query.pop(k)
+                                    # now reconstruct the url
+                                    url = url._replace(query=urlencode(query, True))
+                                    print(f"newUrl: {url.geturl()}")
+                                else:
+                                    query = parse_qs(url.query, keep_blank_values=True)
+                                    if filter in query:
+                                        print(f"removing {filter}")
+                                        query.pop(filter)
+                                    # now reconstruct the url
+                                    url = url._replace(query=urlencode(query, True))
+                                    print(f"newUrl: {url.geturl()}")
+                                #print(f"filter: {filter}")
+                # return the untracked url
+                if url.geturl() != p:
+                    await message.channel.send(url.geturl())
+
         else:
             return
 
