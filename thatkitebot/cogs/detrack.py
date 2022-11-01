@@ -43,6 +43,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         key = f"detrack:{message.guild.id}"
 
+        detrackedStr = ""
         if await self.redis.exists(key):
             # find all urls in the message
             urls = re.findall(r"(?P<url>https?://[^\s]+)", message.content)
@@ -50,7 +51,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                 return
             for p in urls:
                 url = urlparse(p)
-                if url.scheme in ["http", "https"]:
+                if url.scheme in ["http", "https"] and url.query != "":
                     domain = url.hostname
                     #check if domain has subdomains
                     subs = domain.split(".")
@@ -94,10 +95,12 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                     url = url._replace(query=urlencode(query, True))
                 # return the untracked url
                 if url.geturl() != p:
-                    await message.channel.send(url.geturl())
-
+                    detrackedStr += (url.geturl() + "\n\n")
         else:
             return
+        # return the detracted message
+        if detrackedStr != "":
+            await message.channel.send(detrackedStr)
 
     @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="detrack", aliases=["urlclean"],
