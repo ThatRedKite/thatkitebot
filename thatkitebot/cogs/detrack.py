@@ -1,6 +1,4 @@
 #  Copyright (c) 2019-2022 ThatRedKite, diminDDL and contributors
-
-from tkinter import HIDDEN
 import discord
 import aioredis
 import thatkitebot
@@ -23,7 +21,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             except json.decoder.JSONDecodeError:
                 print("detrackparams.json is not valid json. Please fix it.")
 
-    def process_dom_spec(self, filter, query):
+    def process_domain_specific(self, filter, query):
         if "*" in filter:
             # wildcard filter
             for k in list(query):
@@ -43,7 +41,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         key = f"detrack:{message.guild.id}"
 
-        detrackedStrs = []
+        detracked_strs = []
         if await self.redis.exists(key):
             # find all urls in the message
             urls = re.findall(r"(?P<url>https?://[^\s]+)", message.content)
@@ -61,19 +59,19 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                             # parse the filter string into separate variables, @ - domain specific, * - wildcard
                             if "@" in rF:
                                 filter = rF.split("@")[0]
-                                forDomain = rF.split("@")[1]
-                                if "*" in forDomain:
-                                    if forDomain.strip("*").strip(".") in domain:
+                                for_domain = rF.split("@")[1]
+                                if "*" in for_domain:
+                                    if for_domain.strip("*").strip(".") in domain:
                                         # now we parse the query to detrack it
                                         query = parse_qs(url.query, keep_blank_values=True)
-                                        query = self.process_dom_spec(filter, query)
+                                        query = self.process_domain_specific(filter, query)
                                         # now reconstruct the url
                                         url = url._replace(query=urlencode(query, True))
                                 else:
-                                    if forDomain == domain.strip("www."):
+                                    if for_domain == domain.strip("www."):
                                         # now we parse the query to detrack it
                                         query = parse_qs(url.query, keep_blank_values=True)
-                                        query = self.process_dom_spec(filter, query)
+                                        query = self.process_domain_specific(filter, query)
                                         # now reconstruct the url
                                         url = url._replace(query=urlencode(query, True))
                             else:
@@ -95,21 +93,24 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                     url = url._replace(query=urlencode(query, True))
                 # return the untracked url
                 if url.geturl() != p:
-                    detrackedStrs.append(url.geturl())
+                    detracked_strs.append(url.geturl())
         else:
             return
         # return the detracted message
-        if detrackedStrs != []:
-            embed = discord.Embed()
-            embed.add_field(name="Auto link Detrack", value="Tracking links were detected, below are the detracked versions of the links.", inline=False)
-            for i in detrackedStrs:
-                embed.add_field(name="​", value=i, inline=False)
-            await message.reply(embed=embed)
+        if detracked_strs:
+            #embed = discord.Embed()
+            #embed.add_field(name="Auto link Detrack", value="Tracking links were detected, below are the detracked versions of the links.", inline=False)
+            message_str = "Tracking links were detected, below are the detracked versions of the links.\n"
+            for i in detracked_strs:
+                #embed.add_field(name="​", value=i, inline=False)
+                message_str += f"<{i}>\n"
+            #await message.reply(embed=embed)
+            await message.reply(message_str)
 
     @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="detrack", aliases=["urlclean"],
                            description="Remove known tracking urls and de-ampify links")
-    async def add_detrack_setting(self, ctx: commands.Context):
+    async def set_auto_detrack(self, ctx: commands.Context):
         """
         Remove known tracking urls and de-ampify links.
         For example: https://www.youtube.com/watch?&v=dQw4w9WgXcQ&feature=youtu.be will become https://www.youtube.com/watch?v=dQw4w9WgXcQ
@@ -129,7 +130,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             return await ctx.respond("You don't have permission to change settings.")
         
         key = f"detrack:{ctx.guild.id}"
-        if await self.redis.exists(key) == 0:
+        if not await self.redis.exists(key):
             await self.redis.sadd(key, "1")
             await ctx.respond(f"Detrack has been enabled.")
         else:
