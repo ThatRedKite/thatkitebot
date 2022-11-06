@@ -160,6 +160,28 @@ class ImageStuff(commands.Cog, name="image commands"):
         embed.set_image(url=user.avatar.url)
         await ctx.send(embed=embed)
 
+    @commands.cooldown(3, 10, commands.BucketType.guild)
+    @commands.command(aliases=["banner", "profilebanner"])
+    async def pfbanner(self, ctx, user: Optional[discord.Member] = None):
+        """This sends someone's profile banner"""
+        if user is None:
+            user = ctx.author
+        embed = discord.Embed(title=f"{user.name}'s profile banner", color=user.color)
+        # fetch user 
+        user = await self.bot.fetch_user(user.id)
+        embed.set_image(url=user.banner)
+        await ctx.send(embed=embed)
+
+    @commands.cooldown(3, 10, commands.BucketType.guild)
+    @commands.command()
+    async def serverpfp(self, ctx, user: Optional[discord.Member] = None):
+        """This sends the users server's icon"""
+        if user is None:
+            user = ctx.author
+        embed = discord.Embed(title=f"{user.name}'s server's icon", color=user.color)
+        embed.set_image(url=user.display_avatar)
+        await ctx.send(embed=embed)
+
     @commands.cooldown(3, 15, commands.BucketType.guild)
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
