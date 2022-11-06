@@ -10,7 +10,7 @@
 *.log
 *.out
 #settings file
-*.json
+*settings.json
 data/redis
 data/*.yml
 # test files
