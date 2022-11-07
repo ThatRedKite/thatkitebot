@@ -4,6 +4,7 @@ import asyncio
 import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
+from thatkitebot.backend.util import EmbedColors as ec
 from io import BytesIO
 from typing import Optional, Union
 
@@ -180,6 +181,14 @@ class ImageStuff(commands.Cog, name="image commands"):
             user = ctx.author
         embed = discord.Embed(title=f"{user.name}'s server's icon", color=user.color)
         embed.set_image(url=user.display_avatar)
+        await ctx.send(embed=embed)
+
+    @commands.cooldown(3, 10, commands.BucketType.guild)
+    @commands.command(aliases=["emote"])
+    async def emoji(self, ctx, emoji: discord.Emoji):
+        """This sends an emote as an image"""
+        embed = discord.Embed(title=f"{emoji.name}", color=ec.lime_green)
+        embed.set_image(url=emoji.url)
         await ctx.send(embed=embed)
 
     @commands.cooldown(3, 15, commands.BucketType.guild)
