@@ -81,7 +81,7 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         embed.add_field(name="Roles", value=len(guild.roles))
         embed.add_field(name="Created at", value=guild.created_at.strftime("%d/%m/%Y %H:%M:%S"))
         age = relativedelta(datetime.now(timezone.utc), guild.created_at)
-        embed.add_field(name="Age", value=(f"{(str(age.years) + ' years, ' if age.years != 1 else ' year' + ', ') if age.years != 0 else ''}{(str(age.months) + ' months, ' if age.months != 1 else ' month, ') if age.months != 0 else ''}{age.days} {'days' if age.days != 1 else 'day'}"))
+        embed.add_field(name="Age", value=(f"{(str(age.years) + (' years, ' if age.years != 1 else ' year' + ', ')) if age.years != 0 else ''}{(str(age.months) + (' months, ' if age.months != 1 else ' month, ')) if age.months != 0 else ''}{age.days} {'days' if age.days != 1 else 'day'}"))
         if guild.icon:
             embed.set_thumbnail(url=guild.icon)
         embed.color = ec.lime_green
@@ -101,10 +101,10 @@ class UtilityCommands(commands.Cog, name="utility commands"):
         embed.add_field(name="ID", value=user.id)
         embed.add_field(name="Server joined", value=user.joined_at.strftime("%d/%m/%Y %H:%M:%S"))
         age = relativedelta(datetime.now(timezone.utc), user.joined_at)
-        embed.add_field(name="Server age", value=(f"{(str(age.years) + ' years, ' if age.years != 1 else ' year' + ', ') if age.years != 0 else ''}{(str(age.months) + ' months, ' if age.months != 1 else ' month, ') if age.months != 0 else ''}{age.days} {'days' if age.days != 1 else 'day'}"))
+        embed.add_field(name="Server age", value=(f"{(str(age.years) + (' years, ' if age.years != 1 else ' year' + ', ')) if age.years != 0 else ''}{(str(age.months) + (' months, ' if age.months != 1 else ' month, ')) if age.months != 0 else ''}{age.days} {'days' if age.days != 1 else 'day'}"))
         embed.add_field(name="Account created", value=user.created_at.strftime("%d/%m/%Y %H:%M:%S"))
         age = relativedelta(datetime.now(timezone.utc), user.created_at)
-        embed.add_field(name="Account age", value=(f"{(str(age.years) + ' years, ' if age.years != 1 else ' year' + ', ') if age.years != 0 else ''}{(str(age.months) + ' months, ' if age.months != 1 else ' month, ') if age.months != 0 else ''}{age.days} {'days' if age.days != 1 else 'day'}"))
+        embed.add_field(name="Account age", value=(f"{(str(age.years) + (' years, ' if age.years != 1 else ' year' + ', ')) if age.years != 0 else ''}{(str(age.months) + (' months, ' if age.months != 1 else ' month, ')) if age.months != 0 else ''}{age.days} {'days' if age.days != 1 else 'day'}"))
         # a list of roles, excluding @everyone
         embed.add_field(name="Roles", value=", ".join([role.mention for role in user.roles if role.name != "@everyone"]))
         # a footnote with the percentage of the servers existence the user has been in
