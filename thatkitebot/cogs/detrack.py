@@ -45,6 +45,8 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         if await self.redis.exists(key):
             # find all urls in the message
             urls = re.findall(r"(?P<url>https?://[^\s]+)", message.content)
+            # remove all whitespaces in the urls
+            urls = [url.strip() for url in urls]
             if not urls:
                 return
             for p in urls:
@@ -64,33 +66,42 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                                     if for_domain.strip("*").strip(".") in domain:
                                         # now we parse the query to detrack it
                                         query = parse_qs(url.query, keep_blank_values=True)
+                                        oldQuery = query.copy()
                                         query = self.process_domain_specific(filter, query)
-                                        # now reconstruct the url
-                                        url = url._replace(query=urlencode(query, True))
+                                        if query != oldQuery:
+                                            # now reconstruct the url
+                                            url = url._replace(query=urlencode(query, True))
                                 else:
                                     if for_domain == domain.strip("www."):
                                         # now we parse the query to detrack it
                                         query = parse_qs(url.query, keep_blank_values=True)
+                                        oldQuery = query.copy()
                                         query = self.process_domain_specific(filter, query)
-                                        # now reconstruct the url
-                                        url = url._replace(query=urlencode(query, True))
+                                        if oldQuery != query:
+                                            # now reconstruct the url
+                                            url = url._replace(query=urlencode(query, True))
+                                        
                             else:
                                 # if we landed here means we need to apply the filter to all domains
                                 filter = rF
                                 if "*" in filter:
                                     # wildcard filter
                                     query = parse_qs(url.query, keep_blank_values=True)
+                                    oldQuery = query.copy()
                                     for k in list(query):
                                         if filter.strip("*") in k:
                                             query.pop(k)
-                                    # now reconstruct the url
-                                    url = url._replace(query=urlencode(query, True))
+                                    if query != oldQuery:
+                                        # now reconstruct the url
+                                        url = url._replace(query=urlencode(query, True))
                                 else:
                                     query = parse_qs(url.query, keep_blank_values=True)
+                                    oldQuery = query.copy()
                                     if filter in query:
                                         query.pop(filter)
-                                    # now reconstruct the url
-                                    url = url._replace(query=urlencode(query, True))
+                                    if oldQuery != query:
+                                        # now reconstruct the url
+                                        url = url._replace(query=urlencode(query, True))
                 # return the untracked url
                 if url.geturl() != p:
                     detracked_strs.append(url.geturl())

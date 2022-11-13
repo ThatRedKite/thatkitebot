@@ -5,9 +5,9 @@ import functools
 import re
 from concurrent.futures import ProcessPoolExecutor
 from thatkitebot.backend.util import EmbedColors as ec
+from urllib.parse import urlparse, parse_qs, urlencode
 from io import BytesIO
 from typing import Optional, Union
-
 import discord
 from discord.ext import commands, bridge
 
@@ -158,7 +158,10 @@ class ImageStuff(commands.Cog, name="image commands"):
         if user is None:
             user = ctx.author
         embed = discord.Embed(title=f"{user.name}'s profile picture", color=user.color)
-        embed.set_image(url=user.avatar.url)
+        if user.avatar:
+            embed.set_image(url=user.avatar.url)
+        else:
+            embed.description = "This user doesn't have a profile picture."
         await ctx.send(embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.guild)
@@ -170,17 +173,35 @@ class ImageStuff(commands.Cog, name="image commands"):
         embed = discord.Embed(title=f"{user.name}'s profile banner", color=user.color)
         # fetch user 
         user = await self.bot.fetch_user(user.id)
-        embed.set_image(url=user.banner)
+        if user.banner:
+            url = urlparse(user.banner.url)
+            query = parse_qs(url.query, keep_blank_values=True)
+            # set the size to 2048
+            query["size"] = "2048"
+            # reassemble the url
+            url = url._replace(query=urlencode(query, True))
+            embed.set_image(url=url.geturl())
+        else:
+            # if there is no banner, send a message with the user color as an accent color
+            embed.description = f"{user.name} doesn't have a profile banner."
+            if user.accent_color:
+                embed.color = user.accent_color
+                embed.set_footer(text="The profile accent color is: " + str(user.accent_color))
+            else:
+                embed.color = user.color
         await ctx.send(embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.guild)
     @commands.command()
     async def serverpfp(self, ctx, user: Optional[discord.Member] = None):
-        """This sends the users server's icon"""
+        """This sends the users server icon"""
         if user is None:
             user = ctx.author
-        embed = discord.Embed(title=f"{user.name}'s server's icon", color=user.color)
-        embed.set_image(url=user.display_avatar)
+        embed = discord.Embed(title=f"{user.name}'s server icon", color=user.color)
+        if user.display_avatar:
+            embed.set_image(url=user.display_avatar)
+        else:
+            embed.description = "This user doesn't have a profile picture."
         await ctx.send(embed=embed)
 
     @commands.cooldown(3, 10, commands.BucketType.guild)
