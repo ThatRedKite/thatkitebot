@@ -2,7 +2,7 @@
     "categories": [
         { "name": "Action Map", "params": ["action_object_map", "action_ref_map", "action_type_map"]},
         { "name": "AliExpress.com", "params": ["aff_platform", "aff_trace_key", "algo_expid@*.aliexpress.*", "algo_pvid@*.aliexpress.com", "btsid@*.aliexpress.com", "expid@*.aliexpress.com", "initiative_id@*.aliexpress.com", "scm_id@*.aliexpress.com", "spm@*.aliexpress.com", "ws_ab_test*.aliexpress.com"]},
-        { "name": "Amazon", "params": ["_encoding@amazon.*", "ascsubtag@amazon.*", "pd_rd_*@amazon.*", "pf@amazon.*", "pf_rd_*@amazon.*", "psc@amazon.*", "ref_@amazon.*", "tag@amazon.*"]},
+        { "name": "Amazon", "params": ["_encoding@amazon.*", "ascsubtag@amazon.*", "pd_rd_*@amazon.*", "pf@amazon.*", "pf_rd_*@amazon.*", "psc@amazon.*", "ref_@amazon.*", "tag@amazon.*", "content-id@amazon.*", "ref@amazon.*"]},
         { "name": "Bilibili.com", "params": ["callback@bilibili.com"]},
         { "name": "Bing", "params": ["cvid@bing.com", "form@bing.com", "pq@bing.com", "qs@bing.com", "sc@bing.com", "sk@bing.com", "sp@bing.com"]},
         { "name": "Campaign tracking (Adobe Analytics)", "params": ["sc_cid"]},
@@ -27,7 +27,7 @@
         { "name": "Campaign tracking (Yandex)", "params": ["_openstat", "yclid"], "docs": "https://yandex.com/support/direct/statistics/url-tags.html"},
         { "name": "Campaign tracking (others)", "params": ["c_id", "campaign_id", "Campaign", "cmpid", "mbid", "ncid"], "docs": "https://www.parse.ly/help/post/4843/campaign-data-tracking/"},
         { "name": "Caseking.de", "params": ["campaign@caseking.de", "sPartner@caseking.de"]},
-        { "name": "Ebay", "params": ["_trkparms@ebay.*", "_trksid@ebay.*", "amdata@ebay.*", "epid@ebay.*", "hash@ebay.*", "var@ebay.*"]},
+        { "name": "Ebay", "params": ["_trkparms@ebay.*", "_trksid@ebay.*", "amdata@ebay.*", "epid@ebay.*", "hash@ebay.*", "var@ebay.*", "m*@ebay.*", "ss*@ebay.*", "widget_ver@ebay.*", "media@ebay.*"]},
         { "name": "Etsy", "params": ["click_key@etsy.com", "click_sum@etsy.com", "organic_search_click@etsy.com", "ref@etsy.com"]},
         { "name": "Facebook", "params": ["fb_action_ids", "fb_action_types", "fb_ref", "fb_source", "fbclid", "hrc@facebook.com", "refsrc@facebook.com"]},
         { "name": "Google", "params": ["ei@google.*", "gs_gbg@google.*", "gs_l", "gs_lcp@google.*", "gs_mss@google.*", "gs_rn@google.*", "gws_rd@google.*", "sei@google.*", "ved@google.*"]},
