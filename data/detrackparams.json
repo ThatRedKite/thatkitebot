@@ -1,8 +1,8 @@
 {
     "categories": [
         { "name": "Action Map", "params": ["action_object_map", "action_ref_map", "action_type_map"]},
-        { "name": "AliExpress.com", "params": ["aff_platform", "aff_trace_key", "algo_expid@*.aliexpress.*", "algo_pvid@*.aliexpress.com", "btsid@*.aliexpress.com", "expid@*.aliexpress.com", "initiative_id@*.aliexpress.com", "scm_id@*.aliexpress.com", "spm@*.aliexpress.com", "ws_ab_test*.aliexpress.com"]},
-        { "name": "Amazon", "params": ["_encoding@amazon.*", "ascsubtag@amazon.*", "pd_rd_*@amazon.*", "pf@amazon.*", "pf_rd_*@amazon.*", "psc@amazon.*", "ref_@amazon.*", "tag@amazon.*", "content-id@amazon.*", "ref@amazon.*"]},
+        { "name": "AliExpress.com", "params": ["aff_platform", "aff_trace_key", "algo_expid@*.aliexpress.*", "algo_pvid@*.aliexpress.com", "btsid@*.aliexpress.com", "expid@*.aliexpress.com", "initiative_id@*.aliexpress.com", "scm_id@*.aliexpress.com", "spm@*.aliexpress.com", "ws_ab_test*.aliexpress.com", "*id*@*.aliexpress.com"]},
+        { "name": "Amazon", "params": ["_encoding@amazon.*", "ascsubtag@amazon.*", "pd_rd_*@amazon.*", "pf@amazon.*", "pf_rd_*@amazon.*", "psc@amazon.*", "ref_@amazon.*", "tag@amazon.*", "content-id@amazon.*", "ref@amazon.*", "linkCode@amazon.*", "hv*@amazon.*", "*id@amazon.*", "sprefix@amazon.*"]},
         { "name": "Bilibili.com", "params": ["callback@bilibili.com"]},
         { "name": "Bing", "params": ["cvid@bing.com", "form@bing.com", "pq@bing.com", "qs@bing.com", "sc@bing.com", "sk@bing.com", "sp@bing.com"]},
         { "name": "Campaign tracking (Adobe Analytics)", "params": ["sc_cid"]},
@@ -30,7 +30,7 @@
         { "name": "Ebay", "params": ["_trkparms@ebay.*", "_trksid@ebay.*", "amdata@ebay.*", "epid@ebay.*", "hash@ebay.*", "var@ebay.*", "m*@ebay.*", "ss*@ebay.*", "widget_ver@ebay.*", "media@ebay.*"]},
         { "name": "Etsy", "params": ["click_key@etsy.com", "click_sum@etsy.com", "organic_search_click@etsy.com", "ref@etsy.com"]},
         { "name": "Facebook", "params": ["fb_action_ids", "fb_action_types", "fb_ref", "fb_source", "fbclid", "hrc@facebook.com", "refsrc@facebook.com"]},
-        { "name": "Google", "params": ["ei@google.*", "gs_gbg@google.*", "gs_l", "gs_lcp@google.*", "gs_mss@google.*", "gs_rn@google.*", "gws_rd@google.*", "sei@google.*", "ved@google.*"]},
+        { "name": "Google", "params": ["ei@google.*", "gs_gbg@google.*", "gs_l", "gs_lcp@google.*", "gs_mss@google.*", "gs_rn@google.*", "gws_rd@google.*", "sei@google.*", "ved@google.*", "source@books.google.*", "ots@books.google.*", "sig@books.google.*", "hl@books.google.*", "sa@books.google.*", "ved@books.google.*", "f@books.google.*"]},
         { "name": "Hubspot", "params": ["_hsenc", "_hsmi", "__hssc", "__hstc", "hsCtaTracking"]},
         { "name": "IMDb", "params": ["pf_rd_*@imdb.com", "ref_@imdb.com"]},
         { "name": "LinkedIn", "params": ["eBP@linkedin.com", "lgCta@linkedin.com", "lgTemp@linkedin.com", "lipi@linkedin.com", "midSig@linkedin.com", "midToken@linkedin.com", "recommendedFlavor@linkedin.com", "refId@linkedin.com", "trackingId@linkedin.com", "trk@linkedin.com", "trkEmail@linkedin.com"]},
@@ -43,6 +43,8 @@
         { "name": "Yahoo", "params": ["guccounter@*.yahoo.com", "soc_src", "soc_trk"]},
         { "name": "Yandex", "params": ["lr@yandex.*", "redircnt@yandex.*"]},
         { "name": "YouTube.com", "params": ["feature@youtube.com", "kw@youtube.com"]},
-        { "name": "Zeit.de", "params": ["wt_mc", "wt_zmc"]}
+        { "name": "Zeit.de", "params": ["wt_mc", "wt_zmc"]},
+        { "name": "Texas Instruments", "params": ["HQS@ti.com", "ts@ti.com", "ref_*@ti.com"]},
+        { "name": "Instagram", "params": ["igshid@instagram.com"]}
     ]
 }

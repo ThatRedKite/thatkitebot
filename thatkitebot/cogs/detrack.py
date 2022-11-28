@@ -47,10 +47,14 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             urls = re.findall(r"(?P<url>https?://[^\s]+)", message.content)
             # remove all whitespaces in the urls
             urls = [url.strip() for url in urls]
+            # go through all urls and remove everything after the first #
+            urls = [url.split("#")[0] for url in urls]
             if not urls:
                 return
             for p in urls:
                 url = urlparse(p)
+                # print all url params
+                print(url.query) # for some reason "*id*@*.aliexpress.com" isn't working
                 if url.scheme in ["http", "https"] and url.query != "":
                     domain = url.hostname
                     #check if domain has subdomains
