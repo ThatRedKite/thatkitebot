@@ -96,6 +96,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         except discord.errors.NotFound:
             # if the message is not found, we delete our message regardless of who reacted
             author = payload.user_id
+        
         # if the author of the message is the same as the user who reacted to the message
         if payload.user_id == author:
             # delete the message
