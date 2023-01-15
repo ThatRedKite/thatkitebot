@@ -29,7 +29,7 @@ fragment = "_all_"
 [domains.amazon]
 netloc = ".*amazon." # don't forget to escape the \
 netloc_dl = "_pref_"  # delte the matched regex from the netloc
-path = ""
+path = "ref=.{1,}"
 params = "_all_"
 query = "_all_"
 fragment = "_all_"

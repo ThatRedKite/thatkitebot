@@ -67,7 +67,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                             url = url._replace(fragment=re.sub(self.construct_re(self.doms[domain]["fragment"]), '', url.fragment))
                 # return the untracked url
                 if len(url.geturl()) + 5 < len(p):
-                    detracked_strs.append(url.geturl())
+                    detracked_strs.append(url.geturl().strip('?&;#'))
         else:
             return
         # return the detracted message
@@ -91,7 +91,11 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         if self.bot.user not in await message.reactions[0].users().flatten():
             return
         
-        author = (await self.bot.get_channel(payload.channel_id).fetch_message(message.reference.message_id)).author.id
+        try:
+            author = (await self.bot.get_channel(payload.channel_id).fetch_message(message.reference.message_id)).author.id
+        except discord.errors.NotFound:
+            # if the message is not found, we delete our message regardless of who reacted
+            author = payload.user_id
         
         # if the author of the message is the same as the user who reacted to the message
         if payload.user_id == author:
