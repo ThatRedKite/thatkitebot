@@ -5,6 +5,7 @@ import thatkitebot
 import json
 import os
 import re
+import toml
 from urllib.parse import urlparse, parse_qs, urlencode
 from discord.ext import commands, bridge
 from thatkitebot.cogs.settings import mods_can_change_settings
@@ -14,24 +15,19 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
-        # this seems like a bad idea, maybe move it to __main__.py?
-        with open(os.path.join(bot.data_dir, "detrackparams.json"), "r") as f:
+        with open(os.path.join(bot.data_dir, "detrackparams.toml"), "r") as f:
             try:
-                self.detrack_data = json.load(f)
-            except json.decoder.JSONDecodeError:
-                print("detrackparams.json is not valid json. Please fix it.")
+                self.detrack_data = toml.load(f)
+                self.doms = self.detrack_data["domains"]
+                self.LUT = self.detrack_data["LUT"]
+            except toml.decoder.TomlDecodeError:
+                print("detrackparams.toml is not valid toml. Please fix it.") 
 
-    def process_domain_specific(self, filter, query):
-        if "*" in filter:
-            # wildcard filter
-            for k in list(query):
-                if filter.strip("*") in k:
-                    query.pop(k)
-        else:
-            if filter in query:
-                query.pop(filter)
-        # now reconstruct the url
-        return query
+    def construct_re(self, data):
+        # replace parts that are in the LUT
+        for key in self.LUT:
+            data = data.replace(key, self.LUT[key])
+        return data
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -51,72 +47,57 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                 return
             for p in urls:
                 url = urlparse(p)
-                if url.scheme in ["http", "https"] and url.query != "":
-                    domain = url.hostname
-                    #check if domain has subdomains
-                    subs = domain.split(".")
-                    for category in self.detrack_data["categories"]:
-                        rawFilter = category["params"]
-                        for rF in rawFilter:
-                            # parse the filter string into separate variables, @ - domain specific, * - wildcard
-                            if "@" in rF:
-                                filter = rF.split("@")[0]
-                                for_domain = rF.split("@")[1]
-                                if "*" in for_domain:
-                                    if for_domain.strip("*").strip(".") in domain:
-                                        # now we parse the query to detrack it
-                                        query = parse_qs(url.query, keep_blank_values=True)
-                                        oldQuery = query.copy()
-                                        query = self.process_domain_specific(filter, query)
-                                        if query != oldQuery:
-                                            # now reconstruct the url
-                                            url = url._replace(query=urlencode(query, True))
-                                else:
-                                    if for_domain == domain.strip("www."):
-                                        # now we parse the query to detrack it
-                                        query = parse_qs(url.query, keep_blank_values=True)
-                                        oldQuery = query.copy()
-                                        query = self.process_domain_specific(filter, query)
-                                        if oldQuery != query:
-                                            # now reconstruct the url
-                                            url = url._replace(query=urlencode(query, True))
-                                        
-                            else:
-                                # if we landed here means we need to apply the filter to all domains
-                                filter = rF
-                                if "*" in filter:
-                                    # wildcard filter
-                                    query = parse_qs(url.query, keep_blank_values=True)
-                                    oldQuery = query.copy()
-                                    for k in list(query):
-                                        if filter.strip("*") in k:
-                                            query.pop(k)
-                                    if query != oldQuery:
-                                        # now reconstruct the url
-                                        url = url._replace(query=urlencode(query, True))
-                                else:
-                                    query = parse_qs(url.query, keep_blank_values=True)
-                                    oldQuery = query.copy()
-                                    if filter in query:
-                                        query.pop(filter)
-                                    if oldQuery != query:
-                                        # now reconstruct the url
-                                        url = url._replace(query=urlencode(query, True))
+                if url.scheme in ["http", "https"]:
+                    # check if we match a domain
+                    for domain in self.doms:
+                        if domain == "LUT":
+                            continue
+                        # check if the netloc regex matches
+                        if re.match(self.construct_re(self.doms[domain]["netloc"]), self.construct_re(url.netloc)):
+                            # if netloc_dl is set, remove the netloc regex mathes
+                            if "netloc_dl" in self.doms[domain]:
+                                url = url._replace(netloc=re.sub(self.construct_re(self.doms[domain]["netloc_dl"]), '', url.netloc))
+                            # remove the path regex mathes
+                            url = url._replace(path=re.sub(self.construct_re(self.doms[domain]["path"]), '', url.path))
+                            # remove the params regex mathes
+                            url = url._replace(params=re.sub(self.construct_re(self.doms[domain]["params"]), '', url.params))
+                            # remove the query regex mathes
+                            url = url._replace(query=re.sub(self.construct_re(self.doms[domain]["query"]), '', url.query))
+                            # remove the fragment regex mathes
+                            url = url._replace(fragment=re.sub(self.construct_re(self.doms[domain]["fragment"]), '', url.fragment))
                 # return the untracked url
-                if url.geturl() != p:
+                if len(url.geturl()) + 5 < len(p):
                     detracked_strs.append(url.geturl())
         else:
             return
         # return the detracted message
         if detracked_strs:
-            #embed = discord.Embed()
-            #embed.add_field(name="Auto link Detrack", value="Tracking links were detected, below are the detracked versions of the links.", inline=False)
-            message_str = "Tracking links were detected, below are the detracked versions of the links.\n"
+            message_str = "Tracking/mobile links detected, below are the sanitized links. OP can press 🗑️ to remove this message\n"
             for i in detracked_strs:
-                #embed.add_field(name="​", value=i, inline=False)
                 message_str += f"<{i}>\n"
-            #await message.reply(embed=embed)
-            await message.reply(message_str)
+            my_mgs = await message.reply(message_str)
+            await my_mgs.add_reaction("🗑️")
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        # check if the bot is reacting to the message
+        if payload.user_id == self.bot.user.id:
+            return
+        # check if the reaction is a trash can
+        if payload.emoji.name != "🗑️":
+            return
+        # check if the bot also added the trash can reaction
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        if self.bot.user not in await message.reactions[0].users().flatten():
+            return
+        
+        author = (await self.bot.get_channel(payload.channel_id).fetch_message(message.reference.message_id)).author.id
+        
+        # if the author of the message is the same as the user who reacted to the message
+        if payload.user_id == author:
+            # delete the message
+            await message.delete()
+        
 
     @commands.check(mods_can_change_settings)
     @bridge.bridge_command(name="detrack", aliases=["urlclean"],

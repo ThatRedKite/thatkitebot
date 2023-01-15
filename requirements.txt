@@ -18,5 +18,6 @@ matplotlib
 xkcd
 imagehash
 uwuipy
-py-cord[speed]==2.0.1
+py-cord[speed]==2.3.0
 dulwich
+toml
