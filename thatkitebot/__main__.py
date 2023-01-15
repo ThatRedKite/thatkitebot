@@ -34,7 +34,6 @@ enabled_ext = [
     "thatkitebot.cogs.welcomecog",
     "thatkitebot.cogs.repost",
     "thatkitebot.cogs.starboard",
-    "thatkitebot.cogs.music",
     "thatkitebot.cogs.info",
     "thatkitebot.cogs.detrack"
 ]

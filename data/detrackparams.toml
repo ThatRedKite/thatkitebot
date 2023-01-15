@@ -1,0 +1,193 @@
+# detracking config file test
+# 
+#
+# Example:
+# how a link looks like: <scheme>://<net_loc>/<path>;<params>?<query>#<fragment>
+# [domains.link_name] - internal name, doesn't really do much except be desriptive
+# netloc =  - the netloc regex of the site, if this is matched, the link will be processed
+# path = "" - the path regex of the path, if this is matched, the matched part will be removed
+# params = "" - same as the above, but for the params
+# query = ".*" - same as the above, but for the query
+# fragment = ".*" - same as the above, but for the fragment
+
+[domains]
+[domains.global]
+netloc = "_all_"
+path = ""
+params = ""
+query = "&*(utm_.{1,}|action_ref_map|action_ref_map|action_type_map|aff_platform|aff_trace_key|sc_cid|mkt_tok|trk|trkCampaign|at_campaign|at_medium|at_custom|dpg_.{1,}|hmb_campaign|hmb_medium|hmb_source|ga_.{1,}|gclid|gclsrc|spJobID|spMailingID|spReportId|spUserID|itm_.{1,}|s_cid|assetId|assetType|campaignId|elqTrack|recipientId|siteId|mc_cid|mc_eid|mtm_.{1,}|pk_.{1,}|ns_.{1,}|sc_|stm_.{1,}|nr_email_referer|vero_conv|vero_id|_openstat|yclid|c_id|campaign_id|Campaign|cmpid|mbid|ncid|fb_action_ids|fb_action_types|fb_ref|fb_source|fbclid|_hsenc|_hsmi|__hssc|__hstc|hsCtaTracking|tt_content|tt_medium|wt_mc)=[^&]*"
+fragment = ""
+
+[domains.aliexpress]
+netloc = ".*aliexpress." # don't forget to escape the \
+netloc_dl = "_pref_"  # delte the matched regex from the netloc
+path = ""
+params = "_all_"
+query = "_all_"
+fragment = "_all_"
+
+[domains.amazon]
+netloc = ".*amazon." # don't forget to escape the \
+netloc_dl = "_pref_"  # delte the matched regex from the netloc
+path = ""
+params = "_all_"
+query = "_all_"
+fragment = "_all_"
+
+[domains.ebay]
+netloc = ".*ebay."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "_all_"
+fragment = "_all_"
+
+[domains.bing]
+netloc = ".*bing."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(cvid|form|pq|qs|sc|sk|sp|gh.{1,})=[^&]*"
+fragment = "_all_"
+
+[domains.google]
+netloc = ".*google."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(ei|gs_gbg|gs_l|gs_lcp|gs_mss|gs_rn|gws_rd|sei|ved|client|sxsrf|ots|sig|sa|lpg|source)=[^&]*"
+fragment = "_all_"
+
+[domains.etsy]
+netloc = ".*etsy."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(click_key|click_sum|organic_search_click|ref|pro|sts|rec_type|external)=[^&]*"
+fragment = "_all_"
+
+[domains.facebook]
+netloc = ".*facebook."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(fb_action_ids|fb_action_types|fb_ref|fb_source|fbclid|hrc|refsrc|refurl|ref_component|ref_page)=[^&]*"
+fragment = "_all_"
+
+[domains.instagram]
+netloc = ".*instagram."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(igshid)=[^&]*"
+fragment = "_all_"
+
+[domains.imdb]
+netloc = ".*imdb."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "_all_"
+fragment = "_all_"
+
+[domains.linkedin]
+netloc = ".*linkedin."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(eBP|lgCta|lgTemp|lipi|midSig|midToken|recommendedFlavor|refId|trackingId|trk.{1,}|upsellOrderOrigin|original_referer)=[^&]*"
+fragment = "_all_"
+
+[domains.medium]
+netloc = ".*medium."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(_branch_match_id|source)=[^&]*"
+fragment = "_all_"
+
+[domains.sourceforge]
+netloc = ".*sourceforge."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(position|source)=[^&]*"
+fragment = "_all_"
+
+[domains.spotify]
+netloc = ".*spotify."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(context|si)=[^&]*"
+fragment = "_all_"
+
+[domains.tiktok]
+netloc = ".*tiktok."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(_d|checksum|is_copy_url|is_from_webapp|language|preview_pb|sec_user_id|sender_device|sender_web_id|share_app_id|share_link_id|share_item_id|source|timestamp|tt_from|u_code|user_id|_t|_r)=[^&]*"
+fragment = "_all_"
+
+[domains.twitter]
+netloc = ".*twitter."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(cxt|ref_.{1,}|s|t|twclid)=[^&]*"
+fragment = "_all_"
+
+[domains.yahoo]
+netloc = ".*yahoo."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(guccounter|soc_src|soc_trk|guce_referrer|guce_referrer_sig)=[^&]*"
+fragment = "_all_"
+
+[domains.youtube]
+netloc = ".*youtube."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(feature|kw)=[^&]*"
+fragment = "_all_"
+
+[domains.walmart]
+netloc = ".*walmart."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(ath.{1,})=[^&]*"
+fragment = "_all_"
+
+[domains.bestbuy]
+netloc = ".*bestbuy."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(skuId|ref|loc|ds_rl|gc.{1,})=[^&]*"
+fragment = "_all_"
+
+[domains.ti]
+netloc = ".*ti."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(HQS|ts|ref.{1,})=[^&]*"
+fragment = "_all_"
+
+[domains.mouser]
+netloc = ".*mouser."
+netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(qs)=[^&]*"
+fragment = "_all_"
+
+[LUT] # this is the lookup table, it's used to simplify the regex writing by replacing parts of it with a tag
+# the format:
+# _tag_ = "regex"
+_all_ = ".*"
+_pref_ = ""#"^(.*?)\\."
