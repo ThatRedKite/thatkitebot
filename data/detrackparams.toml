@@ -178,14 +178,6 @@ params = "_all_"
 query = "&*(HQS|ts|ref.{1,})=[^&]*"
 fragment = "_all_"
 
-[domains.mouser]
-netloc = ".*mouser."
-netloc_dl = "_pref_"
-path = ""
-params = "_all_"
-query = "&*(qs)=[^&]*"
-fragment = "_all_"
-
 [LUT] # this is the lookup table, it's used to simplify the regex writing by replacing parts of it with a tag
 # the format:
 # _tag_ = "regex"
