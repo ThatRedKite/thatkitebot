@@ -45,6 +45,7 @@ class BetterHelpCommand(commands.HelpCommand):
     async def send_bot_help(self, mapping):
         e = discord.Embed(title=info['name'])
         e.add_field(name='Contribute at', value=info['repo'], inline=False)
+        e.add_field(name='For help about a specific command use:', value='`+help <command>`', inline=False)
         cogs = [(cog, await self.filter_commands(mapping[cog])) for cog in mapping.keys()]
         cogs = [x for x in cogs if len(x[1]) > 0]
         for i, (cog, cmds) in enumerate(cogs):
@@ -56,9 +57,9 @@ class BetterHelpCommand(commands.HelpCommand):
             else:
                 e.add_field(name=cog.qualified_name, value=h, inline=True)
         if random.random() < 0.9:
-            e.set_footer(text='Made with ❤️')
+            e.set_footer(text='Made with ❤️\nUse `+help <command>` to get detailed help about a specific command.')
         else:
-            e.set_footer(text='Made with 🍆')
+            e.set_footer(text='Made with 🍆\nUse `+help <command>` to get detailed help about a specific command.')
         await self.send_embed(e)
 
     async def send_cog_help(self, cog: commands.Cog):
