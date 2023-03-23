@@ -21,15 +21,28 @@ class ChemCog(commands.Cog, name="Chemistry commands"):
         Calculates the molar mass of a chemical formula.
         """
         try:
-            mass_pattern = re.compile(r"mass: (\S+)\n")
             mass_analyzed = molmass.analyze(formula)
-            avg, mono, nom, mean = re.findall(mass_pattern, mass_analyzed)
+
+            nominal = re.findall(r"Nominal mass: ([0-9.]*)", mass_analyzed)[0]
+            average = re.findall(r"Average mass: ([0-9.]*)", mass_analyzed)[0]
+            monoisotopic = re.findall(r"Monoisotopic mass: ([0-9.]*)", mass_analyzed)[0]
+            mostabundant = re.findall(r"Most abundant mass: ([0-9.]*)", mass_analyzed)[0]
+
+            num = re.findall("Number of atoms: ([0-9]*)", mass_analyzed)[0]
+
             embed = discord.Embed(
                 title=f"Molar mass for {formula} (in g/mol)",
-                description=f"Average mass: `{avg}`\nMonoisotopic mass: `{mono}`\nNominal mass: `{nom}`\nMean mass: `{mean}`")
+                description=(
+                    f"Number of Atoms: {num}\n"
+                    f"Nominal mass: {nominal}\n"
+                    f"Average Mass: {average}\n"
+                    f"Monoisotopic mass: {monoisotopic}\n"
+                    f"Most abundant mass: {mostabundant}\n"
+                )
+            )
             embed.color = util.EmbedColors.lime_green
             await ctx.send(embed=embed)
-        except ValueError:
+        except IndexError or ValueError:
             await util.errormsg(ctx, "This does not appear to be a valid Chemical. Please check your input.")
 
 
