@@ -1,14 +1,17 @@
-import aioredis
-import discord
+import re
 import io
+import textwrap
+
+import discord
+from unidecode import unidecode
+from uwuipy import uwuipy
 from discord.ext import commands, bridge
+from redis import asyncio as aioredis
 
 import thatkitebot
-from thatkitebot.cogs.settings import mods_can_change_settings
-from uwuipy import uwuipy
-import textwrap
-from unidecode import unidecode
-import re
+from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.tkb_redis.settings import RedisFlags
+
 
 async def uwuify(message: str, id: int):
     uwu = uwuipy(id)
@@ -23,15 +26,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         self.redis: aioredis.Redis = bot.redis
 
     async def _uwu_enabled(self, ctx):
-        if not await self.redis.hexists(str(ctx.guild.id), "UWU"):
-            await self.redis.hset(str(ctx.guild.id), "UWU", "TRUE")
-            return
-        else:
-            return await self.redis.hget(str(ctx.guild.id), "UWU") == "TRUE"
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id ,RedisFlags.UWU)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # Check if the user is a bot 
+        # Check if the user is a bot
         if message.author.bot:
             return
 
@@ -45,11 +44,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # Carter's code (Updated)
         if not message.webhook_id:
             await self.bot.process_commands(message)
-            await message.delete()
-
             webhooks = await message.channel.webhooks()
             webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
-
             if not webhook:
                 webhook = await message.channel.create_webhook(name='uwuhook', reason='uwuhook is for uwu channel uwu')
 
@@ -58,7 +54,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 async with self.bot.aiohttp_session.get(attachment.url) as resp:
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
-
+            await message.delete()
             # convert the input string to ascii
             msg_len = len(message.content) + 20
             msg = unidecode(message.content)
@@ -80,25 +76,25 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                                files=files)
 
     # Sorry mom
-    @commands.check(mods_can_change_settings)
+    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
                            description="Make a channel automatically UwU every message")
     async def add_uwu_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """
         uwuifies an entire channel by deleting the original messages
         and replacing them with bot clones.
-        
-        Usage: 
+
+        Usage:
         `+uwu_channel #channel` - toggles the setting for a channel
-               
+
         Only administrators and moderators can use this command.
         """
         if not await self._uwu_enabled(ctx):
             return await ctx.respond("This command is disabled on this server (setting `UWU` is set `FALSE`)")
 
-        if not await mods_can_change_settings(ctx):
+        if not await pc.mods_can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
-        
+
         key = f"uwu_channels:{ctx.guild.id}"
         if not await self.redis.sismember(key, channel.id):
             await self.redis.sadd(key, channel.id)
@@ -114,25 +110,25 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
             print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} de-uwuified #{channel.name}")
 
-    @commands.check(mods_can_change_settings)
+    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
                            description="Make a user automatically UwU every message")
     async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User):
         """
         uwuifies all messages sent by a specific person by deleting
         their original messages and replacing them with a bot clone.
-        
-        Usage: 
+
+        Usage:
         `+uwu_user @user True` - toggle the setting for a user
-               
+
         Only admins can use this command.
         """
         if not await self._uwu_enabled(ctx):
             return await ctx.respond("This command is disabled on this server (setting `UWU` is set `FALSE`)")
 
-        if not await mods_can_change_settings(ctx):
+        if not await pc.mods_can_change_settings(ctx):
             return await ctx.respond("You don't have permission to change settings.")
-        
+
         key = f"uwu_users:{ctx.guild.id}"
         if not await self.redis.sismember(key, user.id):
             await self.redis.sadd(key, user.id)

@@ -4,6 +4,7 @@ services:
     links:
       - "redis:redis"
       - "redis_cache:redis_cache"
+      - "lavalink:lavalink"
     volumes:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/
@@ -25,4 +26,10 @@ services:
     container_name: redis_cache
     image: "redis:alpine"
     entrypoint: redis-server --save "" --appendonly no
+
+  lavalink:
+    container_name: lavalink
+    volumes:
+      - ./data/application.yml:/opt/Lavalink/application.yml
+    image: "fredboat/lavalink"
 

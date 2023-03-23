@@ -11,9 +11,11 @@ from datetime import datetime
 from operator import itemgetter
 from typing import Optional
 
-import aioredis
 import discord
 from discord.ext import commands
+from redis import asyncio as aioredis
+
+from thatkitebot.tkb_redis.settings import RedisFlags
 
 
 async def update_count(redis: aioredis.Redis, message: discord.Message):
@@ -54,57 +56,97 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         self.settings_redis: aioredis.Redis = bot.redis
 
     async def cog_check(self, ctx):
-        return await self.settings_redis.hget(ctx.guild.id, "WELCOME") == "TRUE"
+        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild.id, RedisFlags.WELCOME)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """
         Updates the welcome count for the given message's author. This is called by the bot on every message.
         """
-        if self.bot.command_prefix not in message.content and message.author.id != self.bot.user.id and message.channel.id == message.guild.system_channel.id:
-            try:
-                await update_count(self.redis_welcomes, message)
-            except AssertionError:
-                pass
-            
+        # check, if welcome features are even enabled
+        if not await RedisFlags.get_guild_flag(self.settings_redis, message.guild.id, RedisFlags.WELCOME):
+            return
+
+        # make sure we are in the system channel. If not, return
+        if message.channel is not message.guild.system_channel:
+            return
+
+        # make sure the message is not a bot command
+        elif message.content.startswith(self.bot.command_prefix):
+            return
+
+        # ignore the bot's own messages
+        elif message.author is self.bot.user:
+            return
+
+        try:
+            await update_count(self.redis_welcomes, message)
+        except AssertionError:
+            pass
+
     @commands.Cog.listener()
-    async def on_member_join(self, joinedmember):
+    async def on_member_join(self, joined_member):
         """
         Updates the latest_join key for the given member. This is called by the bot on every member join.
         """
-        welcome_channel = joinedmember.guild.system_channel.id
-        last_joined = joinedmember.joined_at
+        # check, if welcome features are even enabled
+        if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME):
+            return
+
+        # get some values
+        welcome_channel = joined_member.guild.system_channel.id
+        last_joined = joined_member.joined_at
         unix_time = time.mktime(last_joined.timetuple())
-        guild = joinedmember.guild.id
+        guild = joined_member.guild.id
+
+        # assemble the redis key
         key = f"latest_join:{guild}"
+
+        # make a dict containint all the data we want to write
         datadict = dict(
             latest_join=int(unix_time),
-            user_id=int(joinedmember.id),
+            user_id=int(joined_member.id),
             join_channel=int(welcome_channel)
         )
+
+        # write the data
         await self.redis_welcomes.hmset(key, datadict)
-        await joinedmember.guild.system_channel.send("welcome")
-            
+        await joined_member.guild.system_channel.send("welcome")
+
+
+
+    # TODO: honestly, this should just be completely rewritten using a sorted set instead of hashes
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="welcomes")
     async def welcome(self, ctx, *, user: Optional[discord.Member] = None):
         """
         Displays the top 10 users with the most welcome count.
         """
+
+        # get the current time through some really overcomplicated means
         current_time = datetime.utcfromtimestamp(int(time.mktime(ctx.message.created_at.timetuple())))
+
         # Scan all users in the DB
         # here's a nice one-liner
         key_list = [key async for key in self.redis_welcomes.scan_iter(match=f"leaderboard:*:{ctx.guild.id}")]
+
+        # create an empty dict that will hold all the leaderboard data
         leaderboard = dict()
+
+        # do some very inefficient stuff
+        # iterate over every key for every thing because yes
         for i in key_list:
             author = re.findall(r":[\d]{5,}:", i)[0][1:-1]  # extract the author id
             leaderboard[f"<@{author}>"] = await self.redis_welcomes.hgetall(i)
         sorted_lb = sorted(leaderboard.items(), key=lambda x: int(x[1]['welcome_count']), reverse=True)
 
+        # display the total leaderboard
         if not user:
             embed = discord.Embed(title="Welcome leaderboard")
             lb_str = ""
+
             number = 1
+
             for i in sorted_lb:
                 if number <= 10:
                     match number:

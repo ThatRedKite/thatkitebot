@@ -1,42 +1,27 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
 import os
+import logging
+import json
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
 
 import aiohttp
+from redis import asyncio as aioredis
 import psutil
 import discord
-import aioredis
-import json
+import redis
+import wavelink
+
 from discord.ext import commands, bridge
 from dulwich.repo import Repo
 
-__name__ = "ThatKiteBot"
-__version__ = "3.11"
-__author__ = "ThatRedKite and contributors"
+from .extensions import ENABLED_EXTENSIONS
 
-enabled_ext = [
-    "thatkitebot.cogs.funstuffcog",
-    "thatkitebot.cogs.imagecog",
-    "thatkitebot.cogs.nsfwcog",
-    "thatkitebot.cogs.listenercog",
-    "thatkitebot.cogs.uwucog",
-    "thatkitebot.cogs.sudocog",
-    "thatkitebot.cogs.utilitiescog",
-    "thatkitebot.cogs.settings",
-    "thatkitebot.cogs.help",
-    "thatkitebot.cogs.chemistry",
-    "thatkitebot.cogs.electronics",
-    "thatkitebot.cogs.electroslash",
-    "thatkitebot.cogs.laser",
-    "thatkitebot.cogs.welcomecog",
-    "thatkitebot.cogs.repost",
-    "thatkitebot.cogs.starboard",
-    "thatkitebot.cogs.info",
-    "thatkitebot.cogs.detrack"
-]
+__name__ = "ThatKiteBot"
+__version__ = "4.0"
+__author__ = "ThatRedKite and contributors"
 
 tempdir = "/tmp/tkb/"
 data_dir = "/app/data"
@@ -45,6 +30,12 @@ dir_name = "/app/thatkitebot"
 # this is a pretty dumb way of doing things, but it works
 intents = discord.Intents.all()
 
+logger = logging.getLogger("discord")
+logger.setLevel(logging.INFO)
+handler = logging.FileHandler(filename="/app/data/discord.log", encoding="utf-8", mode="w")
+handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
+logger.addHandler(handler)
+
 # check if the init_settings.json file exists and if not, create it
 if not Path(os.path.join(data_dir, "init_settings.json")).exists():
     print("No init_settings.json file found. Creating one now.")
@@ -52,6 +43,7 @@ if not Path(os.path.join(data_dir, "init_settings.json")).exists():
         "discord token": "",
         "tenor api key": "",
         "prefix": "+",
+        "wavelink_pw": "",
     }
     # write the dict as json to the init_settings.json file with the json library
     with open(os.path.join(data_dir, "init_settings.json"), "w") as f:
@@ -71,6 +63,7 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
         discord_token = settings_dict["discord token"]
         tenor_token = settings_dict["tenor api key"]
         prefix = settings_dict["prefix"]
+        wavelink_pw = settings_dict["wavelink_pw"]
 
     except json.decoder.JSONDecodeError:
         print("init_settings.json is not valid json. Please fix it.")
@@ -103,6 +96,7 @@ class ThatKiteBot(bridge.Bot, ABC):
         # settings
         self.debug_mode = False
         self.tenor_token = tt
+        self.enable_voice = False  # global override for deactivating voice commands
         # sessions
         self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
@@ -119,8 +113,9 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
+            self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
 
-            self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
+            self.redis_cache = aioredis.Redis(host="redis_cache", db=0)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
             print("Connection successful.")
         except aioredis.ConnectionError:
@@ -128,6 +123,10 @@ class ThatKiteBot(bridge.Bot, ABC):
             exit(1)
         # bot status info
         self.cpu_usage = 0
+
+        self.events_hour = 0
+        self.events_total = 0
+
         self.command_invokes_hour = 0
         self.command_invokes_total = 0
 
@@ -138,16 +137,30 @@ class ThatKiteBot(bridge.Bot, ABC):
 # create the bot instance
 print(f"Starting ThatKiteBot v {__version__} ...")
 bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents)
-print(f"Loading {len(enabled_ext)} extensions: \n")
+print(f"Loading {len(ENABLED_EXTENSIONS)} extensions:")
+for extension in ENABLED_EXTENSIONS:
+    print(extension.split(".")[-1])
+
+
+@bot.event
+async def on_ready():
+    print("Connecting to lavalink ...\n")
+    try:
+        await wavelink.NodePool.create_node(
+            bot=bot,
+            host="lavalink",
+            port=2333,
+            password=wavelink_pw
+        )
+        print("Sucessfully connected to lavalink!")
+        bot.enable_voice = True
+    except:
+        print("Could not connect to lavalink, voice functionality will be disabled. Please check your settings!\n")
+
 
 # load the cogs aka extensions
-for ext in enabled_ext:
-    try:
-        print(f"   loading {ext}")
-        bot.load_extension(ext)
-    except Exception as exc:
-        print(f"error loading {ext}")
-        raise exc
+
+bot.load_extensions(*ENABLED_EXTENSIONS, store=False)
 
 # try to start the bot with the token from the init_settings.json file catch any login errors
 try:

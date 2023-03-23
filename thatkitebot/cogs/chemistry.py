@@ -1,10 +1,9 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
 
 import discord
 from discord.ext import commands
 import molmass
 import re
-from thatkitebot.backend import util
+from thatkitebot.base import util
 
 
 class ChemCog(commands.Cog, name="Chemistry commands"):

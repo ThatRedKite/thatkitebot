@@ -1,11 +1,20 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
 import discord
-import aioredis
+import orjson
+import brotli
+import asyncio
+from time import sleep
+from datetime import datetime
+
+from redis import asyncio as aioredis
 from discord.ext import commands, tasks
-from discord.ext.commands.errors import CommandInvokeError
-from thatkitebot.backend.util import errormsg
-from thatkitebot.backend import cache
+
+import thatkitebot
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessage
+
+from thatkitebot.base.util import errormsg
+from thatkitebot.base import image_stuff
 
 
 class ListenerCog(commands.Cog):
@@ -13,14 +22,13 @@ class ListenerCog(commands.Cog):
     The perfect place to put random listeners in.
     """
     def __init__(self, bot):
-        self.dir_name = bot.dir_name
+        self.bot: thatkitebot.ThatKiteBot = bot
         self.redis_cache: aioredis.Redis = bot.redis_cache
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.repost_redis: aioredis.Redis = bot.redis_repost
-        self.bot: discord.Client = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: CommandInvokeError):
+    async def on_command_error(self, ctx: commands.Context, error):
         match type(error):
             case commands.CommandOnCooldown:
                 await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
@@ -39,6 +47,10 @@ class ListenerCog(commands.Cog):
     async def reset_invoke_counter(self):
         self.bot.command_invokes_hour = 0
 
+    @tasks.loop(hours=1.0)
+    async def reset_event_counter(self):
+        self.bot.events_hour = 0
+
     @commands.Cog.listener()
     async def on_ready(self):
         print("\nbot successfully started!")
@@ -55,15 +67,22 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx, ex):
+
         raise ex
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)
         try:
-            await cache.add_message_to_cache(self.redis_cache, message)
-        except:
-            print("could not add message to cache!")
+            await cache.add_message(message)
+        except CacheInvalidMessage:
+            print("smh")
+            return
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        print("listenercog", datetime.utcnow())
 
+        
 def setup(bot):
     bot.add_cog(ListenerCog(bot))

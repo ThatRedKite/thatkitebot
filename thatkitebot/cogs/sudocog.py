@@ -11,30 +11,12 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         self.bot: commands.Bot = bot
 
     @commands.is_owner()
-    @commands.command()
-    async def kill(self, ctx):
-        """Kills the bot :("""
-
-        # close the aiohttp session
-        await self.bot.aiohttp_session.close()
-
-        # close the redis connections
-        await self.redis.close()
-        await self.redis_repost.close()
-        await self.redis_welcomes.close()
-        await self.redis_cache.close()
-
-        # close the discord session
-        await self.bot.close()
-
-    @commands.is_owner()
     @commands.command(aliases=["reload", "reboot", "r"])
     async def restart(self, ctx):
         """Reloads all cogs"""
         # this will currently break all image commands
         extensions = list(self.bot.extensions.keys())
         for extension in extensions:
-            if not extension == "thatkitebot.cogs.electroslash":
                 try:
                     self.bot.reload_extension(extension)
                     print(f"Reloaded {extension}")
@@ -47,7 +29,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
     @commands.command()
     async def debug(self, ctx):
         """produces more verbose error messages"""
-        self.bot.debugmode = not self.bot.debugmode
+        self.bot.debug_mode = not self.bot.debug_mode
         await ctx.message.delete()
 
     @commands.is_owner()

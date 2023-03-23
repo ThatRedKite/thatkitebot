@@ -1,48 +1,16 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
 import asyncio
-import aioredis
 import discord
 
+from redis import asyncio as aioredis
 from discord.ext import commands, bridge
-from thatkitebot.backend import util
+
+from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.base.util import Parsing
 
 
-def preprocessor(a):
-    if type(a) is str:
-        return a.upper()
-    else:
-        return a
-
-
-async def can_change_settings(ctx: commands.Context):
-    """
-    Checks if the user has the permission to change settings. (Owner and admin)
-    """
-    channel: discord.TextChannel = ctx.channel
-    is_owner = await ctx.bot.is_owner(ctx.author)
-    is_admin = channel.permissions_for(ctx.author).administrator
-    return is_owner or is_admin
-
-
-async def mods_can_change_settings(ctx: commands.Context):
-    """
-    Checks if the user has the permission to change settings. (Mods included)
-    """
-    key = f"mod_roles:{ctx.guild.id}"
-    channel: discord.TextChannel = ctx.channel
-    is_owner = await ctx.bot.is_owner(ctx.author)
-    is_admin = channel.permissions_for(ctx.author).administrator
-    redis: aioredis.Redis = ctx.bot.redis
-    is_mod = False
-    if ctx.bot.redis:
-        pipe = redis.pipeline()
-        for role in ctx.author.roles:
-            await pipe.sismember(key, role.id)
-        is_mod = any(await pipe.execute())
-        await pipe.close()
-    return is_owner or is_admin or is_mod
-
+# TODO: make this not suck ass
 
 class SettingsCog(commands.Cog, name="settings"):
     """
@@ -55,7 +23,7 @@ class SettingsCog(commands.Cog, name="settings"):
         self.possible_settings = ["NSFW", "IMAGE", "REPOST", "WELCOME", "UWU"]
 
     @commands.group(name="setting", aliases=["settings", "set"], hidden=True)
-    @commands.check(can_change_settings)
+    @commands.check(pc.can_change_settings)
     async def settings(self, ctx):
         """
         This is a command group used to change some bot settings.
@@ -79,12 +47,12 @@ class SettingsCog(commands.Cog, name="settings"):
             if m.channel == channel and m.author is author:
                 return m.content.lower() in yes_choices
 
-        if not preprocessor(name) in self.possible_settings:
+        if not Parsing.preprocessor(name) in self.possible_settings:
             await util.errormsg(
                 ctx,
                 f"This seems to be an invalid setting! Execute {ctx.prefix}settings help to see all availible settings")
             return
-        await ctx.send(f"Add the setting `{preprocessor(name)}` with the value `{preprocessor(arg)}` to the settings? (y/n)")
+        await ctx.send(f"Add the setting `{Parsing.preprocessor(name)}` with the value `{preprocessor(arg)}` to the settings? (y/n)")
         msg = await self.bot.wait_for("message", timeout=10, check=check)
         if msg.content in yes_choices:
             await self.redis.hset(ctx.guild.id, preprocessor(name), preprocessor(arg))

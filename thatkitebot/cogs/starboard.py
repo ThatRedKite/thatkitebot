@@ -1,50 +1,10 @@
-import re
-
-import aioredis
+from redis import asyncio as aioredis
 import discord
 from discord.ext import commands, bridge
 
-from thatkitebot.cogs.settings import can_change_settings, mods_can_change_settings
-from thatkitebot.cogs.imagecog import get_image_url
-
-
-def check_emoji(emoji):
-    emoji_regex = r"<\S+:\d+>"
-    if len(emoji) == 1:
-        return True
-    elif re.match(emoji_regex, emoji):
-        return True
-    else:
-        return False
-
-
-async def generate_embed(message: discord.message, count, star_emoji, return_file=False, aiohttp_session=None):
-    embed = discord.Embed(title=f"{message.author.name}",
-                          description=f"**Click [here]({message.jump_url}) to Jump to the message**")
-    try:
-        url, embed_type = await get_image_url(message, video=False, gifv=True)
-    except TypeError:
-        url, embed_type = None, None
-
-    if url and ("image" in embed_type or embed_type == "rich"):
-        embed.set_image(url=url)
-    elif url and "video" in embed_type:
-        embed.add_field(name="[Video]", value=f"[Content]({url}) is a video which bots cannot display")
-
-    content = message.clean_content or ""
-    if content and content != url:
-        embed.description += f"\n\n{content}"
-
-    embed.set_thumbnail(url=message.author.avatar.url)
-    embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
-    embed.color = discord.Color.gold()
-    embed.timestamp = message.created_at
-    if return_file and aiohttp_session:
-        async with aiohttp_session.get(url) as resp:
-            file = discord.File(await resp.read(), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
-            return embed, file
-
-    return embed
+from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.base.util import Parsing
+from thatkitebot.embeds.starboard import generate_embed
 
 
 async def set_starboard(redis, channel_id, mode, threshold, emoji, guild_id, channel_list=None):
@@ -128,10 +88,10 @@ class StarBoard(commands.Cog):
     # the channel specific modes will override the global modes for that channel
 
     # command for adding a global threshold starboard
-    @commands.check(can_change_settings)
+    @commands.check(pc.can_change_settings)
     @bridge.bridge_command(name="starboard", aliases=["sb"], description="Set the starboard settings for this guild")
     async def starboard(self, ctx: bridge.BridgeContext, threshold: int, channel: discord.TextChannel, emoji: str):
-        if not await can_change_settings(ctx):
+        if not await pc.can_change_settings(ctx):
             return
 
         if not await check_permissions(ctx, channel):
@@ -141,12 +101,12 @@ class StarBoard(commands.Cog):
             await ctx.respond("The threshold must be at least 1.")
             return
 
-        assert check_emoji(emoji)
+        assert Parsing.check_emoji(emoji)
         await set_starboard(self.redis, channel.id, 1, threshold, emoji, ctx.guild.id, [])
         await ctx.respond(
             f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}.")
 
-    @commands.check(can_change_settings)
+    @commands.check(pc.can_change_settings)
     @bridge.bridge_command(name="channel_specific_starboard", aliases=["sbcs"],
                            description="A starboard that will only listen in specific channels")
     async def _starboard_channel_specific(self,
@@ -157,7 +117,7 @@ class StarBoard(commands.Cog):
                                           listen_channel: discord.TextChannel
                                           ):
 
-        if not await can_change_settings(ctx):
+        if not await pc.can_change_settings(ctx):
             return
 
         if not await check_permissions(ctx, listen_channel):
@@ -171,18 +131,19 @@ class StarBoard(commands.Cog):
             await ctx.respond("You need to specify a channel to listen in!")
             return
 
-        assert check_emoji(emoji)
+        assert Parsing.check_emoji(emoji)
+        # assert Parsing.check_emoji(emoji) why the fuck was I checking it twice??
 
         await set_starboard(self.redis, starboard_channel.id, 2, threshold, emoji, ctx.guild.id, [str(listen_channel.id)])
         await ctx.respond(
             f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
         )
 
-    @commands.check(mods_can_change_settings)
+    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
                            description="Blacklist or unblacklist a channel from the starboard")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
-        if not can_change_settings(ctx):
+        if not pc.can_change_settings(ctx):
             return
         """
         Add or remove a channel from the blacklist. Blacklisted channels will be ignored by the starboard.
@@ -205,9 +166,12 @@ class StarBoard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+
         channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
         # check if the channel is blacklisted
-        if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", channel.id):
+        if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
             return
 
         # load the starboard settings
