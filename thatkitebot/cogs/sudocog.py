@@ -62,7 +62,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         """pretend to be the bot"""
         if not ctx.author.id == self.bot.owner_id:
             return
-        await ctx.send_response(message, ephemeral=True)
+        #await ctx.send_response(message, ephemeral=True)
         await ctx.send(message)
 
 
