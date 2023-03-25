@@ -128,7 +128,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.check(can_send_image)
     async def _train(self, ctx):
         """Sends a random image of a train."""
-        images = [image for image in glob.glob("/app/data/trains/*.png")]
+        images = [image for image in glob.glob("/app/data/trains/*.jpg")]
         train = discord.File(choice(images), "train.jpg")
         async with ctx.typing():
             await ctx.send(file=train)
