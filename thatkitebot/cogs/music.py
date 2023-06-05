@@ -70,7 +70,7 @@ class MusicCog(commands.Cog, name="Music"):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.settings_redis = self.bot.redis
 
-    music = discord.SlashCommandGroup("music", "Music commands", guild_ids=[759419755253465188, 1043932988032962580])
+    music = discord.SlashCommandGroup("music", "Music commands")
 
     async def cog_check(self, ctx):
         return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.MUSIC)

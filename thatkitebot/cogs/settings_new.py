@@ -16,11 +16,13 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         self.bot: discord.Client = bot
         self.redis: aioredis.Redis = self.bot.redis
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
-    async def enable_images(self, ctx):
+    settings = discord.SlashCommandGroup("settings", "Bot Settings", default_member_permissions=discord.Permissions(manage_guild=True))
+
+    @settings.command(name="images")
+    @discord.default_permissions(manage_guild=True)
+    async def enable_images(self, ctx: discord.ApplicationContext):
         """
-        Toggle image commands. Can be used by Administrators, Guild Owner or the Bot Owner
+        Toggle image commands. Can be used by everyone with "manage_guild" permissions.
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.IMAGE)
         if result:
@@ -28,11 +30,11 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         else:
             await ctx.send(f"Image commands have been disabled")
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
+    @settings.command(name="nsfw")
+    @discord.default_permissions(manage_guild=True)
     async def enable_nsfw(self, ctx):
         """
-        Toggle NSFW commands. Can be used by Administrators, Guild Owner or the Bot Owner
+        Toggle NSFW commands. Can be used by everyone with "manage_guild" permissions.
         (NSFW Commands will still require an NSFW channel to work)
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.NSFW)
@@ -41,11 +43,11 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         else:
             await ctx.send(f"NSFW commands have been disabled")
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
+    @settings.command(name="repost")
+    @discord.default_permissions(manage_guild=True)
     async def enable_repost(self, ctx):
         """
-        Toggle Repost Commands. Can be used by Administrators, Guild Owner or the Bot Owner
+        Toggle Repost Commands. Can be used by everyone with "manage_guild" permissions.
         (NSFW Commands will still require an NSFW channel to work)
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.REPOST)
@@ -54,8 +56,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         else:
             await ctx.send(f"NSFW commands have been disabled")
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
+    @settings.command()
+    @discord.default_permissions(manage_guild=True)
     async def enable_music(self, ctx):
         """
         Toggle music commands in the current server, requires the `Manage Server` permission.
@@ -68,11 +70,11 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         else:
             await ctx.send(f"NSFW commands have been disabled")
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
+    @settings.command(name="uwu")
+    @discord.default_permissions(manage_guild=True)
     async def enable_uwu(self, ctx):
         """
-        Toggle UwU Commands. Can be used by Administrators, Guild Owner or the Bot Owner
+        Toggle UwU Commands. Can be used by everyone with "manage_guild" permissions.
         (NSFW Commands will still require an NSFW channel to work)
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.UWU)
@@ -81,11 +83,11 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         else:
             await ctx.send(f"UwU commands have been disabled")
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
+    @settings.command(name="welcome_leaderboard")
+    @discord.default_permissions(manage_guild=True)
     async def enable_welcome_leaderboard(self, ctx):
         """
-        Toggle the welcome leaderboard. Can be used by Administrators, Guild Owner or the Bot Owner
+        Toggle the welcome leaderboard. Can be used by everyone with "manage_guild" permissions.
         (NSFW Commands will still require an NSFW channel to work)
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.WELCOME)
@@ -94,11 +96,11 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         else:
             await ctx.send(f"Welcome leaderboard has been disabled")
 
-    @commands.check(pc.can_change_settings)
-    @commands.command()
+    @settings.command(name="welcome_message")
+    @discord.default_permissions(manage_guild=True)
     async def enable_welcome_leaderboard(self, ctx):
         """
-        Toggle the welcome message. Can be used by Administrators, Guild Owner or the Bot Owner
+        Toggle the welcome message. Can be used by everyone with "manage_guild" permissions.r
         (NSFW Commands will still require an NSFW channel to work)
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.WELCOME_MESSAGE)
