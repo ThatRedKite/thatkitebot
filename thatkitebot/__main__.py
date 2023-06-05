@@ -1,5 +1,4 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
-
 import os
 import logging
 import json
@@ -100,7 +99,6 @@ class ThatKiteBot(bridge.Bot, ABC):
         # sessions
         self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
-
         # redis databases:
 
         # 0: initial settings, not accessed while the bot is running
