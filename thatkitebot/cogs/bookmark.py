@@ -4,9 +4,7 @@ from discord.ext import commands, pages
 from redis import asyncio as aioredis
 
 from thatkitebot.base.util import list_chunker, link_from_ids
-
-
-
+from thatkitebot.base.exceptions import NoBookmarksException
 
 
 async def get_bookmarks(redis: aioredis.Redis, user: discord.User):
