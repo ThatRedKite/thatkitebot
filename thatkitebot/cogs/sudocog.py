@@ -1,5 +1,5 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
-
+import discord
 from discord.ext import commands
 
 
@@ -32,11 +32,17 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         self.bot.debug_mode = not self.bot.debug_mode
         await ctx.message.delete()
 
+    @discord.guild_only()
     @commands.is_owner()
-    @commands.command()
-    async def echo(self, ctx, *, message: str):
+    @discord.slash_command()
+    async def echo(
+            self,
+            ctx: discord.ApplicationContext,
+            message: discord.Option(discord.SlashCommandOptionType.string, required=True),
+    ):
         """pretend to be the bot"""
-        await ctx.message.delete()
+        if not ctx.author.id == self.bot.owner_id:
+            return
         await ctx.send(message)
 
 
