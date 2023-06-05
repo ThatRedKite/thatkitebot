@@ -49,7 +49,7 @@ class RedisCache:
             pass
 
         if not message or self._sanity_check(message):
-            raise CacheInvalidMessage
+            raise CacheInvalidMessageException
 
         hash_key = str(message.author.id)
         entry_key = f"{message.guild.id}:{message.channel.id}:{message.id}"
@@ -57,7 +57,8 @@ class RedisCache:
         dict_fun = dict(
             clean_content=message.clean_content,
             reference=message.reference.to_message_reference_dict() if message.reference else None,
-            urls=urls
+            urls=urls,
+            reactions=[]
         )
 
         butt = orjson.dumps(dict_fun)
@@ -69,6 +70,18 @@ class RedisCache:
 
         if self.auto_exec:
             await self.pipeline.execute()
+
+    async def update_message(self, key: str, author_id: int, data_new: dict):
+        if not data_new:
+            raise NoDataException
+
+        try:
+            dumped = orjson.dumps(data_new)
+            compressed_data = brotli.compress(dumped, quality=11)
+            await self.pipeline.hset(name=str(author_id), key=key)
+
+        except Exception:
+            raise NoDataException
 
     async def get_author_id(self, message_id: Union[int, str]):
         return int((await self.redis.hget("id_to_author", str(message_id))).decode("ASCII"))
@@ -86,7 +99,7 @@ class RedisCache:
             if not channel_id:
                 channel_id = await self.get_channel_id(message_id)
         except AttributeError:
-            raise CacheInvalidMessage
+            raise CacheInvalidMessageException
 
         key = str(author_id)
         hash_key = f"{guild_id}:{channel_id}:{message_id}"
@@ -101,7 +114,7 @@ class RedisCache:
         raw = await self.redis.hget(key, hash_key)
 
         if not raw:
-            raise CacheInvalidMessage
+            raise CacheInvalidMessageException
 
 
         # decompress the data

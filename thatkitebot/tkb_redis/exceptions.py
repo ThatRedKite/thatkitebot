@@ -2,6 +2,9 @@ class CacheException(Exception):
     pass
 
 
-class CacheInvalidMessage(Exception):
+class CacheInvalidMessageException(Exception):
     pass
 
+
+class NoDataException(Exception):
+    pass
