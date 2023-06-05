@@ -72,12 +72,8 @@ class MusicCog(commands.Cog, name="Music"):
 
     music = discord.SlashCommandGroup("music", "Music commands", guild_ids=[759419755253465188, 1043932988032962580])
 
-    @music.command(name="enable", description="Enables music commands in the current server, requires the `Manage Server` permission.")
-    async def enable_music(self, ctx: discord.ApplicationContext):
-        await ctx.defer()
-        await RedisFlags.set_guild_flag(self.settings_redis, ctx.guild.id, RedisFlags.MUSIC, True)
-        embed = discord.Embed(title="Music commands are now enabled.", description="**WARNING: HIGHLY EXPERIMENTAL**")
-        await ctx.interaction.followup.send(embed=embed)
+    async def cog_check(self, ctx):
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.MUSIC)
 
     # static method for getting the right voice channel
     @staticmethod

@@ -1,7 +1,6 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
 
-from turtle import right
 import discord
 from discord.ext import commands
 
@@ -90,6 +89,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         Updates the latest_join key for the given member. This is called by the bot on every member join.
         """
         # check, if welcome features are even enabled
+        is_enabled, send_message = await RedisFlags.get_guild_flags(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME, RedisFlags.WELCOME_MESSAGE)
         if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME):
             return
 
@@ -111,9 +111,8 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
         # write the data
         await self.redis_welcomes.hmset(key, datadict)
-        await joined_member.guild.system_channel.send("welcome")
-
-
+        if await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME_MESSAGE):
+            await joined_member.guild.system_channel.send("welcome")
 
     # TODO: honestly, this should just be completely rewritten using a sorted set instead of hashes
     @commands.cooldown(1, 5, commands.BucketType.user)

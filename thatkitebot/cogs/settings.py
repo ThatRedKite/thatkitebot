@@ -1,5 +1,7 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
+import enum
+
 import asyncio
 import discord
 
@@ -9,10 +11,12 @@ from discord.ext import commands, bridge
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import Parsing
 
+from thatkitebot.tkb_redis.settings import RedisFlags
+
 
 # TODO: make this not suck ass
 
-class SettingsCog(commands.Cog, name="settings"):
+class SettingsCog(commands.Cog, name="legacy settings"):
     """
     Settings Cog. Allows the bot owner or admins to change settings for their server. All settings are stored in Redis
     and only apply to the server the command was used in. Global settings are not a thing (yet).
@@ -157,6 +161,33 @@ class SettingsCog(commands.Cog, name="settings"):
         if not await self.redis.hexists(guild.id, "IMAGE"):
             # set the settings that were defined in init_dict
             await self.redis.hmset(guild.id, init_dict)
+
+    @commands.is_owner()
+    @commands.command()
+    async def convert_settings(self, ctx):
+        """
+        convert from the old setting system to the new flag-based system
+        """
+        class Settings(enum.Enum):
+            UWU = RedisFlags.UWU
+            NSFW = RedisFlags.NSFW
+            IMAGE = RedisFlags.IMAGE
+            REPOST = RedisFlags.REPOST
+            WELCOME = RedisFlags.WELCOME
+
+        # set the defaults
+        pipe = self.redis.pipeline()
+        for guild in self.bot.guilds:
+            print(f"Converting settings for guild \x1b[0;32m'{guild.name}' \x1b[0;33m({guild.id}) \x1b[0;37m")
+            for key in await self.redis.hgetall(guild.id):
+                setting = await self.redis.hget(guild.id, key)
+                bool_repr = setting == "TRUE"
+                pos = Settings[key].value
+                await RedisFlags.set_guild_flag(pipe, ctx.guild.id, pos, bool_repr)
+            print(await RedisFlags.get_guild_flags(self.redis, guild.id, *range(0, 7)))
+
+        await pipe.execute()
+        print("success!")
 
 
 def setup(bot):

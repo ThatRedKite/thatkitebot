@@ -14,6 +14,7 @@ class RedisFlags:
     DETRACK = 5
     MUSIC = 6
     CACHING = 7
+    WELCOME_MESSAGE = 8
 
     @staticmethod
     async def set_guild_flag(redis: aioredis.Redis, gid, flag_offset: int, value: bool) -> None:
@@ -25,7 +26,8 @@ class RedisFlags:
         4: UWUIFICATION (uwucog.py) - uwuify
         5: LINK DETRACKING (detrack.py) - detracking
         6: MUSIC (musiccog.py) - music commands
-        7: WELCOME MESSAGES
+        7: CACHING
+        8: WELCOME MESSAGE
         """
         key = f"flags:{gid}"
         #await redis.execute_command("BITFIELD", key, "SET", "u1", flag_offset, int(value))

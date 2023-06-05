@@ -8,6 +8,7 @@ from discord.ext import commands
 from thatkitebot.base import url
 from thatkitebot.base.util import errormsg
 from thatkitebot.base.util import EmbedColors as ec
+from thatkitebot.tkb_redis.settings import RedisFlags
 
 
 class NSFW(commands.Cog, name="NSFW commands"):
@@ -20,7 +21,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
         self.bl = [424394851170385921]  # hardcoded guild blacklist, for my own safety
 
     async def cog_check(self, ctx):
-        return await self.redis.hget(ctx.guild.id, "NSFW") == "TRUE" and ctx.guild.id not in self.bl
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.NSFW)
 
     @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True, aliases=["rule34"])

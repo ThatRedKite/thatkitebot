@@ -26,7 +26,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         self.redis: aioredis.Redis = bot.redis
 
     async def _uwu_enabled(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id ,RedisFlags.UWU)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.UWU)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):

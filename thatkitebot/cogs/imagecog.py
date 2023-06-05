@@ -13,9 +13,11 @@ import discord
 from discord import option
 from discord.ext import commands, bridge
 
+import thatkitebot
 from thatkitebot.base import util, image_stuff
 from thatkitebot.base.exceptions import *
 from thatkitebot.base.image_stuff import get_image_url, ImageFunction
+from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import EmbedColors as ec
 
 
@@ -23,7 +25,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     """
     Image commands for the bot. Can be disabled by the bot owner or an admin.
     """
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot):
         self.bot = bot
         self.sem = asyncio.Semaphore(12)
         self.processpool = ProcessPoolExecutor(max_workers=4)
@@ -37,7 +39,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         await util.errormsg(ctx, error)
 
     async def cog_check(self, ctx) -> bool:
-        is_enabled = await self.bot.redis.hget(ctx.guild.id, "IMAGE") == "TRUE" if ctx.guild else True
+        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild.id, RedisFlags.IMAGE)
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed

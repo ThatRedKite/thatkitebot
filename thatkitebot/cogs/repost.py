@@ -61,8 +61,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         """
         return await self.settings_redis.sismember("REPOST_CHANNELS", channel.id)
 
-    #async def cog_check(self, ctx):
-    #    return await self.settings_redis.hget(ctx.guild.id, "REPOST") == "TRUE"
+    async def cog_check(self, ctx):
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.REPOST)
 
     # this is kinda dumb but i guess it works :)
     async def hash_from_url(self, urls: list[str]):
@@ -212,17 +212,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
 
         else:
             return
-
-    @commands.check(pc.can_change_settings)
-    @repost.command(name="enable", aliases=["disable", "toggle"])
-    async def _enable(self, ctx: commands.Context):
-        """
-        Toggles repost detection for the entire server
-        """
-        if await RedisFlags.toggle_guild_flag(self.settings_redis, ctx.guild.id, RedisFlags.REPOST):
-            return await ctx.send("Enabled repost detection")
-        else:
-            return await ctx.send("Disabled repost detection")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
