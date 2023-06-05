@@ -65,7 +65,6 @@ class BetterHelpCommand(commands.HelpCommand):
             e.color = self.context.bot.user.color
 
             if len(cmds) > 10:
-                print("oh no")
                 cmd_chunks = list(list_chunker(cmds, int(len(cmds) / 2)))  # split the command list into multiple lists
                 for cmd_chunk in cmd_chunks:
                     h = "\n".join([cmd.name for cmd in cmd_chunk])
