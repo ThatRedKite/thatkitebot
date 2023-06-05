@@ -176,7 +176,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                 ids, message_json = await cache.get_message(message_id, ctx.guild.id)
                 urls = [url for url in message_json["urls"]]
 
-            except ca.CacheInvalidMessage:
+            except ca.CacheInvalidMessageException:
                 # oh no, the message is not cached, time to use the Discord API
                 channel = await self.bot.fetch_channel(channel_id)
                 message = await channel.fetch_message(message_id)
