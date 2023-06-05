@@ -1,13 +1,11 @@
-import asyncio
-from redis import asyncio as aioredis
+
+import enum
+
 import discord
+from redis import asyncio as aioredis
 
-from discord.ext import commands, bridge
-
-import thatkitebot
-from thatkitebot.base.util import PermissonChecks as pc
+from discord.ext import commands
 from thatkitebot.tkb_redis.settings import RedisFlags
-from thatkitebot.base import util
 
 
 class SettingsCogV2(commands.Cog, name="Settings"):
@@ -108,6 +106,63 @@ class SettingsCogV2(commands.Cog, name="Settings"):
             await ctx.send(f"Welcome messages have been enabled")
         else:
             await ctx.send(f"Welcome messages have been disabled")
+
+    @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")
+    async def _add_mod(self, ctx: discord.ApplicationContext, role: discord.Role):
+        """
+        Allows mod perms to add a moderator role. Anyone with this role will be able to access mod features of KiteBot.
+        """
+        ctx.defer()
+        key = f"mod_roles:{ctx.guild.id}"  # I wanted to call them snowflakes :troll: but that would result in bad readability
+        if not await self.redis.sismember(key, role.id):
+            await self.redis.sadd(key, role.id)
+            await ctx.respond(f"{role.name} is now a moderator role")
+        else:
+            try:
+                await self.redis.srem(key, role.id)
+            except aioredis.ResponseError:
+                await ctx.respond(f"{role.name} is not a moderator role")
+                return
+            await ctx.respond(f"{role.name} is no longer a moderator role")
+
+    @commands.is_owner()
+    @commands.command()
+    async def convert_settings_global(self, ctx):
+        """
+        Convert from the old setting system to the new flag-based system
+        """
+        class Settings(enum.Enum):
+            UWU = RedisFlags.UWU
+            NSFW = RedisFlags.NSFW
+            IMAGE = RedisFlags.IMAGE
+            REPOST = RedisFlags.REPOST
+            WELCOME = RedisFlags.WELCOME
+
+        # set the defaults
+        pipe = self.redis.pipeline()
+        for guild in self.bot.guilds:
+            print(f"Converting settings for guild \x1b[0;32m'{guild.name}' \x1b[0;33m({guild.id}) \x1b[0;37m")
+            for key in await self.redis.hgetall(guild.id):
+                setting = await self.redis.hget(guild.id, key)
+                bool_repr = setting == "TRUE"
+                pos = Settings[key].value
+                await RedisFlags.set_guild_flag(pipe, ctx.guild.id, pos, bool_repr)
+            print(await RedisFlags.get_guild_flags(self.redis, guild.id, *range(0, 7)))
+
+        await pipe.execute()
+        print("success!")
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild):
+        # this initializes the settings for the guild the bot joins
+
+        # check if the bot already has settings for this guild
+        settings = [bool(setting) for setting in await RedisFlags.get_guild_flags(self.redis, guild.id, *range(0, 7))]
+        if any(settings):
+            return  # we seem to already have settings
+
+        # enable image commands
+        await RedisFlags.set_guild_flag(self.redis, guild.id, RedisFlags.IMAGE, True)
 
 
 def setup(bot):
