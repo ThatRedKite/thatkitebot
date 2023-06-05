@@ -11,7 +11,7 @@ from redis import asyncio as aioredis
 from discord.ext import commands, tasks
 
 import thatkitebot
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessage
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
 
 from thatkitebot.base.util import errormsg
 from thatkitebot.base import image_stuff
@@ -40,8 +40,6 @@ class ListenerCog(commands.Cog):
                 await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
-            case commands.NotOwner:
-                await errormsg(ctx, f"Only the bot owner can do this! Contact them if needed.")
 
     @tasks.loop(hours=1.0)
     async def reset_invoke_counter(self):
@@ -75,14 +73,34 @@ class ListenerCog(commands.Cog):
         cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)
         try:
             await cache.add_message(message)
-        except CacheInvalidMessage:
-            print("smh")
+        except CacheInvalidMessageException:
             return
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        print("listenercog", datetime.utcnow())
+        # add the reaction to the cached message
+        # get the message
+        cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)
+        try:
+            key, data = await cache.get_message(
+                message_id=payload.message_id,
+                guild_id=payload.guild_id,
+                author_id=payload.user_id,
+                channel_id=payload.channel_id
+            )
+        except CacheInvalidMessageException:
+            return
+        # update the reactions
+        data["reactions"].append((payload.emoji.id, payload.member.id))
+        print(data)
 
-        
+        # update the message
+        await cache.update_message(
+            author_id=payload.user_id,
+            data_new=data,
+            key=key
+        )
+
+
 def setup(bot):
     bot.add_cog(ListenerCog(bot))
