@@ -1,12 +1,14 @@
-import io
+import functools
 import re
-from datetime import datetime
+import asyncio
 from typing import Union
+from io import BytesIO
 
 import discord
 import imagehash
 import aiohttp
 
+from discord.ext import commands
 from PIL import Image as PILImage
 from wand.image import Image as WandImage
 from wand.color import Color
@@ -19,7 +21,7 @@ def hasher(data):
     """
     Returns a hash of the image data.
     """
-    pil_image = PILImage.open(io.BytesIO(data))
+    pil_image = PILImage.open(BytesIO(data))
     return str(imagehash.phash(pil_image, hash_size=16))
 
 
@@ -31,7 +33,46 @@ async def download_image(session: aiohttp.ClientSession, url: str):
         return await r.read()
 
 
-async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[tuple[str, str], tuple[None, None]]:
+async def get_last_image(ctx, aiohttp_session: aiohttp.ClientSession, return_buffer=False) -> Union[
+    BytesIO, bytes, None]:
+    # search past 30 messages for suitable media content, only search messages with an attachment or embed
+    # first, get a suitable message
+    if ctx.message.reference:
+        # fetch the message from the reference
+        message = await ctx.fetch_message(ctx.message.reference.message_id)
+        url, embed_type = await get_image_url(message)
+
+    # check if the message has an attachment
+    elif ctx.message.attachments or ctx.message.embeds:
+        url, embed_type = await get_image_url(ctx.message)
+    else:
+        # iterate over the last 30 messages
+        async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
+            # get the url of the image and break the loop if it's not None
+            url, embed_type = await get_image_url(msg)
+            if url:
+                break
+            else:
+                continue
+
+    # if the url is None, return None because there is no suitable image in the last 30 messages
+    if not url:
+        raise commands.BadArgument("No suitable image found.")
+
+    # if the url is not None, download the image and return it
+    async with aiohttp_session.get(url) as resp:
+        # if return_buffer is True, return a BytesIO buffer of the image and seek to the beginning
+        if return_buffer:
+            buf = BytesIO(await resp.read())
+            buf.seek(0)
+            return buf
+        # if return_buffer is False, return the image as a blob
+        else:
+            return await resp.read()
+
+
+async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[
+    tuple[str, str], tuple[None, None]]:
     # check if the message has an attachment or embed of the type "image"
     if message.attachments:
         return message.attachments[0].url, message.attachments[0].content_type
@@ -89,8 +130,9 @@ async def get_image_urls(message: discord.Message, video: bool = False, gifv: bo
 
 
 class ImageFunction:
-    def __init__(self, buffer: io.BytesIO, fn:int):
+    def __init__(self, buffer: BytesIO, fn: int, loop: asyncio.AbstractEventLoop):
         buffer.seek(0)
+        self.loop = loop
         self.image = WandImage(file=buffer)
 
         if self.image.height >= 6000 or self.image.height >= 6000:
@@ -99,13 +141,45 @@ class ImageFunction:
 
         self.fn = fn
 
-    def make_blob_close(self) -> (bytes, int):
+    async def image_worker(self, func, name="_", gif: bool = False, does_return=False):
+        if not does_return:
+            # for some reason it never runs the function if you use an actual executor
+            # so this is a temporary workaround
+            try:
+                await asyncio.wait_for(self.loop.run_in_executor(executor=None, func=func), timeout=30.0)
+            except asyncio.TimeoutError:
+                self.image.destroy()
+                return
+        else:
+            try:
+                b2, fn = await asyncio.wait_for(self.loop.run_in_executor(None, func), timeout=30.0)
+            except asyncio.TimeoutError:
+                self.image.destroy()
+                return
+
+            # generate the embed and file object
+            embed = discord.Embed(title="Processed image")
+            extension = 'png' if not gif else 'gif'
+            embed.set_image(url=f"attachment://{name}.{extension}")
+            with BytesIO(b2) as buf:
+                self.image.destroy()
+                del self.image
+                file = discord.File(buf, filename=f"{name}.{extension}")
+            return embed, file
+
+    async def make_blob_close(self, name: str = "image", gif=False):
+        return await self.image_worker(self._make_blob_close, name=f"{name}_{self.__hash__()}", does_return=True, gif=gif)
+
+    def _make_blob_close(self) -> (bytes, int):
         self.image.format = "png"
         b = self.image.make_blob()
         self.image.destroy()
         return b, self.fn
 
-    def make_blob(self) -> (bytes, int):
+    async def make_blob(self, name: str = "image"):
+        return await self.image_worker(self._make_blob, name=f"{name}_{self.__hash__()}", does_return=True)
+
+    def _make_blob(self) -> (bytes, int):
         self.image.format = "png"
         b = self.image.make_blob()
         return b, self.fn
@@ -113,37 +187,63 @@ class ImageFunction:
     def close(self):
         self.image.destroy()
 
-    def magik(self):
+    async def magik(self):
+        await self.image_worker(self._magik)
+
+    def _magik(self):
         self.image.sample(width=int(self.image.width * 0.5), height=int(self.image.height * 0.5))
-        self.image.liquid_rescale(width=int(self.image.width / 2), height=int(self.image.height / 1.5), delta_x=1, rigidity=0)
-        self.image.liquid_rescale(width=int(self.image.width * 2), height=int(self.image.height * 1.5), delta_x=2, rigidity=0)
+        self.image.liquid_rescale(width=int(self.image.width / 2), height=int(self.image.height / 1.5), delta_x=1,
+                                  rigidity=0)
+        self.image.liquid_rescale(width=int(self.image.width * 2), height=int(self.image.height * 1.5), delta_x=2,
+                                  rigidity=0)
         self.image.sample(width=int(self.image.width * 2), height=int(self.image.height * 2))
 
-    def swirlmagik(self, angle):
+    async def swirlmagik(self, angle: float):
+        await self.image_worker(functools.partial(self._swirlmagik, angle))
+
+    def _swirlmagik(self, angle):
         self.image.swirl(angle)
-        self.magik()
+        self._magik()
         self.image.swirl(-angle)
 
-    def swirl(self, angle: int = -60):
+    async def swirl(self, angle: float):
+        await self.image_worker(functools.partial(self._swirl, angle))
+
+    def _swirl(self, angle: int = -60):
         self.image.swirl(degree=angle)
 
-    def invert(self):
+    async def invert(self):
+        await self.image_worker(self._invert)
+
+    def _invert(self):
         self.image.negate()
 
-    def implode(self, factor):
+    async def implode(self, factor):
+        await self.image_worker(functools.partial(self._implode, factor))
+
+    def _implode(self, factor):
         self.image.implode(factor)
 
-    def opacify(self):
+    async def opacify(self):
+        await self.image_worker(self._opacify)
+
+    def _opacify(self):
         self.image.alpha_channel = 'remove'
         self.image.background_color = Color('white')
 
-    def explode(self, factor):
-        self.image.implode(-factor)
+    async def explode(self, factor):
+        await self.image_worker(functools.partial(self._implode, -factor))
 
-    def reduce(self):
+    async def reduce(self):
+        await self.image_worker(self._reduce)
+
+    def _reduce(self):
         self.image.posterize(levels=2)
 
-    def caption(self, ct, path):
+    async def caption(self, text, path):
+        await self.image_worker(functools.partial(self._caption, text, path))
+
+    def _caption(self, ct, path):
         color_alias = {
             'piss': '#f9fc12',
             'cum': '#ededd5',
@@ -183,42 +283,66 @@ class ImageFunction:
         else:
             font = Font(path + 'OpenSansEmoji.ttf', color=color, stroke_color='black', stroke_width=stroke_width)
         self.image.caption(in_str, left=txt_left, top=txt_top, width=txt_width, height=txt_height, font=font,
-                      gravity='center')
+                           gravity='center')
 
-    def wide(self):
+    async def wide(self):
+        await self.image_worker(self._wide)
+
+    def _wide(self):
         self.image.resize(width=int(self.image.width * 3.3), height=int(self.image.height / 1.8))
-        self.image.crop(left=int(self.image.width / 4), top=1, right=(self.image.width - (int(self.image.width / 4))), bottom=self.image.height)
+        self.image.crop(left=int(self.image.width / 4), top=1, right=(self.image.width - (int(self.image.width / 4))),
+                        bottom=self.image.height)
 
-    def deepfry(self):
+    async def deepfry(self):
+        await self.image_worker(self._deepfry)
+
+    def _deepfry(self):
         self.image.modulate(saturation=600.00)
         self.image.noise('gaussian', attenuate=0.1)
 
-    def rotate(self, angle: int = 90):
+    async def rotate(self, angle: int = 90):
+        await self.image_worker(functools.partial(self._rotate, angle))
+
+    def _rotate(self, angle: int = 90):
         self.image.rotate(degree=angle)
 
-    def black_white(self):
+    async def black_white(self):
+        await self.image_worker(self._black_white)
+
+    def _black_white(self):
         self.image.transform_colorspace('gray')
 
-    def sepia(self, threshold: float = 0.8):
+    async def sepia(self, threshold: float = 0.8):
+        await self.image_worker(functools.partial(self._sepia, threshold))
+
+    def _sepia(self, threshold: float = 0.8):
         self.image.sepia_tone(threshold)
 
-    def polaroid(self):
+    async def polaroid(self):
+        await self.image_worker(self._polaroid)
+
+    def _polaroid(self):
         self.image.polaroid()
 
-    def charcoal(self, radius: float = 1.5, sigma: float = 0.5):
+    async def charcoal(self, radius: float = 1.5, sigma: float = 0.5):
+        await self.image_worker(functools.partial(self._charcoal, radius, sigma))
+
+    def _charcoal(self, radius: float = 1.5, sigma: float = 0.5):
         self.image.charcoal(radius, sigma)
 
+    async def make_vignette(self, sigma: int = 3, x: int = 10, y: int = 10):
+        await self.image_worker(functools.partial(self._make_vignette, sigma, x, y))
 
-    def make_vignette(self, sigma: int = 3, x: int = 10, y: int = 10):
-        
-            self.image.vignette(sigma, x, y)
-            
+    def _make_vignette(self, sigma: int = 3, x: int = 10, y: int = 10):
+        self.image.vignette(sigma, x, y)
 
+    async def bubble(self):
+        await self.image_worker(self._bubble)
 
-    def bubble(self):
+    def _bubble(self):
         # grab the template files stored in the data directory
-        negative = '/app/data/resources/bubble_negative.png'
-        outline = '/app/data/resources/bubble_outline.png'
+        negative = '/app/data/static-resources/bubble_negative.png'
+        outline = '/app/data/static-resources/bubble_outline.png'
 
         # load in all the images
         with (
@@ -241,33 +365,61 @@ class ImageFunction:
             # compose the outline image onto the composed negative
             neg.composite_channel(channel='default_channels', image=out, operator='over')
             # create self.image binary output for the upload
-            self.image = neg
+            self.image = neg.clone()
+            neg.destroy()
+            out.destroy()
+            del neg
+            del out
 
-    def scale(self, factor: float = 0.5):
+    async def scale(self, factor: float = 0.5):
+        await self.image_worker(functools.partial(self._scale, factor))
+
+    def _scale(self, factor: float = 0.5):
         # input protection
         if 1 > factor < 0.1:
             factor = 0.5
         self.image.resize(width=int(self.image.width * factor), height=int(self.image.height * factor))
 
-    def blur(self, radius: int = 0, sigma: int = 3):
+    async def blur(self, radius: int = 0, sigma: int = 3):
+        await self.image_worker(functools.partial(self._blur, radius, sigma))
+
+    def _blur(self, radius: int = 0, sigma: int = 3):
         self.image.blur(radius, sigma)
 
-    def adaptive_blur(self, radius: int = 8, sigma: int = 4):
+    async def adaptive_blur(self, radius: int = 8, sigma: int = 4):
+        await self.image_worker(functools.partial(self._adaptive_blur, radius, sigma))
+
+    def _adaptive_blur(self, radius: int = 8, sigma: int = 4):
         self.image.adaptive_blur(radius, sigma)
 
-    def motion_blur(self, radius: int = 8, sigma: int = 4, angle: int = -45):
+    async def motion_blur(self, radius: int = 8, sigma: int = 4, angle: int = -45):
+        await self.image_worker(functools.partial(self._motion_blur, radius, sigma, angle))
+
+    def _motion_blur(self, radius: int = 8, sigma: int = 4, angle: int = -45):
         self.image.motion_blur(radius, sigma, angle)
 
-    def edge(self, radius: int = 1):
+    async def edge(self, radius: int = 1):
+        await self.image_worker(functools.partial(self._edge, radius))
+
+    def _edge(self, radius: int = 1):
         self.image.transform_colorspace('gray')
         self.image.edge(radius)
 
-    def emboss(self, radius: float = 3.0, sigma: float = 1.75):
+    async def emboss(self, radius: float = 3.0, sigma: float = 1.75):
+        await self.image_worker(functools.partial(self._emboss, radius, sigma))
+
+    def _emboss(self, radius: float = 3.0, sigma: float = 1.75):
         self.image.transform_colorspace('gray')
         self.image.emboss(radius, sigma)
 
-    def kuwahara(self, radius: int = 1, sigma: float = 1.5):
+    async def kuwahara(self, radius: int = 1, sigma: float = 1.5):
+        await self.image_worker(functools.partial(self._kuwahara, radius, sigma))
+
+    def _kuwahara(self, radius: int = 1, sigma: float = 1.5):
         self.image.kuwahara(radius, sigma)
 
-    def shade(self, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
+    async def shade(self, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
+        await self.image_worker(functools.partial(self._shade, gray, azimuth, elevation))
+
+    def _shade(self, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
         self.image.shade(gray, azimuth, elevation)
