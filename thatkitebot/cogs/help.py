@@ -1,9 +1,12 @@
- #  Copyright (c) 2019-2022 ThatRedKite and contributors
+# Copyright (c) 2019-2022 ThatRedKite and contributors
 #  Copyright (c) 2021 dunnousername
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
+
+from thatkitebot.base.util import list_chunker
 import random
+
 # thanks to dunnousername  for this help command. It was originally used in the styrobot discord bot
 info = {
     'repo': 'https://github.com/ThatRedKite/thatkitebot',
@@ -15,9 +18,15 @@ class BetterHelpCommand(commands.HelpCommand):
     """
     Custom help command for the bot.
     """
-    async def send_embed(self, embed):
+
+    async def send_embed(self, embed: discord.Embed):
         embed.color = discord.Colour.random()
         await self.get_destination().send(embed=embed)
+
+    async def send_embeds_paginated(self, embeds: list[discord.Embed]):
+        paginator = pages.Paginator(pages=embeds, show_disabled=False, loop_pages=True)
+        await paginator.send(self.context, self.context.channel)
+        #await self.get_destination().send(embed=embed)
 
     def blank_line(self, embed):
         embed.add_field(name='_ _', value='_ _', inline=False)
@@ -43,24 +52,39 @@ class BetterHelpCommand(commands.HelpCommand):
         return ' '.join(out)
 
     async def send_bot_help(self, mapping):
-        e = discord.Embed(title=info['name'])
-        e.add_field(name='Contribute at', value=info['repo'], inline=False)
-        e.add_field(name='For help about a specific command use:', value='`+help <command>`', inline=False)
-        cogs = [(cog, await self.filter_commands(mapping[cog])) for cog in mapping.keys()]
-        cogs = [x for x in cogs if len(x[1]) > 0]
-        for i, (cog, cmds) in enumerate(cogs):
-            if i % 2 == 0:
-                self.blank_line(e)
-            h = '\n'.join([cmd.name for cmd in cmds])
-            if cog is None:
-                e.add_field(name='builtin', value=h, inline=True)
+        embed_pages = []    # list to store the pages in
+
+        cogs = [(cog, await self.filter_commands(mapping[cog])) for cog in mapping.keys()]  # get all cogs
+        cogs = [x for x in cogs if len(x[1]) > 0]  # ignore cogs without commands
+
+        for cog, cmds in cogs:
+            e = discord.Embed(title=info['name'])  # create the embed
+
+            e.add_field(name='Contribute at', value=info['repo'], inline=False)  # include the repo in the header
+            e.add_field(name='For help about a specific command use:', value='`+help <command>`', inline=False)
+            e.color = self.context.bot.user.color
+
+            if len(cmds) > 10:
+                print("oh no")
+                cmd_chunks = list(list_chunker(cmds, int(len(cmds) / 2)))  # split the command list into multiple lists
+                for cmd_chunk in cmd_chunks:
+                    h = "\n".join([cmd.name for cmd in cmd_chunk])
+                    if cog is None:
+                        e.add_field(name='builtin', value=h, inline=True)
+                    else:
+                        e.add_field(name=cog.qualified_name, value=h, inline=True)
+
             else:
-                e.add_field(name=cog.qualified_name, value=h, inline=True)
-        if random.random() < 0.9:
+                h = '\n'.join([cmd.name for cmd in cmds]) # add the commands
+                if cog is None:
+                    e.add_field(name='builtin', value=h, inline=True)
+                else:
+                    e.add_field(name=cog.qualified_name, value=h, inline=True)
+
             e.set_footer(text='Made with ❤️\nUse `+help <command>` to get detailed help about a specific command.')
-        else:
-            e.set_footer(text='Made with 🍆\nUse `+help <command>` to get detailed help about a specific command.')
-        await self.send_embed(e)
+            embed_pages.append(e)
+
+        await self.send_embeds_paginated(embed_pages)
 
     async def send_cog_help(self, cog: commands.Cog):
         e = discord.Embed(title=cog.qualified_name)
@@ -86,8 +110,8 @@ class BetterHelpCommand(commands.HelpCommand):
         e.add_field(name='Name', value=(command.qualified_name or command.name), inline=False)
         e.add_field(name='Signature', value=(self.signature(command)), inline=False)
         e.add_field(name='Help', value=(command.help or '[no help]'), inline=False)
-        if len(command.aliases) !=  0:
-            e.add_field(name='Synonyms', value=('`'+"`, `".join(command.aliases)+'`' or '[no help]'), inline=False)
+        if len(command.aliases) != 0:
+            e.add_field(name='Synonyms', value=('`' + "`, `".join(command.aliases) + '`' or '[no help]'), inline=False)
         await self.send_embed(e)
 
 
