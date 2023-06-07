@@ -31,6 +31,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.bot = bot
         self.aiohttp = bot.aiohttp_session
 
+        self.redis = bot.redis
+
         self.settings_redis: aioredis.Redis = bot.redis
         self.repost_redis: aioredis.Redis = bot.redis_repost
         self.cache_redis: aioredis.Redis = bot.redis_cache
