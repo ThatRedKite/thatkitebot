@@ -10,7 +10,7 @@ ENABLED_EXTENSIONS = [
     "thatkitebot.cogs.help",
     "thatkitebot.cogs.chemistry",
 #    "thatkitebot.cogs.electronics",
-#    "thatkitebot.cogs.electroslash",
+    "thatkitebot.cogs.electroslash",
     "thatkitebot.cogs.laser",
     "thatkitebot.cogs.welcomecog",
     "thatkitebot.cogs.repost",

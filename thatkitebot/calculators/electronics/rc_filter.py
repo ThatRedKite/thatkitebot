@@ -2,7 +2,7 @@
 import math
 
 from io import BytesIO
-from random import  randint
+from random import randint
 from math import *
 
 import discord
