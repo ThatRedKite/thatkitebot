@@ -53,7 +53,7 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         """
         for guild in self.bot.guilds:
             print(guild.name, f"({guild.id})")
-
+            print(f"Owner: {guild.owner.name}\n")
 
 
 def setup(bot):
