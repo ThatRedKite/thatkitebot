@@ -164,14 +164,14 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     # RIP thispersondoesnotexist.com
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(pc.can_send_image)
-    @commands.command(name="fakecat")
-    async def _tcdne(self, ctx):
-        """Send an image from thiscatdoesnotexist.com"""
-        file, embed = await url.tcdne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
+    # @commands.cooldown(1, 10, commands.BucketType.user)
+    # @commands.check(pc.can_send_image)
+    # @commands.command(name="fakecat")
+    # async def _tcdne(self, ctx):
+    #     """Send an image from thiscatdoesnotexist.com"""
+    #     file, embed = await url.tcdne(self.bot.aiohttp_session)
+    #     async with ctx.typing():
+    #         await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
