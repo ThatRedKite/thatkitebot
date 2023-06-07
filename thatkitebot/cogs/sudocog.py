@@ -45,6 +45,16 @@ class SudoCommands(commands.Cog, name="administrative commands"):
             return
         await ctx.send(message)
 
+    @commands.is_owner()
+    @commands.command()
+    async def list_servers(self, ctx):
+        """
+        Lists all the servers in the system console. Owner-only
+        """
+        for guild in self.bot.guilds:
+            print(guild.name, f"({guild.id})")
+
+
 
 def setup(bot):
     bot.add_cog(SudoCommands(bot))
