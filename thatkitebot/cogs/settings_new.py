@@ -50,9 +50,9 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         """
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.REPOST)
         if result:
-            await ctx.send(f"NSFW commands have been enabled")
+            await ctx.send(f"Repost commands have been enabled")
         else:
-            await ctx.send(f"NSFW commands have been disabled")
+            await ctx.send(f"Repost commands have been disabled")
 
     @settings.command()
     @discord.default_permissions(manage_guild=True)
