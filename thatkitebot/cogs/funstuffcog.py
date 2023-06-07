@@ -173,14 +173,14 @@ class FunStuff(commands.Cog, name="fun commands"):
     #     async with ctx.typing():
     #         await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(pc.can_send_image)
-    @commands.command(name="fakeart")
-    async def _tadne(self, ctx):
-        """Send an image from thisartworkdoesnotexist.com"""
-        file, embed = await url.tadne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
+    # @commands.cooldown(1, 10, commands.BucketType.user)
+    # @commands.check(pc.can_send_image)
+    # @commands.command(name="fakeart")
+    # async def _tadne(self, ctx):
+    #     """Send an image from thisartworkdoesnotexist.com"""
+    #     file, embed = await url.tadne(self.bot.aiohttp_session)
+    #     async with ctx.typing():
+    #         await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
