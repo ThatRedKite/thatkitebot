@@ -254,7 +254,7 @@ class MusicCog(commands.Cog, name="Music"):
         await ctx.interaction.followup.send(embed=embed)
 
     @music.command(name="volume", description="Sets the volume of the bot (0-100)")
-    async def _volume(self, ctx: discord.ApplicationContext, volume: int):
+    async def _volume(self, ctx: discord.ApplicationContext, volume: discord.Option(int, max_value=100, min_value=0)):
         # get the voice channel the bot is connected to
         await ctx.defer()
         voice_channel, _ = await self.get_voice_channel(ctx, check_for_bot=True)
@@ -262,8 +262,6 @@ class MusicCog(commands.Cog, name="Music"):
             return
         # set the volume of the bot
         client: wavelink.Player = ctx.voice_client
-        if volume > 100:
-            volume = 100
         await client.set_volume(volume)
         await ctx.respond(f"Set volume to {volume}%")
 
