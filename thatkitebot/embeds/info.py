@@ -1,8 +1,10 @@
-import discord
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
+from discord import Embed, Color
 
 
 def general_science_embed():
-    embed = discord.Embed(title="General Science :microscope:", color=discord.Color.from_rgb(133, 193, 233))
+    embed = Embed(title="General Science :microscope:", color=Color.from_rgb(133, 193, 233))
     embed.add_field(
         name="YouTube",
         value="""
@@ -24,7 +26,7 @@ def general_science_embed():
 
 
 def chemistry_embed():
-    embed = discord.Embed(title="Chemistry :alembic:", color=discord.Color.blue())
+    embed = Embed(title="Chemistry :alembic:", color=Color.blue())
     embed.add_field(
         name="YouTube",
         value="""
@@ -62,7 +64,7 @@ def chemistry_embed():
 
 
 def mathematics_embed():
-    embed = discord.Embed(title="Mathematics :abacus:", color=discord.Color.dark_blue())
+    embed = Embed(title="Mathematics :abacus:", color=Color.dark_blue())
     embed.add_field(
         name="YouTube",
         value="""
@@ -77,7 +79,7 @@ def mathematics_embed():
 
 
 def physics_embed():
-    embed = discord.Embed(title="Physics :magnet:", color=discord.Color.blurple())
+    embed = Embed(title="Physics :magnet:", color=Color.blurple())
     embed.add_field(
         name="YouTube",
         value="""
@@ -100,7 +102,7 @@ def physics_embed():
 
 
 def biology_embed():
-    embed = discord.Embed(title="Nature, Botany and Biology :four_leaf_clover:", color=discord.Color.purple())
+    embed = Embed(title="Nature, Botany and Biology :four_leaf_clover:", color=Color.purple())
     embed.add_field(
         name="YouTube",
         value="""
@@ -125,7 +127,7 @@ def biology_embed():
 
 
 def meteorology_embed():
-    embed = discord.Embed(title="Meteorology :thunder_cloud_rain:", color=discord.Color.brand_red())
+    embed = Embed(title="Meteorology :thunder_cloud_rain:", color=Color.brand_red())
     embed.add_field(
         name="YouTube",
         value="""
@@ -140,7 +142,7 @@ def meteorology_embed():
 
 
 def astronomy_embed():
-    embed = discord.Embed(title="Astronomy and Rocketry :telescope:", color=discord.Color.dark_red())
+    embed = Embed(title="Astronomy and Rocketry :telescope:", color=Color.dark_red())
     embed.add_field(
         name="YouTube",
         value="""
@@ -164,7 +166,7 @@ def astronomy_embed():
 
 
 def geography_embed():
-    embed = discord.Embed(title="Geology and Geography :earth_americas:", color=discord.Color.red())
+    embed = Embed(title="Geology and Geography :earth_americas:", color=Color.red())
     embed.add_field(
         name="YouTube",
         value="""
@@ -184,7 +186,7 @@ def geography_embed():
 
 
 def engineering_embed():
-    embed = discord.Embed(title="Engineering :screwdriver:", color=discord.Color.orange())
+    embed = Embed(title="Engineering :screwdriver:", color=Color.orange())
     embed.add_field(
         name="YouTube",
         value=("General:\n"
@@ -228,7 +230,7 @@ def engineering_embed():
 
 
 def electronics_embed():
-    embed = discord.Embed(title="Electronics :bulb:", color=discord.Color.gold())
+    embed = Embed(title="Electronics :bulb:", color=Color.gold())
     embed.add_field(
         name="YouTube",
         value=("If you want to start learning:\n"
@@ -285,7 +287,7 @@ def electronics_embed():
 
 
 def lasers_embed():
-    embed = discord.Embed(title="Lasers :no_entry:", color=discord.Color.brand_green())
+    embed = Embed(title="Lasers :no_entry:", color=Color.brand_green())
     embed.add_field(
         name="YouTube",
         value=("[Zenodilodon](https://www.youtube.com/c/Zenodilodon)\n"
@@ -306,7 +308,7 @@ def lasers_embed():
 
 
 def it_embed():
-    embed = discord.Embed(title="Computing and Programming :computer:", color=discord.Color.green())
+    embed = Embed(title="Computing and Programming :computer:", color=Color.green())
     embed.add_field(
         name="YouTube",
         value=("General:\n"

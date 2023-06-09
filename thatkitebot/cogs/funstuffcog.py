@@ -1,4 +1,4 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import textwrap
 import re
@@ -16,6 +16,7 @@ from uwuipy import uwuipy
 from thatkitebot.base import url, util
 from thatkitebot.tkb_redis.cache import RedisCache
 from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.base.exceptions import NotEnoughMessagesException
 
 
 class FunStuff(commands.Cog, name="fun commands"):

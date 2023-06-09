@@ -1,4 +1,4 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import discord
 from discord.ext import commands, bridge

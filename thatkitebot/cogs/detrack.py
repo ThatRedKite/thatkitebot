@@ -1,8 +1,7 @@
-#  Copyright (c) 2019-2022 ThatRedKite, diminDDL and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import os
 import re
-from datetime import datetime
 from urllib.parse import urlparse
 
 import toml

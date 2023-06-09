@@ -1,9 +1,11 @@
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import psutil
 from datetime import datetime
 
 import si_prefix
 from discord import Embed
+
 from thatkitebot.base.util import EmbedColors as ec
 
 

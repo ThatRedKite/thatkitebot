@@ -1,20 +1,12 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
-import enum
-
-import asyncio
 import discord
 
 from redis import asyncio as aioredis
-from discord.ext import commands, bridge
+from discord.ext import commands
 
 from thatkitebot.base.util import PermissonChecks as pc
-from thatkitebot.base.util import Parsing
 
-from thatkitebot.tkb_redis.settings import RedisFlags
-
-
-# TODO: make this not suck ass
 
 class SettingsCog(commands.Cog, name="legacy settings"):
     """

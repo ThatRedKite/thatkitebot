@@ -1,10 +1,11 @@
-import discord
-from discord import Embed
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
+from discord import Embed, Message, Color, File
 
 from thatkitebot.base.image_stuff import get_image_url
 
 
-async def generate_embed(message: discord.Message, count, star_emoji, return_file=False, aiohttp_session=None):
+async def generate_embed(message: Message, count, star_emoji, return_file=False, aiohttp_session=None):
     embed = Embed(title=f"{message.author.name}",
                           description=f"**Click [here]({message.jump_url}) to Jump to the message**")
     try:
@@ -23,11 +24,11 @@ async def generate_embed(message: discord.Message, count, star_emoji, return_fil
 
     embed.set_thumbnail(url=message.author.avatar.url)
     embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
-    embed.color = discord.Color.gold()
+    embed.color = Color.gold()
     embed.timestamp = message.created_at
     if return_file and aiohttp_session:
         async with aiohttp_session.get(url) as resp:
-            file = discord.File(await resp.read(), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
+            file = File(await resp.read(), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
             return embed, file
 
     return embed

@@ -1,19 +1,17 @@
-# Copyright (c) 2019-2021 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 import asyncio
 import typing
 import re
-
-from io import BytesIO
 
 import imagehash
 import discord
 
 from redis import asyncio as aioredis
 from discord.ext import commands
-from PIL import Image as PILImage
 
 from thatkitebot.base.image_stuff import hasher, download_image, get_image_urls
-from thatkitebot.base.util import errormsg, ids_from_link
+from thatkitebot.base.util import ids_from_link
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis import cache as ca
 from thatkitebot.base.util import PermissonChecks as pc

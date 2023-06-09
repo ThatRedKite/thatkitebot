@@ -1,3 +1,5 @@
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 from distutils.core import setup, Extension
 
 module_pcb = Extension("pcb_mod", sources=["pcb_calc.c"])

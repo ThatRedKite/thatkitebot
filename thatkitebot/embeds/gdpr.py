@@ -1,7 +1,10 @@
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
+from datetime import datetime
 
 from discord import Embed
+
 from thatkitebot.base.util import EmbedColors as ec
-from datetime import datetime
 
 
 def gen_embed(self) -> Embed:

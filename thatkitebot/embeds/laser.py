@@ -1,8 +1,10 @@
-import discord
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
+from discord import Embed
 
 
 def gen_embed(self):
-    embed = discord.Embed(
+    embed = Embed(
         title="Lasers of all powers can pose a serious risk to your eyes.",
         description=("5mW is the safety limit where your blink reflex should save you from any damage.\n"
                      "Anything above that can cause **permanent eye damage** faster than you can blink or in the worst case: **permanent blindness**."

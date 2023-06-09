@@ -1,3 +1,5 @@
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 from typing import Union
 
 from redis import asyncio as aioredis

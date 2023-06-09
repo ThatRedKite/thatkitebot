@@ -1,7 +1,9 @@
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 from discord import Embed
 
-from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base import url
+from thatkitebot.base.util import EmbedColors as ec
 
 
 async def gen_embed(self) -> Embed:

@@ -1,3 +1,5 @@
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 from random import randint
 
 import si_prefix

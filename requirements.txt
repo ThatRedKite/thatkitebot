@@ -26,3 +26,5 @@ aiofiles
 pynacl
 dulwich
 wavelink
+orjson
+Brotli

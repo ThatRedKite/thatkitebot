@@ -1,4 +1,5 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 import os
 import logging
 import json
@@ -10,10 +11,9 @@ import aiohttp
 from redis import asyncio as aioredis
 import psutil
 import discord
-import redis
 import wavelink
 
-from discord.ext import commands, bridge
+from discord.ext import bridge
 from dulwich.repo import Repo
 
 from .extensions import ENABLED_EXTENSIONS

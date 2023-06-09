@@ -1,5 +1,6 @@
 
 from random import randint
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import discord
 import si_prefix

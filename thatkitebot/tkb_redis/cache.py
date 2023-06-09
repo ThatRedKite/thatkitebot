@@ -1,5 +1,7 @@
-from datetime import timedelta, datetime
-from typing import Union, Optional
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
+from datetime import timedelta
+from typing import Union
 
 import orjson
 import brotli

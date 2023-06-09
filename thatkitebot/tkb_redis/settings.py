@@ -1,7 +1,8 @@
-import base64
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 from typing import Union
 
-from discord import Message
+
 from redis import asyncio as aioredis
 
 

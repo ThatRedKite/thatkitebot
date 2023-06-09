@@ -1,6 +1,6 @@
-import re
-import math
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
+import re
 from datetime import timedelta
 
 import discord

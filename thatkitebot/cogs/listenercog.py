@@ -1,11 +1,7 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
 
 import discord
-import orjson
-import brotli
-import asyncio
-from time import sleep
-from datetime import datetime
 
 from redis import asyncio as aioredis
 from discord.ext import commands, tasks
@@ -14,7 +10,6 @@ import thatkitebot
 from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
 
 from thatkitebot.base.util import errormsg
-from thatkitebot.base import image_stuff
 
 
 class ListenerCog(commands.Cog):
@@ -27,11 +22,12 @@ class ListenerCog(commands.Cog):
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.repost_redis: aioredis.Redis = bot.redis_repost
 
+    # global error handlers
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error):
         match type(error):
             case commands.CommandOnCooldown:
-                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {int(error.retry_after)} seconds.")
+                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {round(error.retry_after, 1)} seconds.")
             case commands.CommandInvokeError:
                 if self.bot.debug_mode:
                     await errormsg(ctx, repr(error))
@@ -42,17 +38,16 @@ class ListenerCog(commands.Cog):
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
 
     @tasks.loop(hours=1.0)
-    async def reset_invoke_counter(self):
+    async def hourly_reset(self):
         self.bot.command_invokes_hour = 0
-
-    @tasks.loop(hours=1.0)
-    async def reset_event_counter(self):
-        self.bot.events_hour = 0
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("\nbot successfully started!")
-        self.reset_invoke_counter.start()
+        print(f"\n{self.bot.user.name} is up and ready.")
+
+        print("Starting task loops…\n")
+        self.hourly_reset.start()
+
         await self.bot.change_presence(
             activity=discord.Activity(name="a battle against russia", type=5),
             status=discord.Status.online,

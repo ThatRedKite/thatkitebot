@@ -1,4 +1,4 @@
-# #  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 #
 # from random import uniform
 #
