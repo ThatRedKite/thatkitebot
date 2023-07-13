@@ -18,6 +18,7 @@ git clone https://github.com/ThatRedKite/thatkitebot.git
 
 ```
 cd thatkitebot
+sudo docker-compose up --build
 sudo docker-compose up
 ```
 Docker will download all dependencies and start. This can take a while.
