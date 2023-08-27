@@ -9,7 +9,7 @@ from .exceptions import *
 from . import pcb_mod
 
 
-class PCBConarversion:
+class PCBConversion:
     """
     Conversion commands for PCB components.
     """
@@ -76,6 +76,7 @@ class PCB_calc:
     """
 
     def __init__(self, d: dict, internal=False, limit=False):
+        self.args = d
         self.current = si_prefix.si_parse(d.get("i")) if d.get("i") else None
         self.width = si_prefix.si_parse(d.get("w")) if d.get("w") else None
         self.thicc = si_prefix.si_parse(d.get("t")) if d.get("t") else None
@@ -84,10 +85,12 @@ class PCB_calc:
         self.mode = "limit" if limit else None
         self.thicc = 0.5 if internal and not self.thicc else 1
 
-        if not self.limit:
-            raise ImpossibleValueError("Get real")
+    def calculate(self, overrideArgs=False):
+        # if there are no args raise too few args error
+        if self.args == {} and not overrideArgs:
+            print(self.args)
+            raise TooFewArgsError()
 
-    def calculate(self):
         if (self.temp and (10 > self.temp > 100)) or (self.thicc and 0.5 < self.thicc > 3):
             raise ImpossibleValueError("Get real")
 
@@ -120,7 +123,7 @@ Internal layer? {self.internal}
         ```
         """
         else:
-            return """
+            return f"""
         ```
 
 Width = {self.width}mils
@@ -140,9 +143,10 @@ Width = {self.width}mils
         try:
             self.calculate()
         except TooFewArgsError:
-            self.randomize()
-            self.calculate()
-            self.mode = None
+            if self.mode != "limit":
+                self.randomize()
+                self.calculate(overrideArgs=True)
+                self.mode = None
 
         embed = discord.Embed(title="PCB Trace Calculator")
 

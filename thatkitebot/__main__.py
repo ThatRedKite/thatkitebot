@@ -10,7 +10,15 @@ from pathlib import Path
 import aiohttp
 from redis import asyncio as aioredis
 import psutil
+
+# # stall the container
+# while True:
+#     pass
+
 import discord
+from discord.ext import bridge, commands
+
+import redis
 import wavelink
 
 from discord.ext import bridge
