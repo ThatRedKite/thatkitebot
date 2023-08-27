@@ -10,15 +10,7 @@ from pathlib import Path
 import aiohttp
 from redis import asyncio as aioredis
 import psutil
-
-# # stall the container
-# while True:
-#     pass
-
 import discord
-from discord.ext import bridge, commands
-
-import redis
 import wavelink
 
 from discord.ext import bridge
@@ -174,5 +166,3 @@ try:
 except discord.LoginFailure:
     print("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
-
-
