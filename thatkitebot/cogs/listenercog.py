@@ -87,7 +87,6 @@ class ListenerCog(commands.Cog):
             return
         # update the reactions
         data["reactions"].append((payload.emoji.id, payload.member.id))
-        print(data)
 
         # update the message
         await cache.update_message(

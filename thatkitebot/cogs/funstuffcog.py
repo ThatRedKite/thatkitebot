@@ -29,6 +29,15 @@ class FunStuff(commands.Cog, name="fun commands"):
         self.dirname = bot.dir_name
         self.redis = bot.redis_cache
 
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        # only listen for commands associated with this cog
+        if ctx.cog is not self:
+            return
+
+        if isinstance(error, NotEnoughMessagesException):
+            await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
+
     @commands.command()
     @commands.check(pc.can_send_image)
     async def inspirobot(self, ctx):
@@ -40,59 +49,67 @@ class FunStuff(commands.Cog, name="fun commands"):
     async def _markov(self, ctx, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
-        Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
+        Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
+        it will use messages from every channel instead)
         """
-        if self.bot.debug_mode:
-            try:
-                print("Markov debug")
-                print("user", user.name)
-                print("channel", channel.name)
-            except:
-                pass
-            
         if not user:
             user = ctx.message.author  # default to message author
         if not channel:
-            channel = ctx.channel  # default to current channel
-            
-        guild = channel.guild
+            channel_id = None  # default to current channel
+        else:
+            channel_id = channel.id
 
         async with ctx.channel.typing():
             try:
                 # try to get the messages from the cache
-                message_list = await RedisCache.get_contents(self.redis, guild.id, channel.id, user.id)
+                cache = RedisCache(self.redis, self.bot, auto_exec=True)
+                message_list = await cache.get_messages(ctx.guild.id, channel_id, user.id)
+
                 if not len(message_list) > 300:
                     # populate the cache if there are less than 300 messages
-                    async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
-                        await RedisCache.add_message_to_cache(self.redis, message)  # add the message to the cache
-                        message_list.append(str(message.clean_content))  # add the message to the message_list
+                    if channel:
+                        print("we have a channel")
+                        # we have a channel but not enough messages, so we iterate over the user history in this channel
+                        async for message in user.history(limit=2500, oldest_first=True).filter(lambda m: m.channel.id == channel_id):
+                            print("test1")
+                            await RedisCache.add_message(self.redis, message)  # add the message to the cache
+                            message_list.append(str(message.clean_content))  # add the message to the message_list
+                    else:
+                        # no channel, iterate over the user history instead
+                        async for message in user.history(limit=2500, oldest_first=True):
+                            await RedisCache.add_message(self.redis, message)
+                            message_list.append(str(message.clean_content))  # add the message to the message_list
+                        else:
+                            print("schmuck")
+
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
+
             try:
-                gen1 = markovify.NewlineText("\n".join(message_list))  # generate the model from the messages
+                # since people often don't use punctuation, we just use newline-separated text.
+                model = markovify.NewlineText("\n".join(message_list))  # generate the model from the messages
             except KeyError:
-                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
-                return
+                raise NotEnoughMessagesException
 
-            gen_set = set()  # create a set to avoid duplicate messages (only works sometimes)
+            sentences = set()  # create a set to avoid duplicate messages (only works sometimes)
             for i in range(10):
-                a = gen1.make_sentence(tries=30)
-                if a:
-                    gen_set.add(a)  # add the string :a: to the gen_set
+                if sentence := model.make_sentence(tries=30):
+                    sentences.add(sentence)  # add the sentence to the set
                 else:
-                    a = gen1.make_short_sentence(5)  # try to make a short sentence instead
-                    gen_set.add(a)  # add the string to the gen_set
+                    sentence = model.make_short_sentence(5)  # try to make a short sentence instead
+                    sentences.add(sentence)  # and add it to the set
 
-            if len(gen_set) > 0:
-                out = ". ".join([a for a in gen_set if a])  # join the strings together with periods
+            if sentences:
+                out = ". ".join(sentences)  # join the strings together with periods
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
                 embed.set_thumbnail(url=user.avatar.url)
                 await ctx.send(embed=embed)
+
             else:
-                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
+                raise NotEnoughMessagesException
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
@@ -201,7 +218,11 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
 
-    # rest in peace, thisvesseldoesnotexist.com
+    # rest in peace,
+    # thisvesseldoesnotexist.com,
+    # thispersondoesnotexist.com,
+    # thiscatdoesnotexist.com
+    # and thisartworkdoesnotexist.com
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
@@ -217,18 +238,23 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
     async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
-        '''UwUify your text (now even more cursed'''
+        """
+        UwUify your text (now even more cursed)
+        """
+        # if not, grab the seed by using the original message id
+        if not ctx.message.reference:
+            seed = ctx.message.id
+
         # fetch the message from the reference
-        if ctx.message.reference:
+        else:
             seed = ctx.message.reference.message_id
             message = await ctx.fetch_message(seed)
             msg = message.content
-        # if not, grab the seed by using the original message id
-        else:
-            seed = ctx.message.id
+
         # if the message content is empty, return
         if not msg:
             return
+
         async with ctx.channel.typing():
             # declare a new uwu object using the message id as seed
             uwu = uwuipy(seed)

@@ -164,8 +164,6 @@ class ImageFunction:
             extension = 'png' if not gif else 'gif'
             embed.set_image(url=f"attachment://{name}.{extension}")
             with BytesIO(b2) as buf:
-                self.image.destroy()
-                del self.image
                 file = discord.File(buf, filename=f"{name}.{extension}")
             return embed, file
 

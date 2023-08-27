@@ -126,6 +126,38 @@ class RedisCache:
         data_decoded = orjson.loads(data_uncompressed)
         return hash_key, data_decoded
 
+    async def get_messages(self, guild_id: int, channel_id: int | None = None, author_id: int | None = None) -> list[str]:
+        # get the message from the message_id
+        # pretty stupid, but it works
+        try:
+            if not author_id:
+                raise CacheException("An author ID is required")
+            if not channel_id:
+                hash_key = f"{guild_id}:*"
+            else:
+                hash_key = f"{guild_id}:{channel_id}:*"
+
+        except AttributeError:
+            raise CacheInvalidMessageException
+
+        key = str(author_id)
+
+
+
+        #raw = [(key, data) async for key, data in self.redis.hscan_iter(str(author_id), match=f"*:{message_id}", count=1)]
+
+        # make sure we actually got a key
+
+
+        contents = [] # create empty list to hold the message contents
+
+        async for key, data in self.redis.hscan_iter(key, match=hash_key):
+            data_uncompressed = brotli.decompress(data)
+            data_decoded = orjson.loads(data_uncompressed)
+            contents.append(data_decoded["clean_content"])
+
+        return contents
+
     async def exec(self):
         await self.pipeline.execute()
 

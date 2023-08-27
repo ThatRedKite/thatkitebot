@@ -48,6 +48,8 @@ async def gen_embed(bot, redis):
         inline=False
     )
 
+    embed.set_footer(text=f"{bot.user.name} - Version {bot.version}")
+
     try:
         embed.set_thumbnail(url=str(bot.user.avatar.url))
     except:

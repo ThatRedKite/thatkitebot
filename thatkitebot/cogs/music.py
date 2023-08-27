@@ -27,7 +27,8 @@ class SongSelect(discord.ui.View):
         if self.enqueue and self.redisqueue is not None:
             if not self.player.is_playing():
                 # ignore the queue if the player is not playing anything
-                await self.player.play(tracklist[track_index])
+                print(tracklist)
+                await self.player.play(tracklist[track_index], pause=False)
             else:
                 data = f"{tracklist[track_index].uri}|{interaction.user.id}"
                 await self.redisqueue.push(data)
@@ -73,7 +74,7 @@ class MusicCog(commands.Cog, name="Music"):
     music = discord.SlashCommandGroup("music", "Music commands")
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.MUSIC)
+        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild.id, RedisFlags.MUSIC)
 
     # static method for getting the right voice channel
     @staticmethod

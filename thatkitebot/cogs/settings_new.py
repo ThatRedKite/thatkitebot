@@ -65,9 +65,9 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.MUSIC)
         if result:
             embed = discord.Embed(title="Music commands are now enabled.", description="**WARNING: HIGHLY EXPERIMENTAL**")
-            await ctx.send(embed)
+            await ctx.send(embed=embed)
         else:
-            await ctx.send(f"NSFW commands have been disabled")
+            await ctx.send(f"Music commands have been disabled")
 
     @settings.command(name="uwu")
     @discord.default_permissions(manage_guild=True)

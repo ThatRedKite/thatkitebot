@@ -67,7 +67,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     # this is kinda dumb but i guess it works :)
     async def hash_from_url(self, urls: list[str]):
         for url in urls:
-            print(url)
             image_data = await download_image(self.aiohttp, url)
             yield hasher(image_data)
 
@@ -219,30 +218,23 @@ class RepostCog(commands.Cog, name="Repost Commands"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        #print("new message OwO")
         await asyncio.sleep(0.5)
         if not message.embeds and not message.attachments:
-            #print("no embeds nor attachments")
-            print(message.embeds, message.attachments)
             return  # return if the message does not contain an image
 
         if not await self.channel_is_enabled(message.channel) or message.author.bot and message.guild:
-            #print("not enabled")
             return  # return, if the channel is not enabled or the message is from a bot and not a DM
 
         async for image_hash in self.extract_imagehash(message):
             repost = False
 
             pipe = self.repost_redis.pipeline()
-            #print("hi i am here")
             async for distance, hash_key in self.check_distance(image_hash):
                 # if the distance is less than 20, it's a repost
-                #print(distance)
                 if distance <= 20:
                     jump_url = await self.repost_redis.hget(hash_key, "jump_url")
                     message_id, channel_id, guild_id = ids_from_link(jump_url)
                     repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
-                    #print(repost)
 
                     # jump_url = attrs["jump_url"]
                     # extract the guild id from the jump url
@@ -254,7 +246,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                     break
 
             if repost:
-                #print("haha")
                 await message.add_reaction("♻️")  # add the repost reaction
                 await pipe.hincrby(hash_key, "repost_count", 1)  # increment the repost count
             else:
