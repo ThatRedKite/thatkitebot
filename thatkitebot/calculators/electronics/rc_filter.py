@@ -27,6 +27,14 @@ class RCFilter:
     def calculate(self):
         if self.e is not None and pcb_mod.check_series(int(self.e)) == 0:
             raise ImpossibleValueError("Get real")
+        # if any value is negative, raise an error
+        if self.r1 and self.r1 < 0:
+            raise ImpossibleValueError("Get real")
+        if self.c1 and self.c1 < 0:
+            raise ImpossibleValueError("Get real")
+        if self.fcut and self.fcut < 0:
+            raise ImpossibleValueError("Get real")
+        # calculate the missing value
         if not self.fcut and self.r1 is not None and self.c1 is not None:
             self.fcut = 1 / (2 * math.pi * self.r1 * self.c1)
             self.mode = "fcut"
@@ -131,8 +139,6 @@ IN  ┌───────┐          OUT
                     value=f"""
                         With this command you can calculate required resistor or capacitor value for a specific RC filter.
                         Example: `rc fcut=1k r1=100` to find c1. You can add `plot` to the end of the command if you would like a bode plot.
-                        If you want the closest real value resistor you can get, you can specify the series with `e`
-                        Example: `rc cut=20k c1=20n e=48` to find r1 and the closest E48 series resistor
 
                         This accepts any SI-prefix (e.g. k, m, M, µ, etc.). 
                         Don't try writing out the `Ω` in Ohms 

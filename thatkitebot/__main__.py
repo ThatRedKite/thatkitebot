@@ -166,5 +166,3 @@ try:
 except discord.LoginFailure:
     print("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
-
-

@@ -177,13 +177,17 @@ class StarBoard(commands.Cog):
             return
 
         # load the starboard settings
-        starboard_settings = await self.redis.hgetall(f"starboard_settings:{payload.guild_id}")
-        mode = int(starboard_settings["mode"])
-        star_emoji = starboard_settings["star_emoji"]
-        threshold = int(starboard_settings["threshold"])
-        star_channel = await self.bot.fetch_channel(starboard_settings["channel_id"])
-        channels = starboard_settings["channels"].split(";")
-        reaction_emoji = str(payload.emoji)
+        try:
+            starboard_settings = await self.redis.hgetall(f"starboard_settings:{payload.guild_id}")
+            mode = int(starboard_settings["mode"])
+            star_emoji = starboard_settings["star_emoji"]
+            threshold = int(starboard_settings["threshold"])
+            star_channel = await self.bot.fetch_channel(starboard_settings["channel_id"])
+            channels = starboard_settings["channels"].split(";")
+            reaction_emoji = str(payload.emoji)
+        except KeyError:
+            print("Starboard settings not found.")
+            return
 
         # load the message into the internal cache
         message = await channel.fetch_message(payload.message_id)
