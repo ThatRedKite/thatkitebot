@@ -34,6 +34,14 @@ params = "_all_"
 query = "_all_"
 fragment = "_all_"
 
+[domains.allegro]
+netloc = ".*allegro." 
+netloc_dl = "_pref_"  
+path = ""
+params = "_all_"
+query = "&*(reco_id|sid|bi_s|bi_m|bi_c|bi_t|referrer|emission_unit_id)=[^&]*"
+fragment = "_all_"
+
 [domains.ebay]
 netloc = ".*ebay."
 netloc_dl = "_pref_"
