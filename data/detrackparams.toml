@@ -151,7 +151,7 @@ netloc = ".*youtube."
 netloc_dl = "_pref_"
 path = ""
 params = "_all_"
-query = "&*(feature|kw)=[^&]*"
+query = "&*(feature|kw|si)=[^&]*"
 fragment = "_all_"
 
 [domains.walmart]
