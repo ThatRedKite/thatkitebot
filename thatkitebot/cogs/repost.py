@@ -247,7 +247,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
 
             if repost:
                 await message.add_reaction("♻️")  # add the repost reaction
-                await pipe.hincrby(hash_key, "repost_count", 1)  # increment the repost count
+                await self.repost_redis.hincrby(hash_key, "repost_count", 1)  # increment the repost count
             else:
                 # the message does not appear to be a repost, let's add it to the database
                 await pipe.hset(key := f"{message.id}:{image_hash}", "jump_url", message.jump_url)
