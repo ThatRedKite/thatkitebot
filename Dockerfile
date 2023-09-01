@@ -12,8 +12,10 @@ RUN apt-get update && apt-get upgrade -y
 
 RUN apt-get install -y python3-dev gcc libfreeimage3 libwebp-dev libjpeg-turbo-progs git libffi-dev
 
-RUN pip3 install --upgrade pip
+RUN python3 -m venv /app/thatkitebot/venv
 
-RUN pip3 install -r requirements.txt
+RUN /app/thatkitebot/venv/bin/pip3 install --upgrade pip
+
+RUN /app/thatkitebot/venv/bin/pip3 install -r requirements.txt
 
 WORKDIR /app/
