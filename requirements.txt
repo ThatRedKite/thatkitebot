@@ -17,7 +17,7 @@ matplotlib
 xkcd
 imagehash
 uwuipy
-py-cord[speed]==2.3.0
+py-cord[speed]==2.4.1
 cchardet
 brotlipy
 aiodns
