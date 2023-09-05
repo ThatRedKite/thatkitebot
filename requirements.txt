@@ -28,3 +28,4 @@ dulwich
 wavelink==1.3.5
 orjson
 Brotli
+discord_emoji
