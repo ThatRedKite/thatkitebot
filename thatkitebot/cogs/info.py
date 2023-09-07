@@ -206,9 +206,9 @@ class InfoCog(commands.Cog, name="Info"):
     info_settings = SlashCommandGroup(
         "info-settings", 
         "Settings for /info command",
-        checks=[commands.check(pc.mods_can_change_settings)]
+        checks=[commands.check(pc.can_change_settings).predicate]                
         )        
-
+    
     @info_settings.command(name="add-section")
     async def new_section(self, ctx: discord.ApplicationContext, name: Option(str, "Choose a name!", required = True, max_lenght = 256), 
                           emoji : Option(str, "Choose an emoji! (e.g :lightbulb:)", required = True), 
