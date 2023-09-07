@@ -27,7 +27,6 @@ class SongSelect(discord.ui.View):
         if self.enqueue and self.redisqueue is not None:
             if not self.player.is_playing():
                 # ignore the queue if the player is not playing anything
-                print(tracklist)
                 await self.player.play(tracklist[track_index], pause=False)
             else:
                 data = f"{tracklist[track_index].uri}|{interaction.user.id}"
@@ -178,6 +177,9 @@ class MusicCog(commands.Cog, name="Music"):
         # get the voice connection for the channel
         voice_connection = ctx.voice_client
         song = None
+
+        if not voice_connection.is_playing():
+            enqueue = False
 
         # use a regex to determine if the query is a YouTube link, if so do not search for it
         if re.match(r"^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+$", query):

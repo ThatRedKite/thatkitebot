@@ -140,20 +140,20 @@ for extension in ENABLED_EXTENSIONS:
     print(extension.split(".")[-1])
 
 
-@bot.event
-async def on_ready():
-    print("Connecting to lavalink ...\n")
-    try:
-        await wavelink.NodePool.create_node(
-            bot=bot,
-            host="lavalink",
-            port=2333,
-            password=wavelink_pw
-        )
-        print("Sucessfully connected to lavalink!")
-        bot.enable_voice = True
-    except:
-        print("Could not connect to lavalink, voice functionality will be disabled. Please check your settings!\n")
+#@bot.event
+#async def on_ready():
+#    print("Connecting to lavalink ...\n")
+#    try:
+#        await wavelink.NodePool.create_node(
+#            bot=bot,
+#            host="lavalink",
+#            port=2333,
+#            password=wavelink_pw
+#        )
+#        print("Sucessfully connected to lavalink!")
+#        bot.enable_voice = True
+#    except:
+#        print("Could not connect to lavalink, voice functionality will be disabled. Please check your settings!\n")
 
 
 # load the cogs aka extensions

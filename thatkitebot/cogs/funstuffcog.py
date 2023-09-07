@@ -68,10 +68,8 @@ class FunStuff(commands.Cog, name="fun commands"):
                 if not len(message_list) > 300:
                     # populate the cache if there are less than 300 messages
                     if channel:
-                        print("we have a channel")
                         # we have a channel but not enough messages, so we iterate over the user history in this channel
                         async for message in user.history(limit=2500, oldest_first=True).filter(lambda m: m.channel.id == channel_id):
-                            print("test1")
                             await RedisCache.add_message(self.redis, message)  # add the message to the cache
                             message_list.append(str(message.clean_content))  # add the message to the message_list
                     else:
@@ -79,8 +77,6 @@ class FunStuff(commands.Cog, name="fun commands"):
                         async for message in user.history(limit=2500, oldest_first=True):
                             await RedisCache.add_message(self.redis, message)
                             message_list.append(str(message.clean_content))  # add the message to the message_list
-                        else:
-                            print("schmuck")
 
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")

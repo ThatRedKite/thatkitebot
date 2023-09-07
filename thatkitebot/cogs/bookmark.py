@@ -31,7 +31,9 @@ class BookmarkModal(discord.ui.Modal):
         self.redis = redis
         self.message = message
         self.ctx = ctx
+        # python class black magic
         super().__init__(*args, **kwargs)
+        # add the Comment text box
         self.add_item(discord.ui.InputText(
             label="Add a Comment for the bookmark",
             style=discord.InputTextStyle.singleline,
