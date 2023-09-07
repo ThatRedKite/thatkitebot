@@ -1,4 +1,4 @@
-FROM python:3.10.9-bullseye AS Thatkitebot
+FROM python:3.10.13-bookworm AS Thatkitebot
 
 WORKDIR /app/
 
