@@ -13,7 +13,7 @@ services:
     restart:  "no"
     environment:
       - PYTHONUNBUFFERED=1
-    command: bash -c "cd /app/ && /app/thatkitebot/venv/bin/python3 -m thatkitebot"
+    command: bash -c "cd /app/ && /venv/bin/python3 -m thatkitebot"
 
   redis:
     container_name: redis
