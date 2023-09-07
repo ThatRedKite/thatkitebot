@@ -145,7 +145,7 @@ class StarBoard(commands.Cog):
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
                            description="Blacklist or unblacklist a channel from the starboard")
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
-        if not pc.can_change_settings(ctx):
+        if not await pc.can_change_settings(ctx):
             return
         """
         Add or remove a channel from the blacklist. Blacklisted channels will be ignored by the starboard.
