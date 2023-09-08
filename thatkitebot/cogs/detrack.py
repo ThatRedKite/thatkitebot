@@ -152,9 +152,9 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             # delete the message
             await message.delete()
 
-    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="detrack", aliases=["urlclean"],
-                           description="Remove known tracking urls and de-ampify links")
+                           description="Remove known tracking urls and de-ampify links",
+                           checks=[commands.check(pc.mods_can_change_settings).predicate])
     async def set_auto_detrack(self, ctx: bridge.BridgeContext):
         """
         Remove known tracking urls and de-ampify links.
@@ -170,10 +170,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                
         Only administrators and moderators can use this command.
         """
-
-        if not await pc.mods_can_change_settings(ctx):
-            return await ctx.respond("You don't have permission to change settings.")
-
+        
         if await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.DETRACK):
             await ctx.respond("Detracking has been enabled.")
         else:

@@ -78,9 +78,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                                files=files)
 
     # Sorry mom
-    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="uwu_channel", aliases=["uwuchannel", "uwuch"],
-                           description="Make a channel automatically UwU every message")
+                           description="Make a channel automatically UwU every message",
+                           checks=[commands.check(pc.mods_can_change_settings).predicate])
     async def add_uwu_channel(self, ctx: commands.Context, channel: discord.TextChannel):
         """
         uwuifies an entire channel by deleting the original messages
@@ -93,9 +93,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         """
         if not await self._uwu_enabled(ctx):
             return await ctx.respond("This command is disabled on this server (setting `UWU` is set `FALSE`)")
-
-        if not await pc.mods_can_change_settings(ctx):
-            return await ctx.respond("You don't have permission to change settings.")
 
         key = f"uwu_channels:{ctx.guild.id}"
         if not await self.redis.sismember(key, channel.id):
@@ -112,9 +109,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
             print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} de-uwuified #{channel.name}")
 
-    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="uwu_user", aliases=["fuck_you"], hidden=True,
-                           description="Make a user automatically UwU every message")
+                           description="Make a user automatically UwU every message",
+                           checks=[commands.check(pc.mods_can_change_settings).predicate])
     async def add_uwu_user(self, ctx: bridge.BridgeContext, user: discord.User):
         """
         uwuifies all messages sent by a specific person by deleting
@@ -127,9 +124,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         """
         if not await self._uwu_enabled(ctx):
             return await ctx.respond("This command is disabled on this server (setting `UWU` is set `FALSE`)")
-
-        if not await pc.mods_can_change_settings(ctx):
-            return await ctx.respond("You don't have permission to change settings.")
 
         key = f"uwu_users:{ctx.guild.id}"
         if not await self.redis.sismember(key, user.id):
