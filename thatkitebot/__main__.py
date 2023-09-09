@@ -11,7 +11,7 @@ import aiohttp
 from redis import asyncio as aioredis
 import psutil
 import discord
-import wavelink
+#import wavelink
 
 from discord.ext import bridge
 from dulwich.repo import Repo
@@ -19,7 +19,7 @@ from dulwich.repo import Repo
 from .extensions import ENABLED_EXTENSIONS
 
 __name__ = "ThatKiteBot"
-__version__ = "4.0"
+__version__ = "4.0a"
 __author__ = "ThatRedKite and contributors"
 
 tempdir = "/tmp/tkb/"
