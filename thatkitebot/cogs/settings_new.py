@@ -127,6 +127,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
             await ctx.respond(f"{role.name} is no longer a moderator role")
 
     @commands.is_owner()
+    @commands.dm_only()
     @commands.command()
     async def convert_settings_global(self, ctx):
         """
