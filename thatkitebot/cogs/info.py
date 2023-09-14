@@ -6,6 +6,7 @@ import json
 import random
 from pathlib import Path
 import discord_emoji
+import aiofiles
 
 import discord
 from discord.ext import commands
@@ -133,16 +134,21 @@ class InfoCog(commands.Cog, name="Info"):
     async def get_options(self, ctx: discord.AutocompleteContext):
         return [section for section in ["add", "edit", "remove"] if section.lower().startswith(ctx.value.lower())]
     
-    # get config file from redis
+    # get config file
     async def get_config(self, guild):
-        with open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "r") as f:
-                config = json.load(f)
-        return config
+        async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "r") as f:
+            return json.loads("".join([line async for line in f]))
+            
+    # get default config file
+    async def get_default_config(self):
+        async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/info.json"), "r") as f:
+            return json.loads("".join([line async for line in f]))
+
 
     # update config file
     async def update_config(self, guild, data: dict):
-           with open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "w") as f:
-                json.dump(data, f)
+        async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "w") as f:
+            await f.write(json.dumps(data))
 
     # setting up view for main dropdown menu
     async def get_dropdown(self, guild):
@@ -172,13 +178,25 @@ class InfoCog(commands.Cog, name="Info"):
     ###### Commands ######   
 
     @commands.slash_command(name="info")
-    async def info(self, ctx: discord.ApplicationContext, section: Option(str, "Pick a section!", required = False, autocomplete=get_sections) = None):
+    async def info(self, ctx: discord.ApplicationContext, 
+                   section: Option(str, "Pick a section!", required = False, autocomplete=get_sections) = None,
+                   disable_navigation: Option(str, "True or False", required = False, name = "disable-navigation") = None):
         """
         Sends YT channels, documents, books etc related to chosen science topic arranged in convenient way.
         """
 
         # load default config if not already done
         await self.load_defaults(ctx.guild)
+
+        # check if disable_navigation value is valid
+        if disable_navigation and not disable_navigation.lower() in ["true", "false"] :
+            await ctx.respond("Invalid `disable_navigation` value! (true or false)", ephemeral=True)
+            return
+        
+        # check if section is provided
+        if disable_navigation and not section:
+            await ctx.respond("If you want to disable navigation, you need to specify a section!", ephemeral=True)
+            return
         
         # setting up view for embeds
         dropdown = await self.get_dropdown(ctx.guild)
@@ -196,7 +214,11 @@ class InfoCog(commands.Cog, name="Info"):
             if id < 0:
                 await ctx.respond("Incorrect section name!", ephemeral=True)
                 return
-            else: await ctx.respond(embed = await get_embed(id, await self.get_config(ctx.guild)), view=self.main_view)
+            
+            if disable_navigation and disable_navigation.lower() == "true": 
+                await ctx.respond(embed = await get_embed(id, await self.get_config(ctx.guild)))
+            else:
+                await ctx.respond(embed = await get_embed(id, await self.get_config(ctx.guild)), view=self.main_view)
         else:
             await ctx.respond("Choose a section!", view=dropdown_view)
 
@@ -390,7 +412,6 @@ class InfoCog(commands.Cog, name="Info"):
 
 
 
-
     @info_settings.command(name="edit-footer")
     async def edit_footer(self, ctx, name: Option(str, "Pick a section!", required = True, autocomplete=get_sections), 
                              footer: Option(str, required = True, max_lenght = 2048)):
@@ -409,6 +430,28 @@ class InfoCog(commands.Cog, name="Info"):
         
         await ctx.respond("Footer has been changed.")
 
+
+    @info_settings.command(name="factory-reset")
+    async def factory_reset(self, ctx):
+        view = View()
+
+        buttons = [
+            Button(
+                emoji="✅",
+                style= discord.ButtonStyle.gray,
+                custom_id="yes"
+            ),
+            Button(
+                emoji="⛔",
+                style= discord.ButtonStyle.gray,
+                custom_id="no"
+            )
+        ]
+        
+        for button in buttons: button.callback = self.reset_callback
+        for button in buttons: view.add_item(button)
+        
+        await ctx.respond("Are you sure? It will **replace all of your sections.**", view = view)
 
     ###### Callbacks ######   
 
@@ -457,18 +500,30 @@ class InfoCog(commands.Cog, name="Info"):
         
         await interaction.response.edit_message(embed=await get_embed(self.current_embed, config), view=self.main_view, content=None)
 
+    async def reset_callback(self, interaction: discord.Interaction):
+        """Factory reset all the sections in /info """
+
+        if interaction.custom_id == "no":
+              await interaction.response.edit_message(content="Nothing has changed.", view=None)
+        else:
+            # load default config
+            default_config = await self.get_default_config()
+
+            # replace the contents of the file with the default values
+            await self.update_config(interaction.guild, default_config)
+
+            await interaction.response.edit_message(content="Default settings have been restored.", view=None)
+
     # this initializes default /info content for the guild the bot joins
     @commands.Cog.listener(name="on_guild_join")
     async def load_defaults(self, guild):
         # check if there already is a config for the guild present
         if not Path(os.path.join(self.bot.data_dir, f"info/{guild.id}.json")).exists():
             # load default config
-            with open(os.path.join(self.bot.data_dir, "info/info.json"), "r") as f:
-                default_config = json.load(f)
-            
+            default_config = await self.get_default_config()
+
             # make config file for a guild
-            with open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "w") as f:
-                json.dump(default_config, f)
+            await self.update_config(guild, default_config)
 
 def setup(bot):
     bot.add_cog(InfoCog(bot))
