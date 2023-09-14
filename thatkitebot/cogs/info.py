@@ -206,7 +206,7 @@ class InfoCog(commands.Cog, name="Info"):
     info_settings = SlashCommandGroup(
         "info-settings", 
         "Settings for /info command",
-        checks=[commands.check(pc.can_change_settings).predicate]                
+        checks=[pc.mods_can_change_settings]
         )        
     
     @info_settings.command(name="add-section")
