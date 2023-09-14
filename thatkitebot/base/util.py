@@ -113,18 +113,22 @@ class PermissonChecks:
         """
         Checks if the user has the permission to change settings. (Mods included)
         """
-        key = f"mod_roles:{ctx.guild.id}"
         channel: discord.TextChannel = ctx.channel
         is_owner = await ctx.bot.is_owner(ctx.author)
         is_admin = channel.permissions_for(ctx.author).administrator
-        redis: aioredis.Redis = ctx.bot.redis
-        is_mod = False
-        if ctx.bot.redis:
-            pipe = redis.pipeline()
-            for role in ctx.author.roles:
-                await pipe.sismember(key, role.id)
-            is_mod = any(await pipe.execute())
-        return is_owner or is_admin or is_mod
+        # return early if owner or admin, to avoid unnecessary redis calls
+        if is_admin or is_owner:
+            return True
+        else:
+            key = f"mod_roles:{ctx.guild.id}"
+            redis: aioredis.Redis = ctx.bot.redis
+            is_mod = False
+            if ctx.bot.redis:
+                pipe = redis.pipeline()
+                for role in ctx.author.roles:
+                    await pipe.sismember(key, str(role.id))
+                is_mod = any(await pipe.execute())
+            return is_mod
 
     @staticmethod
     def can_send_image(ctx: commands.Context | discord.ApplicationContext | BridgeContext | BridgeApplicationContext):
