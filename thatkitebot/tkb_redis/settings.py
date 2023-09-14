@@ -16,6 +16,7 @@ class RedisFlags:
     MUSIC = 6
     CACHING = 7
     WELCOME_MESSAGE = 8
+    MODERATION = 9
 
     @staticmethod
     async def set_guild_flag(redis: aioredis.Redis, gid, flag_offset: int, value: bool) -> None:
@@ -29,19 +30,26 @@ class RedisFlags:
         6: MUSIC (musiccog.py) - music commands
         7: CACHING
         8: WELCOME MESSAGE
+        9: MODERATION
         """
         key = f"flags:{gid}"
-        #await redis.execute_command("BITFIELD", key, "SET", "u1", flag_offset, int(value))
         await redis.setbit(key, flag_offset, int(value))
 
     @staticmethod
-    async def get_guild_flag(redis: aioredis.Redis, gid: Union[str, int], flag_offset: int) -> bool:
+    async def set_guild_flag_custom(redis: aioredis.Redis, gid, name: str, value: bool, flag_offset: int) -> None:
         """
-        Gets a flag from a guild. See set_guild_flag() for more info.
+        Sets flags for a guild with a custom name. They are stored as Bitfields.
         """
-        key = f"flags:{gid}"
-        flag_value = await redis.getbit(key, flag_offset)
-        return bool(flag_value)
+        key = f"flags-{name}:{gid}"
+        await redis.setbit(key, flag_offset, int(value))
+
+    @staticmethod
+    async def get_guild_flag_custom(redis: aioredis.Redis, gid, name: str, flag_offset: int,) -> None:
+        """
+        Gets flags for a guild with a custom name. They are stored as Bitfields.
+        """
+        key = f"flags-{name}:{gid}"
+        return await redis.getbit(key, flag_offset)
 
     @staticmethod
     async def get_guild_flags(redis: aioredis.Redis, gid: Union[str, int], *flag_offsets):
@@ -59,12 +67,15 @@ class RedisFlags:
     async def toggle_guild_flag(redis: aioredis.Redis, gid, flag_offset: int) -> bool:
         """
         Sets flags for a guild. They are stored as Bitfields. The flags are stored in the following order:
-        0: NSFW (nsfwcog.py)
-        1: IMAGES (imagecog.py)
-        3: WELCOME COUNTING (welcomecog.py)
-        4: UWUIFICATION (uwucog.py)
-        5: LINK DETRACKING (detrack.py)
-        6: MUSIC (musiccog.py)
+        0: NSFW (nsfwcog.py) - NSFW commands
+        1: IMAGES (imagecog.py) - Image commands
+        3: WELCOME COUNTING (welcomecog.py) - Welcome Counting
+        4: UWUIFICATION (uwucog.py) - uwuify
+        5: LINK DETRACKING (detrack.py) - detracking
+        6: MUSIC (musiccog.py) - music commands
+        7: CACHING
+        8: WELCOME MESSAGE
+        9: MODERATION
         """
         key = f"flags:{gid}"
         current = await RedisFlags.get_guild_flag(redis, gid, flag_offset)
