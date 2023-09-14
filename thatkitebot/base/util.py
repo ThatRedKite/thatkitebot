@@ -5,6 +5,8 @@ import re
 
 import discord
 from discord.ext import commands
+from discord.ext.bridge import BridgeContext
+from discord.ext.bridge import BridgeApplicationContext
 
 from redis import asyncio as aioredis
 
@@ -97,7 +99,7 @@ class Parsing:
 
 class PermissonChecks:
     @staticmethod
-    async def can_change_settings(ctx: commands.Context):
+    async def can_change_settings(ctx: commands.Context | discord.ApplicationContext | BridgeContext | BridgeApplicationContext):
         """
         Checks if the user has the permission to change settings. (Owner and admin)
         """
@@ -107,7 +109,7 @@ class PermissonChecks:
         return is_owner or is_admin
 
     @staticmethod
-    async def mods_can_change_settings(ctx: commands.Context):
+    async def mods_can_change_settings(ctx: commands.Context | discord.ApplicationContext | BridgeContext | BridgeApplicationContext):
         """
         Checks if the user has the permission to change settings. (Mods included)
         """
@@ -122,11 +124,10 @@ class PermissonChecks:
             for role in ctx.author.roles:
                 await pipe.sismember(key, role.id)
             is_mod = any(await pipe.execute())
-            #await pipe.close()   # why are you like this, redis???
         return is_owner or is_admin or is_mod
 
     @staticmethod
-    def can_send_image(ctx):
+    def can_send_image(ctx: commands.Context | discord.ApplicationContext | BridgeContext | BridgeApplicationContext):
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return can_attach and can_embed
