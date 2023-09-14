@@ -32,10 +32,25 @@ class ListenerCog(commands.Cog):
                 if self.bot.debug_mode:
                     await errormsg(ctx, repr(error))
                 raise error
-            case commands.CheckFailure:
+            case discord.errors.CheckFailure:
                 await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+    
+    @commands.Cog.listener()
+    async def on_application_command_error(self, ctx: commands.Context, error):
+        match type(error):
+            case commands.CommandOnCooldown:
+                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {round(error.retry_after, 1)} seconds.")
+            case commands.CommandInvokeError:
+                if self.bot.debug_mode:
+                    await errormsg(ctx, repr(error))
+                raise error
+            case discord.errors.CheckFailure:
+                await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
+            case commands.MissingPermissions:
+                await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+
 
     @tasks.loop(hours=1.0)
     async def hourly_reset(self):

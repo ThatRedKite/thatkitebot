@@ -90,12 +90,9 @@ class StarBoard(commands.Cog):
     # the channel specific modes will override the global modes for that channel
 
     # command for adding a global threshold starboard
-    @commands.check(pc.can_change_settings)
-    @bridge.bridge_command(name="starboard", aliases=["sb"], description="Set the starboard settings for this guild")
+    @bridge.bridge_command(name="starboard", aliases=["sb"], description="Set the starboard settings for this guild", 
+                           checks=[commands.check(pc.can_change_settings).predicate])
     async def starboard(self, ctx: bridge.BridgeContext, threshold: int, channel: discord.TextChannel, emoji: str):
-        if not await pc.can_change_settings(ctx):
-            return
-
         if not await check_permissions(ctx, channel):
             return
 
@@ -108,9 +105,9 @@ class StarBoard(commands.Cog):
         await ctx.respond(
             f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}.")
 
-    @commands.check(pc.can_change_settings)
     @bridge.bridge_command(name="channel_specific_starboard", aliases=["sbcs"],
-                           description="A starboard that will only listen in specific channels")
+                           description="A starboard that will only listen in specific channels",
+                            checks=[commands.check(pc.can_change_settings).predicate])
     async def _starboard_channel_specific(self,
                                           ctx,
                                           threshold: int,
@@ -118,10 +115,6 @@ class StarBoard(commands.Cog):
                                           starboard_channel: discord.TextChannel,
                                           listen_channel: discord.TextChannel
                                           ):
-
-        if not await pc.can_change_settings(ctx):
-            return
-
         if not await check_permissions(ctx, listen_channel):
             return
 
@@ -141,12 +134,10 @@ class StarBoard(commands.Cog):
             f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
         )
 
-    @commands.check(pc.mods_can_change_settings)
     @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
-                           description="Blacklist or unblacklist a channel from the starboard")
+                           description="Blacklist or unblacklist a channel from the starboard",
+                            checks=[commands.check(pc.can_change_settings).predicate])
     async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
-        if not await pc.can_change_settings(ctx):
-            return
         """
         Add or remove a channel from the blacklist. Blacklisted channels will be ignored by the starboard.
         **Only usable by guild administrators or the bot owner.**
