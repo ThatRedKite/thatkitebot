@@ -520,7 +520,7 @@ class InfoCog(commands.Cog, name="Info"):
     @commands.Cog.listener(name="on_guild_join")
     async def load_defaults(self, guild):
         # check if there already is a config for the guild present
-        if not Path(os.path.join(self.bot.data_dir, f"info/{guild.id}.json")).exists():
+        if not Path(os.path.join(self.bot.data_dir, "info", f"{guild.id}.json")).exists():
             # load default config
             default_config = await self.get_default_config()
 
