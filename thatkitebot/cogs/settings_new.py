@@ -11,7 +11,6 @@ from thatkitebot.tkb_redis.settings import RedisFlags
 
 class SettingsCogV2(commands.Cog, name="Settings"):
     def __init__(self, bot):
-        print("ass")
         self.bot: discord.Client = bot
         self.redis: aioredis.Redis = self.bot.redis
 
