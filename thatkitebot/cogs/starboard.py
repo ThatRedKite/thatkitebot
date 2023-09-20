@@ -177,7 +177,7 @@ class StarBoard(commands.Cog):
             channels = starboard_settings["channels"].split(";")
             reaction_emoji = str(payload.emoji)
         except KeyError:
-            print("Starboard settings not found.")
+            #print("Starboard settings not found.")
             return
 
         # load the message into the internal cache
