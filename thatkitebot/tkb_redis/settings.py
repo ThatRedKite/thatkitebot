@@ -36,6 +36,23 @@ class RedisFlags:
         await redis.setbit(key, flag_offset, int(value))
 
     @staticmethod
+    async def get_guild_flag(redis: aioredis.Redis, gid, flag_offset: int) -> bool:
+        """
+        Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
+        0: NSFW (nsfwcog.py) - NSFW commands
+        1: IMAGES (imagecog.py) - Image commands
+        3: WELCOME COUNTING (welcomecog.py) - Welcome Counting
+        4: UWUIFICATION (uwucog.py) - uwuify
+        5: LINK DETRACKING (detrack.py) - detracking
+        6: MUSIC (musiccog.py) - music commands
+        7: CACHING
+        8: WELCOME MESSAGE
+        9: MODERATION
+        """
+        key = f"flags:{gid}"
+        return await redis.getbit(key, flag_offset)
+
+    @staticmethod
     async def set_guild_flag_custom(redis: aioredis.Redis, gid, name: str, value: bool, flag_offset: int) -> None:
         """
         Sets flags for a guild with a custom name. They are stored as Bitfields.

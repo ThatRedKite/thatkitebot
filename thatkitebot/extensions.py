@@ -20,4 +20,5 @@ ENABLED_EXTENSIONS = [
     "thatkitebot.cogs.detrack",
     "thatkitebot.cogs.bookmark",
     "thatkitebot.cogs.sudocog",
+    "thatkitebot.cogs.moderation"
 ]
