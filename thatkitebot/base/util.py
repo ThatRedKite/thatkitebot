@@ -2,6 +2,7 @@
 
 import asyncio
 import re
+import datetime
 
 import discord
 from discord.ext import commands
@@ -21,6 +22,29 @@ class EmbedColors:
     ultramarine_blue = 0x00387b
     telemagenta = 0xbc4077
     cum = 0xfbf5e9
+
+
+def parse_timestring(time_string:str):
+    le_regex = r"([0-9]{1,3})([s,h,d,w,m,y])"
+    total_delta = 0
+
+    for matched in re.finditer(le_regex, time_string):
+        match matched[2]:
+            case "s":
+                total_delta += int(datetime.timedelta(seconds=int(matched[1])).total_seconds())
+            case "h":
+                total_delta += int(datetime.timedelta(hours=int(matched[1])).total_seconds())
+            case "d":
+                total_delta += int(datetime.timedelta(days=int(matched[1])).total_seconds())
+            case "w":
+                total_delta += int(datetime.timedelta(weeks=int(matched[1])).total_seconds())
+            case "m":
+                total_delta += int(datetime.timedelta(minutes=int(matched[1])).total_seconds())
+            case "y":
+                total_delta += int(datetime.timedelta(days=(int(matched[1]) * 365)).total_seconds())
+            case _:
+                raise ValueError
+    return total_delta
 
 
 def list_chunker(list_to_chunk, size):
