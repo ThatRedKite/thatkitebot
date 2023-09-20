@@ -89,7 +89,6 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         Updates the latest_join key for the given member. This is called by the bot on every member join.
         """
         # check, if welcome features are even enabled
-        is_enabled, send_message = await RedisFlags.get_guild_flags(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME, RedisFlags.WELCOME_MESSAGE)
         if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME):
             return
 
@@ -110,7 +109,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         )
 
         # write the data
-        await self.redis_welcomes.hmset(key, datadict)
+        await self.redis_welcomes.hset(key, mapping=datadict)
         if await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME_MESSAGE):
             await joined_member.guild.system_channel.send("welcome")
 
