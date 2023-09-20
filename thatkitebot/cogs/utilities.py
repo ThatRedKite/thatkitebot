@@ -13,7 +13,7 @@ from thatkitebot.embeds.about import gen_embed as about_embed
 from thatkitebot.embeds.gdpr import gen_embed as gdpr_embed
 
 
-class UtilityCommands(commands.Cog, name="utility commands"):
+class UtilityCommands(commands.Cog, name="Potentially useful commands"):
     """
     Utility commands for the bot. These commands are basically informational commands.
     """

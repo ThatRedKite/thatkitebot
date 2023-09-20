@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 
-class SudoCommands(commands.Cog, name="administrative commands"):
+class SudoCommands(commands.Cog, name="Bot Owner Commands"):
     """
     This cog contains commands that are used to manage the bot. These commands are only available to the bot owner.
     """
@@ -55,6 +55,12 @@ class SudoCommands(commands.Cog, name="administrative commands"):
         for guild in self.bot.guilds:
             print(guild.name, f"({guild.id})")
             print(f"Owner: {guild.owner.name}\n")
+
+    @commands.is_owner()
+    @commands.command(name="sync_commands")
+    async def _sync_commands(self, ctx):
+        print("Synced all Commands!")
+        await self.bot.sync_commands(method="bulk", force=True)
 
 
 def setup(bot):
