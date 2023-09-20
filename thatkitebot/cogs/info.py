@@ -185,18 +185,13 @@ class InfoCog(commands.Cog, name="Info"):
     @commands.slash_command(name="info")
     async def info(self, ctx: discord.ApplicationContext,
                    section: Option(str, "Pick a section!", required=False, autocomplete=get_sections) = None,
-                   disable_navigation: Option(str, "True or False", required=False, name="disable-navigation") = None):
+                   disable_navigation: Option(bool, "True or False", required=False, name="disable-navigation") = None):
         """
-        Sends YT channels, documents, books etc related to chosen science topic arranged in convenient way.
+        Sends YT channels, documents, books etc. related to chosen science topic arranged in convenient way.
         """
 
         # load default config if not already done
         await self.load_defaults(ctx.guild)
-
-        # check if disable_navigation value is valid
-        if disable_navigation and not disable_navigation.lower() in ["true", "false"]:
-            await ctx.respond("Invalid `disable_navigation` value! (true or false)", ephemeral=True)
-            return
 
         # check if section is provided
         if disable_navigation and not section:
@@ -215,12 +210,12 @@ class InfoCog(commands.Cog, name="Info"):
         for button in self.buttons: self.main_view.add_item(button)
 
         id = await self.check_section_id(section, ctx.guild)
-        if section != None:
+        if section is not None:
             if id < 0:
                 await ctx.respond("Incorrect section name!", ephemeral=True)
                 return
 
-            if disable_navigation and disable_navigation.lower() == "true":
+            if disable_navigation:
                 await ctx.respond(embed=await get_embed(id, await self.get_config(ctx.guild)))
             else:
                 await ctx.respond(embed=await get_embed(id, await self.get_config(ctx.guild)), view=self.main_view)
