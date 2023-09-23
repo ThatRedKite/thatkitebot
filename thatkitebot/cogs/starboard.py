@@ -90,72 +90,95 @@ class StarBoard(commands.Cog):
     # the channel specific modes will override the global modes for that channel
 
     # command for adding a global threshold starboard
-    @bridge.bridge_command(name="starboard", aliases=["sb"], description="Set the starboard settings for this guild", 
-                           checks=[commands.check(pc.can_change_settings).predicate])
-    async def starboard(self, ctx: bridge.BridgeContext, threshold: int, channel: discord.TextChannel, emoji: str):
+
+    starboard = discord.SlashCommandGroup(
+        "starboard",
+        "starboard Commands",
+        checks=[pc.can_change_settings, lambda ctx: ctx.guild is not None]
+    )
+
+    @starboard.command(
+        name="enable",
+        description="Set the starboard settings for this guild",
+        checks=[pc.can_change_settings]
+    )
+    async def _starboard_enable(
+            self,
+            ctx: discord.ApplicationContext,
+            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99),
+            channel: discord.Option(discord.TextChannel, "The channel where starboard messages are sent", required=True),
+            emoji: discord.Option(str, "The emoji to count", required=True)
+    ):
+        await ctx.defer()
         if not await check_permissions(ctx, channel):
             return
 
-        if threshold < 1:
-            await ctx.respond("The threshold must be at least 1.")
-            return
+        if not Parsing.check_emoji(emoji):
+            await ctx.followup.send("Invalid Emoji!")
 
-        assert Parsing.check_emoji(emoji)
-        await set_starboard(self.redis, channel.id, 1, threshold, emoji, ctx.guild.id, [])
-        await ctx.respond(
-            f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}.")
+        await set_starboard(
+            redis=self.redis,
+            channel_id=channel.id,
+            mode=1,
+            threshold=threshold,
+            emoji=emoji,
+            guild_id=ctx.guild.id,
+            channel_list=[]
+        )
+        await ctx.followup.send(
+            f"Starboard set to threshold mode for {channel.mention} with threshold {threshold} and emoji {emoji}."
+        )
 
-    @bridge.bridge_command(name="channel_specific_starboard", aliases=["sbcs"],
-                           description="A starboard that will only listen in specific channels",
-                            checks=[commands.check(pc.can_change_settings).predicate])
-    async def _starboard_channel_specific(self,
-                                          ctx,
-                                          threshold: int,
-                                          emoji,
-                                          starboard_channel: discord.TextChannel,
-                                          listen_channel: discord.TextChannel
-                                          ):
+    @starboard.command(
+        name="channel_specific_starboard",
+        description="A starboard that will only listen in specific channels",
+        checks=[pc.can_change_settings]
+    )
+    async def _starboard_channel_specific(
+            self,
+            ctx: discord.ApplicationContext,
+            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99),
+            emoji: discord.Option(str, description="The emoji to count", required=True),
+            starboard_channel: discord.Option(str, description="The channel where starboard messages are sent", required=True),
+            listen_channel: discord.Option(discord.TextChannel, description="The channel to listen in.", required=True)
+    ):
+        await ctx.defer()
         if not await check_permissions(ctx, listen_channel):
             return
 
-        if threshold < 1:
-            await ctx.respond("The threshold must be at least 1.")
-            return
-
-        if not listen_channel:
-            await ctx.respond("You need to specify a channel to listen in!")
-            return
-
-        assert Parsing.check_emoji(emoji)
-        # assert Parsing.check_emoji(emoji) why the fuck was I checking it twice??
+        if not Parsing.check_emoji(emoji):
+            await ctx.followup.send("Invalid Emoji!")
 
         await set_starboard(self.redis, starboard_channel.id, 2, threshold, emoji, ctx.guild.id, [str(listen_channel.id)])
-        await ctx.respond(
+        await ctx.followup.send(
             f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
         )
 
-    @bridge.bridge_command(name="starboard_blacklist", aliases=["sbblacklist", "sbb"],
-                           description="Blacklist or unblacklist a channel from the starboard",
-                            checks=[commands.check(pc.can_change_settings).predicate])
-    async def starboard_blacklist(self, ctx: bridge.BridgeContext, channel: discord.TextChannel, add: bool = True):
+    @starboard.command(
+        name="blacklist",
+        description="Blacklist or unblacklist a channel from the starboard",
+        checks=[pc.can_change_settings]
+    )
+    async def starboard_blacklist(self, ctx: discord.ApplicationContext, channel: discord.TextChannel, add: bool = True):
         """
         Add or remove a channel from the blacklist. Blacklisted channels will be ignored by the starboard.
         **Only usable by guild administrators or the bot owner.**
         If the add argument is *True* then the channel will be added to the blacklist.
         If the add argument is *False* then the channel will be removed from the blacklist.
         """
+        await ctx.defer()
         key = f"starboard_blacklist:{ctx.guild.id}"
         if add:
             await self.redis.sadd(key, channel.id)
-            await ctx.respond(f"Added {channel.mention} to the starboard blacklist.")
+            await ctx.followup.send(f"Added {channel.mention} to the starboard blacklist.")
         else:
             try:
                 await self.redis.srem(key, channel.id)
             # notify the user if the channel is not in the blacklist
             except aioredis.ResponseError:
-                await ctx.respond(f"{channel.mention} is not in the starboard blacklist.")
+                await ctx.followup.send(f"{channel.mention} is not in the starboard blacklist.")
 
-            await ctx.respond(f"Removed {channel.mention} from the starboard blacklist.")
+            await ctx.followup.send(f"Removed {channel.mention} from the starboard blacklist.")
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -165,6 +188,11 @@ class StarBoard(commands.Cog):
         channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
         # check if the channel is blacklisted
         if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
+            print("channel blacklisted")
+            return
+
+        if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
+            print("starboard not enabled")
             return
 
         # load the starboard settings
@@ -177,7 +205,7 @@ class StarBoard(commands.Cog):
             channels = starboard_settings["channels"].split(";")
             reaction_emoji = str(payload.emoji)
         except KeyError:
-            #print("Starboard settings not found.")
+            print("error getting starboard settings")
             return
 
         # load the message into the internal cache
@@ -205,10 +233,12 @@ class StarBoard(commands.Cog):
                     already_posted = await check_if_already_posted(message, star_channel, self.bot.user.id)
 
                     if not already_posted:
-                        await star_channel.send(embed=await generate_embed(message, count, star_emoji))
+                        embed, file = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session, return_file=True)
+                        await star_channel.send(embed=embed, file=file)
                     else:
                         # update the starboard message
-                        await already_posted.edit(embed=await generate_embed(message, count, star_emoji))
+                        embed = await generate_embed(message, count, star_emoji)
+                        await already_posted.edit(embed=embed)
                 else:
                     return
             case _:
