@@ -186,7 +186,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 10, loop=self.loop)  # initialize the image class
-            await image.caption(text=text, path=self.datadir)
+            await image.caption(text=text, path="/app/data/static-resources/")
             embed, file = await image.make_blob_close(name="caption")
             await ctx.reply(embed=embed, file=file, mention_author=False)
             file.close()
@@ -262,7 +262,6 @@ class ImageStuff(commands.Cog, name="image commands"):
             embed, file = await image.make_blob_close(name="vignette")
             await ctx.reply(embed=embed, file=file, mention_author=False)
             file.close()
-
 
     @commands.cooldown(5, 10, commands.BucketType.user)
     @commands.command(aliases=["bubble"])
