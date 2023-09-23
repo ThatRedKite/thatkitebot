@@ -3,11 +3,12 @@
 import re
 import io
 import textwrap
+from typing import Union
 
 import discord
 from unidecode import unidecode
 from uwuipy import uwuipy
-from discord.ext import commands, bridge
+from discord.ext import commands
 from redis import asyncio as aioredis
 
 import thatkitebot
@@ -21,7 +22,26 @@ async def uwuify(message: str, id: int):
     return message
 
 
-# Yes this definitely needs its own cog shut the fuck up kite (Jk I love you)
+async def get_uwu_webhook(channel: discord.TextChannel) -> Union[discord.Webhook, None]:
+    webhooks = await channel.webhooks()
+    uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
+    if not uwu_webhook:
+        print("trying to create new hook")
+        try:
+            webhooker = await channel.create_webhook(
+                name='uwuhook',
+                reason='uwuhook is for UwU'
+            )
+        except discord.HTTPException:
+            print("failed to create hook")
+            return None
+        return webhooker
+
+    else:
+        print("got hook: ", uwu_webhook)
+        return uwu_webhook
+
+
 class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
@@ -40,13 +60,14 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # check if message is in an uwu channel
         is_channel = await self.redis.sismember(f"uwu_channels:{message.guild.id}", str(message.channel.id))
         is_user = await self.redis.sismember(f"uwu_users:{message.guild.id}", str(message.author.id))
-        if not (is_user and is_channel):
-            return False
 
-        return True
+        #if not (is_user and is_channel):
+        #    return False
+
+        return is_user or is_channel
 
     #
-    #   --- UwU command group
+    #   --- UwU command groups
     #
 
     uwu = discord.SlashCommandGroup(
@@ -115,11 +136,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             print(
                 f"{ctx.guild.name}: {ctx.author.name}#{ctx.author.discriminator} uwuified {user.name}#{user.discriminator}")
         else:
-            try:
-                await self.redis.srem(key, user.id)
-            except aioredis.ResponseError:
-                await ctx.followup.send(f"{user.name} is not fucked.")
-                return
+            await self.redis.srem(key, user.id)
             await ctx.followup.send(f"{user.name} is now unfucked.")
             print(
                 f"{ctx.guild.name}: {ctx.author.name}#{ctx.author.discriminator} de-uwuified {user.name}#{user.discriminator}")
@@ -138,26 +155,23 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # Check if the user is a bot
+        webhook = None
+
+        # Check if the user is a bot and if they are affected by uwuify
         if not await self._listener_checks(message):
+            print("no uwu")
             return
 
-        print("UwU")
-
         # Carter's code (Updated)
+        # ignore webhooks
         if not message.webhook_id:
-            await self.bot.process_commands(message)
-            webhooks = await message.channel.webhooks()
-            webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
+            # get or create the uwu webhook
+            webhook = await get_uwu_webhook(message.channel)
+
+            # if we failed to create it somehow, return
             if not webhook:
-                try:
-                    webhook = await message.channel.create_webhook(
-                        name='uwuhook',
-                        reason='uwuhook is for UwU'
-                    )
-                except discord.HTTPException:
-                    print("Fuck")
-                    return
+                print("no hookey :(")
+                return
 
             files = []
             for attachment in message.attachments:
@@ -186,8 +200,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 avatar_url=message.author.display_avatar.url,
                 files=files
             )
-
-
 
 
 def setup(bot):
