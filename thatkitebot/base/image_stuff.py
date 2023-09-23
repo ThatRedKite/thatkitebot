@@ -260,7 +260,7 @@ class ImageFunction:
         if len(x) > 0:
             color = x[0].lower().replace('color:', 'rgb(') + ')'
             in_str = in_str.replace(x[0], '')
-        x = re.findall(r'color:(?:\d{2}|[1-f]{2}){3}', in_str)
+        x = re.findall(r'color:(?:\d{2}|[1-9a-f]{2}){3}', in_str)
         if len(x) > 0:
             color = x[0].lower().replace('color:', '#')
             in_str = in_str.replace(x[0], '')
