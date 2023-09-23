@@ -37,6 +37,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
 
         self.tt = bot.tenor_token
 
+        self.repost_database_lock = asyncio.Lock()
+
     async def get_tenor_image(self, url, token):
         """
         Downloads a tenor gif and returns the hash of the image.
@@ -157,7 +159,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     @commands.group(name="repost")
     async def repost(self, ctx: commands.Context, *, message: typing.Optional[discord.Message]):
         if not ctx.subcommand_passed:
-
             # set some default values
             if ctx.message.reference:
                 message_id = ctx.message.reference.message_id
@@ -167,7 +168,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                     await ctx.send("You did not specify any message. Please respond to a message or provide as a command argument.")
                 message_id = message.id
                 channel_id = message.channel.id
-
 
             # load the message from the discord api
 
@@ -185,73 +185,83 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                 message = await channel.fetch_message(message_id)
                 urls = await get_image_urls(message, video=False, gifv=True)
 
-            async for imghash in self.hash_from_url(urls):
-                try:
-                    repost = False
-                    async for distance, hash_key in self.check_distance(imghash):
-                        if distance < 20:
-                            repost = True
-                            jump_url, repost_count = await self.repost_redis.hmget(
-                                hash_key,
-                                ["jump_url", "repost_count"]
-                            )
+            async with self.repost_database_lock:
+                async for imghash in self.hash_from_url(urls):
+                    try:
+                        repost = False
+                        async for distance, hash_key in self.check_distance(imghash):
+                            if distance < 20:
+                                repost = True
+                                jump_url, repost_count = await self.repost_redis.hmget(
+                                    hash_key,
+                                    ["jump_url", "repost_count"]
+                                )
 
-                            ms = "s" if int(repost_count) > 1 else ""  # pluralize the word "time"
+                                ms = "s" if int(repost_count) > 1 else ""  # pluralize the word "time"
 
-                            embed = discord.Embed(
-                                title="Repost Detected",
-                                description=f"This message is a repost of [this message]({jump_url}) it has been reposted {repost_count} time{ms}.",
-                            )
-                            await ctx.send(embed=embed)
-                            break
-                        else:
-                            repost = False
-                    if not repost:
-                        # the message seems to be the original
-                        await ctx.send("This seems to be the original image.")
-                except TypeError:
-                    # the message is not an image
-                    await ctx.send("There doesn't seem to be any images in this message.")
+                                embed = discord.Embed(
+                                    title="Repost Detected",
+                                    description=f"This message is a repost of [this message]({jump_url}) it has been reposted {repost_count} time{ms}.",
+                                )
+                                await ctx.send(embed=embed)
+                                break
+                            else:
+                                repost = False
+                        if not repost:
+                            # the message seems to be the original
+                            await ctx.send("This seems to be the original image.")
+                    except TypeError:
+                        # the message is not an image
+                        await ctx.send("There doesn't seem to be any images in this message.")
 
         else:
             return
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        await asyncio.sleep(0.5)
         if not message.embeds and not message.attachments:
             return  # return if the message does not contain an image
 
         if not await self.channel_is_enabled(message.channel) or message.author.bot and message.guild:
             return  # return, if the channel is not enabled or the message is from a bot and not a DM
 
-        async for image_hash in self.extract_imagehash(message):
-            repost = False
+        repost = False
+        hash_key = None
+        pipe = self.repost_redis.pipeline()
+        async with self.repost_database_lock:
+            # iterate over every image in the message and get the image hash for them
+            async for image_hash in self.extract_imagehash(message):
+                # first check for a direct match
+                async for scan_key in self.repost_redis.scan_iter(f"*:{image_hash}"):
+                    # get the jump url
+                    jump_url = await self.repost_redis.hget(scan_key, "jump_url")
 
-            pipe = self.repost_redis.pipeline()
-            async for distance, hash_key in self.check_distance(image_hash):
-                # if the distance is less than 20, it's a repost
-                if distance <= 20:
-                    jump_url = await self.repost_redis.hget(hash_key, "jump_url")
+                    # turn the jump url into IDs
                     message_id, channel_id, guild_id = ids_from_link(jump_url)
+
                     repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
+                    if repost:
+                        # direct match found, break loop and bypass scanning for similar images
+                        hash_key = scan_key
+                        break
 
-                    # jump_url = attrs["jump_url"]
-                    # extract the guild id from the jump url
-                    #guild_id = int(jump_url.split("/")[4])
-                    #channel_id = int(jump_url.split("/")[5])
-                    # set the repost flag to true if the guild id and channel id
-                    # match the current message's guild id and channel id
-                    #repost = True if message.guild.id == guild_id and message.channel.id == channel_id else False
-                    break
+                if not repost:
+                    async for distance, hash_key in self.check_distance(image_hash):
+                        #print(distance)
+                        # if the distance is less than 20, it's a repost
+                        if distance <= 20:
+                            jump_url = await self.repost_redis.hget(hash_key, "jump_url")
+                            message_id, channel_id, guild_id = ids_from_link(jump_url)
+                            repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
+                            break
 
-            if repost:
-                await message.add_reaction("♻️")  # add the repost reaction
-                await self.repost_redis.hincrby(hash_key, "repost_count", 1)  # increment the repost count
-            else:
-                # the message does not appear to be a repost, let's add it to the database
-                await pipe.hset(key := f"{message.id}:{image_hash}", "jump_url", message.jump_url)
-                await pipe.hset(key, "repost_count", str(0))
+                if repost:
+                    await message.add_reaction("♻️")  # add the repost reaction
+                    await self.repost_redis.hincrby(hash_key, "repost_count", 1)  # increment the repost count
+                else:
+                    # the message does not appear to be a repost, let's add it to the database
+                    await pipe.hset(key := f"{message.id}:{image_hash}", "jump_url", message.jump_url)
+                    await pipe.hset(key, "repost_count", str(0))
 
             await pipe.execute()  # execute the pipeline to commit the changes
 
