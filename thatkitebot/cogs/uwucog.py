@@ -159,7 +159,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         # Check if the user is a bot and if they are affected by uwuify
         if not await self._listener_checks(message):
-            print("no uwu")
             return
 
         # Carter's code (Updated)
