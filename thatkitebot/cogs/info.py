@@ -5,9 +5,9 @@ import re
 import json
 import random
 from pathlib import Path
-import discord_emoji
-import aiofiles
 
+import aiofiles
+import discord_emoji
 import discord
 from discord.ext import commands
 from discord.ui import Select, View, Button

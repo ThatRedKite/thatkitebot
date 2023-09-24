@@ -4,9 +4,8 @@ from datetime import timedelta
 from datetime import datetime
 
 import discord
-from redis import asyncio as aioredis
-
 from discord.ext import commands
+from redis import asyncio as aioredis
 
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import parse_timestring

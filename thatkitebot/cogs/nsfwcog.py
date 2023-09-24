@@ -3,8 +3,10 @@
 import asyncio
 import typing
 from random import choice, choices
+
 import discord
 from discord.ext import commands
+
 from thatkitebot.base import url
 from thatkitebot.base.util import errormsg
 from thatkitebot.base.util import EmbedColors as ec

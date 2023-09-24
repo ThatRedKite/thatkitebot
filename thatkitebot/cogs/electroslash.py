@@ -1,19 +1,14 @@
 #  Copyright (c) 2019-2023 ThatRedKite and contributors
-#
-# from random import uniform
-#
 
-# THIS IS A WORK IN PROGRESS!
-# TODO: fix
 
 from random import uniform
 
 import discord
 from discord.ext.commands import Cog
 
-from thatkitebot.calculators.electronics.rc_filter import RCFilter
 from thatkitebot.base.util import Parsing as p
 from thatkitebot.base.util import errormsg
+from thatkitebot.calculators.electronics.rc_filter import RCFilter
 from thatkitebot.calculators import electronics as el
 from thatkitebot.calculators.electronics.exceptions import *
 

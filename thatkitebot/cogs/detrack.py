@@ -6,11 +6,10 @@ from urllib.parse import urlparse
 
 import toml
 import discord
-from discord.ext import commands, bridge
+from discord.ext import commands
 from redis import asyncio as aioredis
 
 import thatkitebot
-from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis.cache import RedisCache
 

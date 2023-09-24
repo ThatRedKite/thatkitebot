@@ -3,7 +3,6 @@
 import textwrap
 import re
 import typing
-
 from unidecode import unidecode
 from random import choice, Random
 from datetime import datetime
@@ -14,9 +13,9 @@ from discord.ext import commands
 from uwuipy import uwuipy
 
 from thatkitebot.base import url, util
-from thatkitebot.tkb_redis.cache import RedisCache
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.exceptions import NotEnoughMessagesException
+from thatkitebot.tkb_redis.cache import RedisCache
 
 
 class FunStuff(commands.Cog, name="fun commands"):

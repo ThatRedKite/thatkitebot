@@ -1,19 +1,14 @@
 #  Copyright (c) 2019-2022 ThatRedKite and contributors
 
-import math
-from math import log10, sqrt
-import matplotlib.pyplot as plt
-from io import BytesIO
 import discord
 from discord.ext import commands
 import si_prefix
-from random import randint
 
+from thatkitebot.base.util import Parsing as p
+from thatkitebot.base.util import errormsg
 from thatkitebot.calculators.electronics.rc_filter import RCFilter
 from thatkitebot.calculators.electronics.divider import VoltageDivider
 from thatkitebot.calculators.electronics.lm317 import LM317
-from thatkitebot.base.util import Parsing as p
-from thatkitebot.base.util import errormsg
 from thatkitebot.calculators.electronics.pcb_calc import PCBConversion, PCB_calc
 from thatkitebot.calculators.electronics.exceptions import *
 

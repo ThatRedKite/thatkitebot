@@ -3,21 +3,15 @@
 
 import asyncio
 import re
-
+from typing import Optional
 from concurrent.futures import ProcessPoolExecutor
-
 from urllib.parse import urlparse, parse_qs, urlencode
-from io import BytesIO
-from typing import Optional, Union
 
 import discord
-from discord import option
 from discord.ext import commands
 
-import thatkitebot
 from thatkitebot.base import util, image_stuff
-from thatkitebot.base.exceptions import *
-from thatkitebot.base.image_stuff import get_image_url, ImageFunction
+from thatkitebot.base.image_stuff import ImageFunction
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import EmbedColors as ec
 

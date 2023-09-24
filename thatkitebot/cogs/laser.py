@@ -1,13 +1,13 @@
 #  Copyright (c) 2019-2023 ThatRedKite and contributors
 
+from math import sin, atan
+from io import BytesIO
 
+import discord
+import si_prefix
 from discord.ext import commands
 from wand.image import Image as WandImage
 from wand.color import Color as WandColor
-import discord
-import si_prefix
-from math import sin, atan
-from io import BytesIO
 
 from thatkitebot.base import util
 from thatkitebot.embeds.laser import gen_embed as safety_embed

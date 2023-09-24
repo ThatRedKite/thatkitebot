@@ -7,9 +7,8 @@ from redis import asyncio as aioredis
 from discord.ext import commands, tasks
 
 import thatkitebot
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
-
 from thatkitebot.base.util import errormsg
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
 
 
 class ListenerCog(commands.Cog):
