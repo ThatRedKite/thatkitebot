@@ -22,91 +22,112 @@ class SettingsCogV2(commands.Cog, name="Settings"):
     )
 
     @settings.command(name="images")
-    async def enable_images(self, ctx: discord.ApplicationContext):
+    async def enable_images(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle image commands. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.IMAGE)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.IMAGE, value=enable)
+
+        if enable:
             await ctx.send(f"Image commands have been enabled")
         else:
             await ctx.send(f"Image commands have been disabled")
 
     @settings.command(name="nsfw")
-    async def enable_nsfw(self, ctx):
+    async def enable_nsfw(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle NSFW commands. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.NSFW)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.NSFW, value=enable)
+
+        if enable:
             await ctx.send(f"NSFW commands have been enabled")
         else:
             await ctx.send(f"NSFW commands have been disabled")
 
     @settings.command(name="repost")
-    async def enable_repost(self, ctx):
+    async def enable_repost(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle Repost Commands. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.REPOST)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.REPOST, value=enable)
+
+        if enable:
             await ctx.send(f"Repost commands have been enabled")
         else:
             await ctx.send(f"Repost commands have been disabled")
 
-    @settings.command()
-    async def enable_music(self, ctx):
+    @settings.command(name="music")
+    async def enable_music(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle music commands in the current server, requires the `Manage Server` permission.
-        (Warning: Music functionality is still highly experimental)
+        (Warning: Music functionality is still highly experimental and the cog has to be manually loaded first)
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.MUSIC)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.MUSIC, value=enable)
+
+        if enable:
             embed = discord.Embed(title="Music commands are now enabled.", description="**WARNING: HIGHLY EXPERIMENTAL**")
             await ctx.send(embed=embed)
         else:
             await ctx.send(f"Music commands have been disabled")
 
     @settings.command(name="uwu")
-    async def enable_uwu(self, ctx):
+    async def enable_uwu(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle UwU Commands. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.UWU)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.UWU, value=enable)
+
+        if enable:
+            await ctx.send(f"UwU commands have been enabled")
+        else:
+            await ctx.send(f"UwU commands have been disabled")
+
+    @settings.command(name="detrack")
+    async def enable_detrack(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
+        """
+        Toggle de-tracking commands. Can be used by everyone with "manage_guild" permissions.
+        """
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.DETRACK, value=enable)
+
+        if enable:
             await ctx.send(f"UwU commands have been enabled")
         else:
             await ctx.send(f"UwU commands have been disabled")
 
     @settings.command(name="welcome_leaderboard")
-    async def enable_welcome_leaderboard(self, ctx):
+    async def enable_welcome_leaderboard(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle the welcome leaderboard. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.WELCOME)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.WELCOME, value=enable)
+
+        if enable:
             await ctx.send(f"Welcome leaderboard has been enabled")
         else:
             await ctx.send(f"Welcome leaderboard has been disabled")
 
     @settings.command(name="welcome_message")
-    async def enable_welcome_message(self, ctx):
+    async def enable_welcome_message(self, ctx, enable: discord.Option(bool, name="Enable?", description="Whether to enable or disable the setting", required=True)):
         """
-        Toggle the welcome message. Can be used by everyone with "manage_guild" permissions.r
+        Toggle the welcome message. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.WELCOME_MESSAGE)
-        if result:
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.WELCOME_MESSAGE, value=enable)
+
+        if enable:
             await ctx.send(f"Welcome messages have been enabled")
         else:
             await ctx.send(f"Welcome messages have been disabled")
 
     @settings.command(name="moderation")
-    async def enable_moderation(self, ctx):
+    async def enable_moderation(self, ctx, enable: discord.Option(bool, "Whether to enable or disable the setting", required=False)):
         """
         Toggle all Moderation features. Can be used by everyone with "manage_guild" permissions.
         """
-        result = await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.MODERATION)
-        if result:
+
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, RedisFlags.MODERATION, value=enable)
+
+        if enable:
             await ctx.send(f"Moderation features have been enabled")
         else:
             await ctx.send(f"Moderation features have been disabled")
@@ -114,16 +135,16 @@ class SettingsCogV2(commands.Cog, name="Settings"):
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")
     async def _add_mod(self, ctx: discord.ApplicationContext, role: discord.Role):
         """
-        Allows mod perms to add a moderator role. Anyone with this role will be able to access mod features of KiteBot.
+        Allows mod perms to add a moderator role. Anyone with this role will be able to access mod features of the bot.
         """
         ctx.defer()
-        key = f"mod_roles:{ctx.guild.id}"  # I wanted to call them snowflakes :troll: but that would result in bad readability
-        if not await self.redis.sismember(key, role.id):
+        key = f"mod_roles:{ctx.guild.id}"
+        if not await self.redis.sismember(key, str(role.id)):
             await self.redis.sadd(key, role.id)
             await ctx.respond(f"{role.name} is now a moderator role")
         else:
             try:
-                await self.redis.srem(key, role.id)
+                await self.redis.srem(key, str(role.id))
             except aioredis.ResponseError:
                 await ctx.respond(f"{role.name} is not a moderator role")
                 return
@@ -147,8 +168,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         pipe = self.redis.pipeline()
         for guild in self.bot.guilds:
             print(f"Converting settings for guild \x1b[0;32m'{guild.name}' \x1b[0;33m({guild.id}) \x1b[0;37m")
-            for key in await self.redis.hgetall(guild.id):
-                setting = await self.redis.hget(guild.id, key)
+            for key in await self.redis.hgetall(str(guild.id)):
+                setting = await self.redis.hget(str(guild.id), key)
                 bool_repr = setting == "TRUE"
                 pos = Settings[key].value
                 await RedisFlags.set_guild_flag(pipe, ctx.guild.id, pos, bool_repr)

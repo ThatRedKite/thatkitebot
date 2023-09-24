@@ -152,30 +152,6 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             # delete the message
             await message.delete()
 
-    @bridge.bridge_command(name="detrack", aliases=["urlclean"],
-                           description="Remove known tracking urls and de-ampify links",
-                           checks=[commands.check(pc.mods_can_change_settings).predicate])
-    async def set_auto_detrack(self, ctx: bridge.BridgeContext):
-        """
-        Remove known tracking urls and de-ampify links.
-        For example: https://www.youtube.com/watch?&v=dQw4w9WgXcQ&feature=youtu.be will become https://www.youtube.com/watch?v=dQw4w9WgXcQ
-        
-        The way this works is that the original users message is removed and reposed by the bot as an embed, with a button to restore the ordinal message.
-        But since discord can't undelete message it will create a "clone" of the original message using webhooks.
-
-        This setting is off by default.
-
-        Usage: 
-        `+detrack` - toggles the setting server wide
-               
-        Only administrators and moderators can use this command.
-        """
-        
-        if await RedisFlags.toggle_guild_flag(self.redis, ctx.guild.id, RedisFlags.DETRACK):
-            await ctx.respond("Detracking has been enabled.")
-        else:
-            await ctx.respond("Detracking has been disabled.")
-
 
 def setup(bot):
     bot.add_cog(DetrackCog(bot))
