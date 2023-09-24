@@ -246,6 +246,8 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
         # check if edit checking is enabled
         is_enabled = await settings.RedisFlags.get_guild_flag_custom(
             redis=self.redis,

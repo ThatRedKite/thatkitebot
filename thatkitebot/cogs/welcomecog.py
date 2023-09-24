@@ -59,6 +59,8 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
         """
         Updates the welcome count for the given message's author. This is called by the bot on every message.
         """
@@ -88,6 +90,8 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         """
         Updates the latest_join key for the given member. This is called by the bot on every member join.
         """
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
         # check, if welcome features are even enabled
         if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild.id, RedisFlags.WELCOME):
             return

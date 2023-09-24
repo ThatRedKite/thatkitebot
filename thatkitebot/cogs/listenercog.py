@@ -50,10 +50,10 @@ class ListenerCog(commands.Cog):
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
 
-
     @tasks.loop(hours=1.0)
     async def hourly_reset(self):
         self.bot.command_invokes_hour = 0
+        self.bot.events_hour += 0
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -71,6 +71,8 @@ class ListenerCog(commands.Cog):
     async def on_command_completion(self, ctx):
         self.bot.command_invokes_hour += 1
         self.bot.command_invokes_total += 1
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
 
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx, ex):
@@ -79,6 +81,8 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
         cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)
         try:
             await cache.add_message(message)
@@ -87,6 +91,8 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
         # add the reaction to the cached message
         # get the message
         cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)

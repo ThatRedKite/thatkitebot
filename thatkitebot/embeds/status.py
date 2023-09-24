@@ -42,8 +42,8 @@ async def gen_embed(bot, redis):
                f"Running commit: **[{bot.git_hash[0:7]}](https://github.com/ThatRedKite/thatkitebot/tree/{bot.git_hash})**\n"
                f"Total command invokes: **{bot.command_invokes_total}**\n"
                f"Commands invoked this hour: **{bot.command_invokes_hour}**\n"
-               f"Events per hour: **{bot.events_hour}**\n"
-               f"Events total: **{bot.events_total}**"
+               f"Events per hour: **{si_prefix.si_format(bot.events_hour, 0)}**\n"
+               f"Events total: **{si_prefix.si_format(bot.events_total, 0)}**"
                ),
         inline=False
     )

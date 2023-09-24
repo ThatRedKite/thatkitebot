@@ -79,6 +79,9 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+
         # Check if the user is a bot 
         if message.author.bot:
             return
@@ -86,8 +89,6 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         # do not detrack in DMs
         elif isinstance(message.channel, discord.DMChannel):
             return
-
-
 
         # find all urls in the message
         urls = re.findall(r"(?P<url>https?://\S+)", message.content)
@@ -124,6 +125,9 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+
         # check if the bot is reacting to the message
         if payload.user_id == self.bot.user.id:
             return

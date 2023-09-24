@@ -155,6 +155,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+
         webhook = None
 
         # Check if the user is a bot and if they are affected by uwuify
