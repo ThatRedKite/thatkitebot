@@ -188,11 +188,9 @@ class StarBoard(commands.Cog):
         channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
         # check if the channel is blacklisted
         if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
-            print("channel blacklisted")
             return
 
         if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
-            print("starboard not enabled")
             return
 
         # load the starboard settings
@@ -205,7 +203,6 @@ class StarBoard(commands.Cog):
             channels = starboard_settings["channels"].split(";")
             reaction_emoji = str(payload.emoji)
         except KeyError:
-            print("error getting starboard settings")
             return
 
         # load the message into the internal cache
@@ -234,10 +231,13 @@ class StarBoard(commands.Cog):
 
                     if not already_posted:
                         embed, file = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session, return_file=True)
-                        await star_channel.send(embed=embed, file=file)
+                        if file:
+                            await star_channel.send(embed=embed, file=file)
+                        else:
+                            await star_channel.send(embed=embed)
                     else:
                         # update the starboard message
-                        embed = await generate_embed(message, count, star_emoji)
+                        embed, _ = await generate_embed(message, count, star_emoji)
                         await already_posted.edit(embed=embed)
                 else:
                     return

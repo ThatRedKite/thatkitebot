@@ -13,7 +13,6 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     try:
         url, embed_type = await get_image_url(message, video=True, gifv=True)
     except TypeError:
-        print("whoops")
         url, embed_type = None, None
 
     is_image = embed_type in ("rich", "image")
@@ -23,8 +22,8 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
         embed.description += f"\n\n{content}"
 
     elif content and url in content:
-        type = "image" if is_image else "video"
-        replaced_content = content.replace(url, f"[{type} url]({url})")
+        content_type = "image" if is_image else "video"
+        replaced_content = content.replace(url, f"[{content_type} url]({url})")
         embed.add_field(name="​", value=replaced_content, inline=False)
 
     embed.set_thumbnail(url=message.author.avatar.url)
@@ -32,11 +31,10 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     embed.color = Color.gold()
     embed.timestamp = message.created_at
 
-    if return_file and aiohttp_session:
+    if return_file and aiohttp_session and url:
         async with aiohttp_session.get(url) as resp:
             resp: aiohttp.ClientResponse
-            print(resp.status)
             file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
             return embed, file
 
-    return embed
+    return embed, None
