@@ -2,7 +2,7 @@
 
 import discord
 from redis import asyncio as aioredis
-from discord.ext import commands, bridge
+from discord.ext import commands
 
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import Parsing

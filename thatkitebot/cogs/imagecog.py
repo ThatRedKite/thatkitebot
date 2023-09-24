@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 import discord
 from discord import option
-from discord.ext import commands, bridge
+from discord.ext import commands
 
 import thatkitebot
 from thatkitebot.base import util, image_stuff
