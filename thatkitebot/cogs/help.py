@@ -7,7 +7,7 @@ from discord.ext import commands, pages
 from thatkitebot.base.util import list_chunker
 import random
 
-ZWSP = "​"
+ZWSP = "​"  # zero width space
 
 # thanks to dunnousername  for this help command. It was originally used in the styrobot discord bot
 info = {
