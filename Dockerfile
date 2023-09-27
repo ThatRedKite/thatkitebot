@@ -7,7 +7,7 @@ COPY ./thatkitebot /app/thatkitebot
 
 RUN apt-get update && apt-get upgrade -y
 
-RUN apt-get install -y python3-dev gcc libfreeimage3 libwebp-dev libjpeg-turbo-progs git libffi-dev
+RUN apt-get install -y python3-dev gcc libfreeimage3 libwebp-dev libjpeg-turbo-progs git libffi-dev units
 
 RUN python3 -m venv /app/thatkitebot-venv/
 
