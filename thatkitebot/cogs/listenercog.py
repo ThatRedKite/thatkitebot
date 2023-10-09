@@ -9,6 +9,7 @@ from discord.ext import commands, tasks
 import thatkitebot
 from thatkitebot.base.util import errormsg
 from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
+from thatkitebot.tkb_redis.settings import RedisFlags as flags
 
 
 class ListenerCog(commands.Cog):
@@ -17,9 +18,12 @@ class ListenerCog(commands.Cog):
     """
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
+        self.redis: aioredis.Redis = bot.redis
         self.redis_cache: aioredis.Redis = bot.redis_cache
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.repost_redis: aioredis.Redis = bot.redis_repost
+
+        self.database_ping.start()
 
     # global error handlers
     @commands.Cog.listener()
@@ -54,6 +58,15 @@ class ListenerCog(commands.Cog):
     async def hourly_reset(self):
         self.bot.command_invokes_hour = 0
         self.bot.events_hour += 0
+
+    @tasks.loop(seconds=10)
+    async def database_ping(self):
+        if not await self.redis.ping():
+            print("Settings Redis not responding to ping command")
+        elif not await self.redis_cache.ping():
+            print("Cache Redis not reponding to ping command")
+        else:
+            return
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -115,6 +128,39 @@ class ListenerCog(commands.Cog):
             key=key
         )
 
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+
+        # initialize standard settings when joining a Guild
+        pipe = self.redis.pipeline()
+        await flags.set_guild_flag(pipe, guild.id, flags.IMAGE, True)
+        await flags.set_guild_flag(pipe, guild.id, flags.CACHING, True)
+        await flags.set_guild_flag(pipe, guild.id, flags.UWU, True)
+
+        # try to send a message informing about settings
+        try:
+            await guild.system_channel.send(
+                (
+                    "Thanks for Inviting me! "
+                    "Note that most of the advanced features (Moderation, Repost Detection, etc.) "
+                    "are disabled by default and need to be enabled if you want to use them. "
+                    "Use `/settings` to see what settings are available. "
+                )
+            )
+        except TypeError:
+            return
+        except discord.Forbidden:
+            return
+
+
+
+
+
+
+
 
 def setup(bot):
     bot.add_cog(ListenerCog(bot))
+
