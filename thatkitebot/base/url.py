@@ -21,6 +21,17 @@ tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 emoji_pattern = re.compile(r"<:\S+:\n+>")
 
 
+def get_avatar_url(user: discord.User | discord.Message):
+    if user.avatar:
+        return user.avatar.url
+    else:
+        image_id = 0
+        if user.discriminator == 0:
+            return f"https://cdn.discordapp.com/embed/avatars/{(int(user.id) >> 22) % 6}.png"
+        else:
+            return f"https://cdn.discordapp.com/embed/avatars/{int(user.discriminator) % 5}.png"
+
+
 async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):
     """
     Gets a random image from r34 based on the tags.

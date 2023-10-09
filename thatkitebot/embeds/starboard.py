@@ -5,11 +5,15 @@ import aiohttp
 from discord import Embed, Message, Color, File
 
 from thatkitebot.base.image_stuff import get_image_url
+from thatkitebot.base.url import get_avatar_url
 
 
 async def generate_embed(message: Message, count, star_emoji, return_file=False, aiohttp_session=None):
-    embed = Embed(title=f"{message.author.name}",
-                          description=f"**Click [here]({message.jump_url}) to Jump to the message**")
+    embed = Embed(
+        title=f"{message.author.name}",
+        description=f"**[Click here to Jump to the message]({message.jump_url})**"
+    )
+
     try:
         url, embed_type = await get_image_url(message, video=True, gifv=True)
     except TypeError:
@@ -26,7 +30,7 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
         replaced_content = content.replace(url, f"[{content_type} url]({url})")
         embed.add_field(name="​", value=replaced_content, inline=False)
 
-    embed.set_thumbnail(url=message.author.avatar.url)
+    embed.set_thumbnail(url=get_avatar_url(message.author))
     embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
     embed.color = Color.gold()
     embed.timestamp = message.created_at
