@@ -17,6 +17,7 @@ class RedisFlags:
     CACHING = 7
     WELCOME_MESSAGE = 8
     MODERATION = 9
+    STARBOARD = 10
 
     @staticmethod
     async def set_guild_flag(redis: aioredis.Redis, gid, flag_offset: int, value: bool) -> None:
@@ -31,6 +32,7 @@ class RedisFlags:
         7: CACHING
         8: WELCOME MESSAGE
         9: MODERATION
+        10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
         key = f"flags:{gid}"
         await redis.setbit(key, flag_offset, int(value))
@@ -48,6 +50,7 @@ class RedisFlags:
         7: CACHING
         8: WELCOME MESSAGE
         9: MODERATION
+        10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
         key = f"flags:{gid}"
         return await redis.getbit(key, flag_offset)
@@ -78,7 +81,6 @@ class RedisFlags:
         items = [("u1", offset) for offset in flag_offsets]
 
         values = await redis.bitfield_ro(key, "u1", 0, items=items)
-        print(values)
 
     @staticmethod
     async def toggle_guild_flag(redis: aioredis.Redis, gid, flag_offset: int) -> bool:
@@ -93,11 +95,10 @@ class RedisFlags:
         7: CACHING
         8: WELCOME MESSAGE
         9: MODERATION
+        10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
         key = f"flags:{gid}"
         current = await RedisFlags.get_guild_flag(redis, gid, flag_offset)
-        print(current)
-        #await redis.execute_command("BITFIELD", key, "SET", "u1", flag_offset, int(not current))
         await redis.setbit(key, flag_offset, int(not current))
         return not current
 
