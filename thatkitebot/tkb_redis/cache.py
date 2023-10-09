@@ -12,17 +12,6 @@ from redis import asyncio as aioredis
 from thatkitebot.base.image_stuff import get_image_urls, NoImageFoundException
 from .exceptions import *
 
-# TODO: make the cache actually store useful data alongside the message content
-
-#  message id contains the time of message creation, that is pretty neat!
-# so, we could make every message its own hash containing all sorts of potentially useful data
-
-# alternatively we could have every channel be a hash, containing the messages as key - value pairs
-# this would limit us in our ability to store much useful data other than the content
-# this could be remedied by havign a "metadata" entry for every message, essentially doubling the numbers of entries required
-# overall, this seems to be slower and more stupid
-# alternatively we could serialize the whole message, not sure how useful that would be
-
 
 class RedisCache:
     def __init__(self, redis: aioredis.Redis, bot: discord.Bot, auto_exec=False):
@@ -80,7 +69,7 @@ class RedisCache:
         try:
             dumped = orjson.dumps(data_new)
             compressed_data = brotli.compress(dumped, quality=11)
-            await self.pipeline.hset(name=str(author_id), key=key)
+            await self.pipeline.hset(name=str(author_id), key=key, value=compressed_data)
 
         except Exception:
             raise NoDataException
@@ -107,11 +96,7 @@ class RedisCache:
         hash_key = f"{guild_id}:{channel_id}:{message_id}"
 
 
-        #raw = [(key, data) async for key, data in self.redis.hscan_iter(str(author_id), match=f"*:{message_id}", count=1)]
-
         # make sure we actually got a key
-        #if not raw:
-        #    raise CacheInvalidMessage
 
         raw = await self.redis.hget(key, hash_key)
 
@@ -142,12 +127,7 @@ class RedisCache:
 
         key = str(author_id)
 
-
-
-        #raw = [(key, data) async for key, data in self.redis.hscan_iter(str(author_id), match=f"*:{message_id}", count=1)]
-
         # make sure we actually got a key
-
 
         contents = [] # create empty list to hold the message contents
 
