@@ -2,8 +2,8 @@ services:
   thatkitebot:
     build:  .
     links:
-      - "redis:redis"
-      - "redis_cache:redis_cache"
+      - "redis:thatkitebot_redis"
+      - "redis_cache:thatkitebot_redis_cache"
       #- "lavalink:lavalink"
     volumes:
       - ./thatkitebot/:/app/thatkitebot
@@ -16,14 +16,14 @@ services:
     command: bash -c "cd /app/ && /app/thatkitebot-venv/bin/python3 -m thatkitebot"
 
   redis:
-    container_name: redis
+    container_name: thatkitebot_redis
     volumes:
       - ./data/redis:/data
     image: "redis:alpine"
     entrypoint: redis-server --appendonly yes
 
   redis_cache:
-    container_name: redis_cache
+    container_name: thatkitebot_redis_cache
     image: "redis:alpine"
     entrypoint: redis-server --save "" --appendonly no
 
