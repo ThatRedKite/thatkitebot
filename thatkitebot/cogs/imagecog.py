@@ -14,6 +14,7 @@ from thatkitebot.base import util, image_stuff
 from thatkitebot.base.image_stuff import ImageFunction
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import EmbedColors as ec
+from thatkitebot.base.url import get_avatar_url
 
 
 class ImageStuff(commands.Cog, name="image commands"):
@@ -372,10 +373,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         if user is None:
             user = ctx.author
         embed = discord.Embed(title=f"{user.name}'s profile picture", color=user.color)
-        if user.avatar:
-            embed.set_image(url=user.avatar.url)
-        else:
-            embed.description = "This user doesn't have a profile picture."
+        embed.set_image(url=get_avatar_url(user))
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.cooldown(3, 10, commands.BucketType.guild)
