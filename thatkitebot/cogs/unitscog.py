@@ -4,9 +4,10 @@ import discord
 import asyncio
 import subprocess
 import re
+from thatkitebot.embeds.units import gen_embed, gen_error_embed, gen_help_embed
 from discord.ext import commands
 
-from thatkitebot.embeds.units import gen_embed
+
 
 async def unicode_to_ascii_exponents(expression: str) -> str:
     """Convert unicode exponents to ASCII exponents."""
@@ -43,12 +44,18 @@ async def units_expander(expression: str) -> str:
     For example '3 m/s' will be turned into '3 meters/second'
     Degrees are also supported, so '3°' will be turned into '3 degrees'
     """
+    # if the expression is empty, return it
+    if not expression:
+        return expression
+
     lookup_table = {
-        'm': 'meters',
-        's': 'seconds',
-        '°': 'degrees',
-        'kg': 'kilograms',
-        # add more units here
+        'h': 'hour',
+        '°': 'degree',
+
+        # likely redundant
+        #'kg': 'kilogram',
+        #'m': 'meters',
+        #'s': 'seconds',
     }
 
     # Regex pattern to match a unit abbreviation bounded by word boundaries,
@@ -58,35 +65,26 @@ async def units_expander(expression: str) -> str:
     def unit_replacer(match):
         return lookup_table[match.group(0)]
 
-    # Function to process text outside of square brackets
     def expand_units(text):
         return unit_pattern.sub(unit_replacer, text)
 
-    # Regex pattern to match text inside square brackets
-    bracket_pattern = re.compile(r'\[([^]]+)\]')
+    # Use findall to split the string into segments inside and outside square brackets
+    segments = re.findall(r'(\[[^\]]+\])|([^\[\]]+)', expression)
 
-    # Function to process text inside square brackets
-    def bracket_replacer(match):
-        # Just remove the brackets, keep the text inside unchanged
-        return match.group(1)
+    processed_segments = []
+    for segment in segments:
+        # For each segment, check if it starts with '[' (indicating it was inside square brackets)
+        if segment[0] and segment[0].startswith('['):
+            # If inside square brackets, just remove the brackets
+            processed_segments.append(segment[0][1:-1])
+        else:
+            # Otherwise, expand the units
+            processed_segments.append(expand_units(segment[1]))
 
-    # First, handle text inside square brackets
-    expression = bracket_pattern.sub(bracket_replacer, expression)
-
-    # Then, expand units in the rest of the text
-    expanded_expression = expand_units(expression)
+    expanded_expression = ''.join(processed_segments)
     return expanded_expression
 
-async def units_expander(expression: str) -> str:
-    """
-    Used in orer to turn user firendly units into units that units can understand.
-    For example '3 m/s' will be turned into '3 meters/second'
-    Degrees are also supported, so '3°' will be turned into '3 degrees'
-    """
-    # TODO
-    return expression
-
-async def units_converter(expression: str, target_unit: str = "") -> (float, str, str):
+async def units_converter(expression: str, target_unit: str = "") -> (float, str, str, str):
     """Asynchronous wrapper for the units command."""
     
     # Construct the command to be executed.
@@ -95,6 +93,9 @@ async def units_converter(expression: str, target_unit: str = "") -> (float, str
     if target_unit:
         cmd.append(target_unit)
 
+    print("running command:")
+    print(cmd)
+
     # Run the command asynchronously and capture the output.
     proc = await asyncio.create_subprocess_exec(*cmd,
                                                 stdout=subprocess.PIPE,
@@ -102,16 +103,27 @@ async def units_converter(expression: str, target_unit: str = "") -> (float, str
     
     stdout, stderr = await proc.communicate()
     
+    print("got stdout:")
+    print(stdout)
+    print("got stderr:")
+    print(stderr)
+
     # Check for errors
-    if proc.returncode != 0:
-        raise ValueError(f"Error executing units: {stderr.decode().strip()}")
+    if len(stderr) != 0 or "error" in stdout.decode().strip().lower():
+        print("got error")
+        return None, None, None, stdout.decode().strip()
+    
+    # Check for unknown units
+    if "unknown" in stdout.decode().strip().lower():
+        print("got unknown")
+        return None, None, None, stdout.decode().strip()
     
     output = stdout.decode().strip()
 
     # Check if a definition is being returned
     if "=" in output:
         # Return the unit definition as the third element in the tuple
-        return None, None, output
+        return None, None, output, None
 
     # Parse the output to get the numerical value and unit.
     # We expect output in the format: "value unit"
@@ -122,9 +134,9 @@ async def units_converter(expression: str, target_unit: str = "") -> (float, str
     unit = " ".join(parts[1:])
     
     if target_unit:
-        return value, target_unit, None
+        return value, target_unit, None, None
 
-    return value, unit, None
+    return value, unit, None, None
 
 class UnitsCommands(commands.Cog, name="Units Commands"):
     """
@@ -142,6 +154,14 @@ class UnitsCommands(commands.Cog, name="Units Commands"):
         "units",
         "Units Commands"
     )
+
+    @units_commands.command(name="help", description="Explain the units command")
+    async def help(self,
+            ctx: discord.ApplicationContext):
+        """Explain the units command."""
+        await ctx.defer()
+
+        await ctx.followup.send(embed=await gen_help_embed())   
 
     #
     # --- Basic evaluation Commands ---
@@ -181,9 +201,26 @@ class UnitsCommands(commands.Cog, name="Units Commands"):
         print(ascii_expression)
         print(ascii_target_unit)
 
-        value, unit, unit_def = await units_converter(expression, target_unit)
+        ascii_expression = await units_expander(ascii_expression)
+        ascii_target_unit = await units_expander(ascii_target_unit)
 
-        embed = await gen_embed(expression, value, unit, unit_def)
+        print("expanded:")
+        print(ascii_expression)
+        print(ascii_target_unit)
+
+
+        value, unit, unit_def, err = await units_converter(ascii_expression, ascii_target_unit)
+
+        print("post converted:")
+        print(value)
+        print(unit)
+        print(unit_def)
+        print(err)
+        
+        if err:
+            embed = await gen_error_embed(ascii_expression, err)
+        else:
+            embed = await gen_embed(ascii_expression, value, unit, unit_def)
 
         # Send the response
         await ctx.followup.send(embed=embed)

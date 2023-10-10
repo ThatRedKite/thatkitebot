@@ -20,6 +20,7 @@ class EmbedColors:
     light_grey = 0xc5c7c4
     sulfur_yellow = 0xf1dd38
     ultramarine_blue = 0x00387b
+    unique_blue = 0x0000bb
     telemagenta = 0xbc4077
     cum = 0xfbf5e9
 
