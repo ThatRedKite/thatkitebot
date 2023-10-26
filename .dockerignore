@@ -1,0 +1,9 @@
+.git/
+.idea/
+.vscode/
+venv/
+LICENSE
+README.md
+src/
+__pycache__
+.github/
