@@ -19,3 +19,6 @@ test*.*
 .idea
 .vscode
 src/pcb_mod/build
+as
+info/
+!info/info.json
