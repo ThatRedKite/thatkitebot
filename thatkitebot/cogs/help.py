@@ -28,7 +28,6 @@ class BetterHelpCommand(commands.HelpCommand):
     async def send_embeds_paginated(self, embeds: list[discord.Embed]):
         paginator = pages.Paginator(pages=embeds, show_disabled=False, loop_pages=True)
         await paginator.send(self.context, self.context.channel)
-        #await self.get_destination().send(embed=embed)
 
     def blank_line(self, embed):
         embed.add_field(name=ZWSP, value=ZWSP, inline=False)

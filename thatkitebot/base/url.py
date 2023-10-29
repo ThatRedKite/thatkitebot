@@ -25,7 +25,6 @@ def get_avatar_url(user: discord.User | discord.Message):
     if user.avatar:
         return user.avatar.url
     else:
-        image_id = 0
         if user.discriminator == 0:
             return f"https://cdn.discordapp.com/embed/avatars/{(int(user.id) >> 22) % 6}.png"
         else:
@@ -37,7 +36,7 @@ async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, cou
     Gets a random image from r34 based on the tags.
     """
     urls = {}
-    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "application/xml"}
+    headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "application/xml"}
     payload = {"page": "dapi", "tags": tags, "s": "post", "q": "index", "limit": 100}
     for x in range(0, 10):  # update the :updatevalue: from 0 to 10
         payload.update(dict(pid=x))
@@ -65,7 +64,7 @@ async def monosodiumglutamate(session, tags):
     api_url = "https://www.e621.net/posts.json"
     payload = {"tags": tags, "limit": 320, "page": 0}
     # set user agent because this API is weird
-    headers = {"User-Agent": "ThatkiteBot/3.6 (from luio950)", "content-type": "application/json"}
+    headers = {"User-Agent": "ThatkiteBot/4.0 (from luio950)", "content-type": "application/json"}
     for x in range(2):  # do that stuff twice
         payload.update({"page": x})  # change the "page"
         async with session.get(api_url, headers=headers, params=payload) as r:
@@ -90,7 +89,7 @@ async def get_yan_url(session, islist: bool = False, tags=None):
     urls = set()
     for x in range(10):
         payload = {"limit": 100, "tags": tags, "page": x}
-        headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "application/json"}
+        headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "application/json"}
         async with session.get(url="https://yande.re/post.json", params=payload, headers=headers) as r:
             jsoned = await r.json()
             for entry in jsoned:
@@ -109,7 +108,7 @@ async def word(session, embedmode: bool = True):
     """
     Gets a word that does not exist from thisworddoesnotexist.com. Rarely works.
     """
-    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "text/html"}
+    headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "text/html"}
     async with session.get("https://www.thisworddoesnotexist.com/", headers=headers) as r:  # get the website contents
         bs = BeautifulSoup(await r.text(), "html.parser")
         fake_word = bs.find(id="definition-word").string  # get the word
@@ -132,7 +131,7 @@ async def inspirourl(session: aiohttp.ClientSession):
     Gets a random image from Inspirobot.
     """
     payload = {"generate": "true"}
-    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "text/html"}
+    headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "text/html"}
     async with session.get("https://inspirobot.me/api", params=payload, headers=headers) as r:
         url = await r.text()
     embed = discord.Embed(title="A motivating quote from InspiroBot")

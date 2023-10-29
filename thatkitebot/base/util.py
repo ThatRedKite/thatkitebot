@@ -2,7 +2,10 @@
 
 import asyncio
 import re
+import sys
+import logging
 import datetime
+import os
 
 import discord
 from discord.ext import commands
@@ -45,6 +48,15 @@ def parse_timestring(time_string:str):
             case _:
                 raise ValueError
     return total_delta
+
+
+def check_message_age(message_id: int, max_age: int):
+    if max_age > 0:
+        creation_date = discord.utils.snowflake_time(message_id)
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        return (now - creation_date) >= datetime.timedelta(seconds=max_age)
+    else:
+        return False
 
 
 def list_chunker(list_to_chunk, size):
@@ -160,3 +172,18 @@ class PermissonChecks:
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return can_attach and can_embed
 
+
+def set_up_guild_logger(guild_id: int) -> logging.Logger:
+    guild_logger = logging.getLogger(str(guild_id))
+    guild_logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(filename=f"/var/log/thatkitebot/{guild_id}.log", encoding="utf-8", mode="a")
+    stream_handler = logging.StreamHandler(sys.stdout)
+
+    file_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s:%(name)s:%(message)s", "%H:%M:%S %d.%m.%Y"))
+    stream_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s:%(name)s:%(message)s", "%H:%M:%S %d.%m.%Y"))
+
+    guild_logger.addHandler(file_handler)
+    guild_logger.addHandler(stream_handler)
+
+    return guild_logger

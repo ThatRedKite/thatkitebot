@@ -3,6 +3,7 @@
 import asyncio
 import typing
 import re
+import logging
 
 import imagehash
 import discord
@@ -11,7 +12,7 @@ from redis import asyncio as aioredis
 from discord.ext import commands
 
 from thatkitebot.base.image_stuff import hasher, download_image, get_image_urls
-from thatkitebot.base.util import ids_from_link
+from thatkitebot.base.util import ids_from_link, set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis import cache as ca
 from thatkitebot.base.util import PermissonChecks as pc
@@ -34,10 +35,10 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.settings_redis: aioredis.Redis = bot.redis
         self.repost_redis: aioredis.Redis = bot.redis_repost
         self.cache_redis: aioredis.Redis = bot.redis_cache
-
         self.tt = bot.tenor_token
 
         self.repost_database_lock = asyncio.Lock()
+        self.logger: logging.Logger = bot.logger
 
     async def get_tenor_image(self, url, token):
         """
@@ -139,6 +140,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             channel = ctx.channel
 
         # add the current channel to the list of repost channels
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"REPOST: User {ctx.author.name} activated repost detection in channel {channel.name} in {ctx.guild.name}")
         await self.settings_redis.sadd("REPOST_CHANNELS", channel.id)
         await ctx.send(f"{channel.mention} has been added to the repost-activated channels.")
 
@@ -152,6 +155,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         if not channel:
             channel = ctx.channel
         # remove the current channel from the list of repost channels
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"REPOST: User {ctx.author.name} deactivated repost detection in channel {channel.name} in {ctx.guild.name}")
         await self.settings_redis.srem("REPOST_CHANNELS", channel.id)
         await ctx.send(f"{channel.mention} has been removed from the repost-activated channels.")
 

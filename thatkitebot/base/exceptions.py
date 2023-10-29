@@ -5,7 +5,6 @@
 class ImageTooLargeException(Exception):
     pass
 
-
 class NoImageFoundException(Exception):
     pass
 
@@ -13,10 +12,11 @@ class NoImageFoundException(Exception):
 class InvalidTagsException(Exception):
     pass
 
-
 class NoBookmarksException(Exception):
     pass
 
-
 class NotEnoughMessagesException(Exception):
+    pass
+
+class StarboardDisabledException(Exception):
     pass

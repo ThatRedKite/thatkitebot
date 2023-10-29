@@ -1,14 +1,15 @@
 
-import time
-from datetime import timedelta
-from datetime import datetime
+import os
+import io
+import logging
 
 import discord
+import aiofiles
 from discord.ext import commands
 from redis import asyncio as aioredis
 
 from thatkitebot.base.util import PermissonChecks as pc
-from thatkitebot.base.util import parse_timestring
+from thatkitebot.base.util import check_message_age, parse_timestring, set_up_guild_logger
 from thatkitebot.embeds import moderation as mod_embeds
 from thatkitebot.tkb_redis import settings
 
@@ -31,16 +32,38 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
         self.redis: aioredis.Redis = bot.redis
+        self.logger: logging.Logger = bot.logger
 
     edit_checker = discord.SlashCommandGroup(
         "edit_checker",
-        "Moderation Commands",
+        "Edit Checking Commands",
         checks=[pc.mods_can_change_settings, enable_check]
     )
+
+    moderation = discord.SlashCommandGroup(
+        "moderation",
+        "General Moderation Commands",
+        checks=[pc.mods_can_change_settings, enable_check],
+        guild_ids=[759419755253465188]
+    )
+
+    @moderation.command(name="send_logs", description="Sends the logs for this guild. Use with care.")
+    async def send_logs(self, ctx: discord.ApplicationContext):
+        await ctx.defer()
+        log_path = os.path.join("/var/log/thatkitebot/", f"{ctx.guild.id}.log")
+        if not os.path.exists(log_path):
+            await ctx.followup.send("No logs found.")
+            return
+        
+        async with aiofiles.open(log_path, "rb") as log:
+            file = discord.File(fp=io.BytesIO(await log.read()), filename=f"{ctx.guild.id}.txt")
+            await ctx.followup.send(file=file)
+
 
     #
     # --- General Settings Commands ---
     #
+
 
     @edit_checker.command(name="enable", description="Enable or change settings for checking for old edits")
     async def edit_checker_enable(
@@ -119,9 +142,13 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
             "channel_id": warn_channel_id
         }
 
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} enabled edit-checking with behavior {behavior} in {ctx.guild.name}")
+
         await pipe.hset(key, mapping=mapping)
         await ctx.followup.send("Edit checking has been enabled!")
         await pipe.execute()
+
 
     @edit_checker.command(name="change_time", description="Change minimum age of messages that will be deleted.")
     async def _change_time(
@@ -151,7 +178,9 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         if not await self.redis.exists(key):
             await ctx.followup.send("Error! Edit checking does not seem to be enabled. Please run /edit_checker enable.")
             return
-
+        
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} changed edit-check age to {check_time} in {ctx.guild.name}")
         await self.redis.hset(key, "age", time_diff)
         await ctx.followup.send("Successfully changed the check time.")
 
@@ -170,6 +199,8 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
             value=False,
         )
 
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} disabled edit-checking in {ctx.guild.name}")
         await ctx.followup.send("Successfully disabled edit checking.")
 
     #
@@ -186,9 +217,10 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         if not ctx.guild:
             await ctx.followup.send("Error! This command can only used in guilds. DMs won't work.")
             return
-
+        
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} added {channel.name} to ignorelist in {ctx.guild.name}")
         await self.redis.sadd(f"edit_check_ignore_channels", channel.id)
-
         await ctx.followup.send(f"Successfully added <#{channel.id}> to the ignore list.")
 
     @edit_checker.command(name="unignore_channel", description="Remove channel from the list of channels in which edits will be ignored.")
@@ -199,11 +231,12 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     ):
         await ctx.defer()
         if not ctx.guild:
-            await ctx.followup.send("Error! This command can only used in guilds. DMs won't work.")
+            await ctx.followup.send("Error! This command can only be used in guilds. DMs won't work.")
             return
-
+        
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} removed {channel.name} from ignorelist in {ctx.guild.name}")
         await self.redis.srem("edit_check_ignore_channels", channel.id)
-
         await ctx.followup.send(f"Successfully removed <#{channel.id}> from the ignore list.")
 
     #
@@ -220,9 +253,10 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         if not ctx.guild:
             await ctx.followup.send("Error! This command can only used in guilds. DMs won't work.")
             return
-
+        
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} added role {role.name} to ignorelist in {ctx.guild.name}")
         await self.redis.sadd(f"edit_check_ignore_roles", role.id)
-
         await ctx.followup.send(f"Successfully added {role.name} to the ignore list.")
 
     @edit_checker.command(name="unignore_role", description="Remove a role from the list of roles whose edits will be ignored.")
@@ -235,9 +269,10 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         if not ctx.guild:
             await ctx.followup.send("Error! This command can only used in guilds. DMs won't work.")
             return
-
+        
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} removed role {role.name} from ignorelist in {ctx.guild.name}")
         await self.redis.srem("edit_check_ignore_roles", role.id)
-
         await ctx.followup.send(f"Successfully removed {role.name} from the ignore list.")
 
     #
@@ -278,16 +313,8 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         # return if that somehow didn't exist
         if not check_settings:
             return
-
-        # discord messages ids contain the millisecond timestamp of their creation, using the "discord epoch"
-        create_timestamp = datetime.utcfromtimestamp(int((payload.message_id >> 22) + 1420070400000) / 1000)
-        current_time = datetime.now()
-        max_age = timedelta(seconds=int(check_settings["age"]))
-
-        time_diff = current_time - create_timestamp
-
         # check if message is too old
-        if time_diff > max_age:
+        if check_message_age(payload.message_id, int(check_settings["age"])):
             # message is too old, let's decide what to do with it
             match int(check_settings["behavior"]):
                 case 0:
@@ -298,7 +325,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
                     # send warning message in warning channel
                     # get the warning channel
                     warn_channel = await self.bot.fetch_channel(int(check_settings["channel_id"]))
-                    warn_embed = mod_embeds.gen_edit_warning(self, payload, time_diff)
+                    warn_embed = mod_embeds.gen_edit_warning(payload)
 
                     await warn_channel.send(embed=warn_embed)
                     return
@@ -309,21 +336,32 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
                     # get the message from the API
                     try:
                         await message.delete(reason="Automatic removal of old messages suddenly edited.")
+                        logger = set_up_guild_logger(ctx.guild.id)
+                        logger.info(f"MODERATION: Message {message.id} by {message.author} deleted by edit-checker.")
+                        return
+                    
                     except Exception:
-                        pass
+                        logger = set_up_guild_logger(ctx.guild.id)
+                        logger.warn(f"MODERATION: Edit-checker failed to delete {message.id} by {message.author}")
+                        return
 
                 case 3:
                     # warn and delete
 
                     # generate the warning embed
                     warn_channel = self.bot.get_channel(int(check_settings["channel_id"]))
-                    warn_embed = mod_embeds.gen_edit_warning(self, payload, time_diff)
+                    warn_embed = mod_embeds.gen_edit_warning(payload)
                     warn_embed.title = f"Deleted old edited message by {message.author.name}#{message.author.discriminator}"
 
                     try:
                         await message.delete(reason="Automatic removal of old messages suddenly edited.")
+                        self.logger.info(f"MODERATION: Message {message.id} by {message.author} deleted by edit-checker.")
+
                     except discord.Forbidden:
-                        await warn_channel.send("Failed to to Delete", embed=warn_embed)
+                        await warn_channel.send("Failed to to delete due to insufficient permissions:", embed=warn_embed)
+                        self.logger.warn(f"MODERATION: Edit-checker failed to delete {message.id} by {message.author}")
+                        return
+            
                     await warn_channel.send(embed=warn_embed)
 
 

@@ -25,6 +25,9 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     if content and content != url:
         embed.description += f"\n\n{content}"
 
+    elif content == url or is_image:
+        embed.set_image(url=url)
+
     elif content and url in content:
         content_type = "image" if is_image else "video"
         replaced_content = content.replace(url, f"[{content_type} url]({url})")
@@ -36,9 +39,11 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     embed.timestamp = message.created_at
 
     if return_file and aiohttp_session and url:
-        async with aiohttp_session.get(url) as resp:
-            resp: aiohttp.ClientResponse
-            file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
-            return embed, file
+        if not is_image:
+            async with aiohttp_session.get(url) as resp:
+                resp: aiohttp.ClientResponse
+                file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
+                return embed, file
+        
 
     return embed, None

@@ -3,15 +3,15 @@
 import os
 import logging
 import json
+import sys
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
 
 import aiohttp
-from redis import asyncio as aioredis
 import psutil
 import discord
-#import wavelink
+from redis import asyncio as aioredis
 
 from discord.ext import bridge
 from dulwich.repo import Repo
@@ -25,15 +25,35 @@ __author__ = "ThatRedKite and contributors"
 tempdir = "/tmp/tkb/"
 data_dir = "/app/data"
 dir_name = "/app/thatkitebot"
+log_dir = "/var/log/thatkitebot"
+
 
 # this is a pretty dumb way of doing things, but it works
 intents = discord.Intents.all()
 
-logger = logging.getLogger("discord")
-logger.setLevel(logging.INFO)
-handler = logging.FileHandler(filename="/app/data/discord.log", encoding="utf-8", mode="w")
-handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
-logger.addHandler(handler)
+# set up logging
+
+logger = logging.getLogger("global")
+discord_logger = logging.getLogger("discord")
+
+if int(os.getenv("KITEBOT_DEBUG")) == 1:
+    logger.setLevel(logging.DEBUG)
+else:    
+    logger.setLevel(logging.INFO)
+
+if int(os.getenv("DISCORD_DEBUG")) == 1:
+    discord_logger.setLevel(logging.DEBUG)
+else:    
+    discord_logger.setLevel(logging.INFO)
+
+discord_handler = logging.FileHandler(filename="/app/data/discord.log", encoding="utf-8", mode="w")
+global_handler = logging.StreamHandler(sys.stdout)
+
+discord_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
+global_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
+
+discord_logger.addHandler(discord_handler)
+logger.addHandler(global_handler)
 
 # check if the init_settings.json file exists and if not, create it
 if not Path(os.path.join(data_dir, "init_settings.json")).exists():
@@ -42,7 +62,6 @@ if not Path(os.path.join(data_dir, "init_settings.json")).exists():
         "discord token": "",
         "tenor api key": "",
         "prefix": "+",
-        "wavelink_pw": "",
     }
     # write the dict as json to the init_settings.json file with the json library
     with open(os.path.join(data_dir, "init_settings.json"), "w") as f:
@@ -62,7 +81,6 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
         discord_token = settings_dict["discord token"]
         tenor_token = settings_dict["tenor api key"]
         prefix = settings_dict["prefix"]
-        wavelink_pw = settings_dict["wavelink_pw"]
 
     except json.decoder.JSONDecodeError:
         print("init_settings.json is not valid json. Please fix it.")
@@ -99,12 +117,17 @@ class ThatKiteBot(bridge.Bot, ABC):
         # sessions
         self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
+        self.logger = logger
+        
         # redis databases:
+
 
         # 0: initial settings, not accessed while the bot is running
         # 1: guild settings
         # 2: reposts
         # 3: welcome leaderboards
+        # 4: bookmarks
+        # 5: starboard
 
         print("Connecting to redis...")
         try:
@@ -112,8 +135,9 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
             self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
+            self.redis_starboard = aioredis.Redis(host="redis", db=5, decode_responses=True)
 
-            self.redis_cache = aioredis.Redis(host="redis_cache", db=0)
+            self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
             print("Connection successful.")
         except aioredis.ConnectionError:

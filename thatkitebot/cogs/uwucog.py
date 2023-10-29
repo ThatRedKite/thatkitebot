@@ -13,6 +13,7 @@ from redis import asyncio as aioredis
 
 import thatkitebot
 from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.base.util import set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
 
 
@@ -92,14 +93,18 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         Only administrators and moderators can use this command.
         """
         await ctx.defer()
+        logger = set_up_guild_logger(ctx.guild.id)
+
+        key = f"uwu_channels:{ctx.guild.id}"
+
         if not await self._uwu_enabled(ctx):
             return await ctx.followup.send("This command is disabled on this server.")
 
-        key = f"uwu_channels:{ctx.guild.id}"
         if not await self.redis.sismember(key, str(channel.id)):
             await self.redis.sadd(key, channel.id)
             await ctx.followup.send(f"{channel.mention} is now an UwU channel.")
-            print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} uwuified #{channel.name}")
+            logger.info(f"UWU: {ctx.author.name} uwuified #{channel.name} in {ctx.guild.name}")
+
         else:
             try:
                 await self.redis.srem(key, channel.id)
@@ -108,7 +113,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 return
 
             await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
-            print(f"{ctx.guild.name}:  {ctx.author.name}#{ctx.author.discriminator} de-uwuified #{channel.name}")
+            logger.info(f"UWU: {ctx.author.name} de-uwuified #{channel.name} in {ctx.guild.name}")
 
     @uwu.command(name="user", description="Turn every message from this user into unintelligible uwu gibberish.")
     async def add_user(
@@ -126,20 +131,22 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         Only admins and moderators can use this command.
         """
         await ctx.defer()
+        logger = set_up_guild_logger(ctx.guild.id)
+        
         if not await self._uwu_enabled(ctx):
             return await ctx.followup.send("This command is disabled on this server.")
 
         key = f"uwu_users:{ctx.guild.id}"
+
         if not await self.redis.sismember(key, user.id):
             await self.redis.sadd(key, user.id)
             await ctx.followup.send(f"{user.name} is now fucked.")
-            print(
-                f"{ctx.guild.name}: {ctx.author.name}#{ctx.author.discriminator} uwuified {user.name}#{user.discriminator}")
+            logger.info(f"UWU: {ctx.author.name} uwuified #{user.name} in {ctx.guild.name}")
+
         else:
             await self.redis.srem(key, user.id)
             await ctx.followup.send(f"{user.name} is now unfucked.")
-            print(
-                f"{ctx.guild.name}: {ctx.author.name}#{ctx.author.discriminator} de-uwuified {user.name}#{user.discriminator}")
+            logger.info(f"UWU: {ctx.author.name} de-uwuified #{user.name} in {ctx.guild.name}")
 
     #
     #   --- main listener function ---

@@ -40,7 +40,7 @@ class RedisCache:
             pass
 
         if not message or self._sanity_check(message):
-            raise CacheInvalidMessageException
+            raise CacheInvalidMessageException("Invalid Message")
 
         hash_key = str(message.author.id)
         entry_key = f"{message.guild.id}:{message.channel.id}:{message.id}"

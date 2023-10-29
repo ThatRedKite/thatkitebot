@@ -1,8 +1,10 @@
 #  Copyright (c) 2019-2023 ThatRedKite and contributors
 
+import logging
 
 import discord
 
+from redis.exceptions import ConnectionError
 from redis import asyncio as aioredis
 from discord.ext import commands, tasks
 
@@ -22,6 +24,8 @@ class ListenerCog(commands.Cog):
         self.redis_cache: aioredis.Redis = bot.redis_cache
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.repost_redis: aioredis.Redis = bot.redis_repost
+
+        self.logger: logging.Logger = bot.logger
 
         self.database_ping.start()
 
@@ -59,14 +63,14 @@ class ListenerCog(commands.Cog):
         self.bot.command_invokes_hour = 0
         self.bot.events_hour += 0
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(minutes=1)
     async def database_ping(self):
-        if not await self.redis.ping():
-            print("Settings Redis not responding to ping command")
-        elif not await self.redis_cache.ping():
-            print("Cache Redis not reponding to ping command")
-        else:
-            return
+        try:
+            await self.redis.ping()
+            await self.redis_cache.ping()
+        except ConnectionError as exc:
+            self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(ec)}")
+
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -89,7 +93,6 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx, ex):
-
         raise ex
 
     @commands.Cog.listener()
@@ -143,7 +146,7 @@ class ListenerCog(commands.Cog):
         try:
             await guild.system_channel.send(
                 (
-                    "Thanks for Inviting me! "
+                    "Thanks for inviting me! "
                     "Note that most of the advanced features (Moderation, Repost Detection, etc.) "
                     "are disabled by default and need to be enabled if you want to use them. "
                     "Use `/settings` to see what settings are available. "
@@ -153,12 +156,6 @@ class ListenerCog(commands.Cog):
             return
         except discord.Forbidden:
             return
-
-
-
-
-
-
 
 
 def setup(bot):
