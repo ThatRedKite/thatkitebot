@@ -43,8 +43,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     moderation = discord.SlashCommandGroup(
         "moderation",
         "General Moderation Commands",
-        checks=[pc.mods_can_change_settings, enable_check],
-        guild_ids=[759419755253465188]
+        checks=[pc.mods_can_change_settings, enable_check]
     )
 
     @moderation.command(name="send_logs", description="Sends the logs for this guild. Use with care.")
