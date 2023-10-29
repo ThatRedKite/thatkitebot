@@ -109,7 +109,7 @@ class ListenerCog(commands.Cog):
             await self.cache.add_message(message)
         except CacheInvalidMessageException:
             return
-
+    """
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
@@ -137,7 +137,8 @@ class ListenerCog(commands.Cog):
             data_new=data,
             key=key
         )
-
+    """
+    
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
         self.bot.events_hour += 1
