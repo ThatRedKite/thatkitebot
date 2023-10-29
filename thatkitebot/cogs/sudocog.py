@@ -12,6 +12,7 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
     """
     def __init__(self, bot):
         self.bot: commands.Bot = bot
+        self.logger = bot.logger
 
     @commands.is_owner()
     @commands.command(aliases=["reload", "reboot", "r"])
@@ -22,10 +23,11 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
         for extension in extensions:
                 try:
                     self.bot.reload_extension(extension)
-                    print(f"Reloaded {extension}")
                 except Exception as exc:
                     raise exc
+                
         await ctx.send(f"All cogs reloaded.")
+        self.logger.info(f"Reloaded {len(extensions)} Extensions")
         print("\n")
 
     @commands.is_owner()

@@ -12,11 +12,11 @@ import aiohttp
 import psutil
 import discord
 from redis import asyncio as aioredis
-
 from discord.ext import bridge
 from dulwich.repo import Repo
 
 from .extensions import ENABLED_EXTENSIONS
+from .tkb_redis.cache import RedisCache
 
 __name__ = "ThatKiteBot"
 __version__ = "4.0a"
@@ -106,7 +106,6 @@ class ThatKiteBot(bridge.Bot, ABC):
         r = Repo('.')
         self.git_hash = r.head().decode("utf-8")
         r.close()
-        print(f"Running on commit: {self.git_hash}")
 
         # ---dynamic values---
 
@@ -129,19 +128,21 @@ class ThatKiteBot(bridge.Bot, ABC):
         # 4: bookmarks
         # 5: starboard
 
-        print("Connecting to redis...")
+        self.logger.info("Redis: Trying to connect")
         try:
             self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
             self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
             self.redis_starboard = aioredis.Redis(host="redis", db=5, decode_responses=True)
-
+            
             self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
-            print("Connection successful.")
+            self.r_cache = RedisCache(self.redis_cache, self, auto_exec=False)
+
+            self.logger.info("Redis: Connection successful")
         except aioredis.ConnectionError:
-            print("Redis connection failed. Check if redis is running.")
+            self.logger.critical("Redis: connection failed")
             exit(1)
         # bot status info
         self.cpu_usage = 0
@@ -157,36 +158,20 @@ class ThatKiteBot(bridge.Bot, ABC):
 
 
 # create the bot instance
-print(f"Starting ThatKiteBot v {__version__} ...")
+
 bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents)
-print(f"Loading {len(ENABLED_EXTENSIONS)} extensions:")
-for extension in ENABLED_EXTENSIONS:
-    print(extension.split(".")[-1])
-
-
-#@bot.event
-#async def on_ready():
-#    print("Connecting to lavalink ...\n")
-#    try:
-#        await wavelink.NodePool.create_node(
-#            bot=bot,
-#            host="lavalink",
-#            port=2333,
-#            password=wavelink_pw
-#        )
-#        print("Sucessfully connected to lavalink!")
-#        bot.enable_voice = True
-#    except:
-#        print("Could not connect to lavalink, voice functionality will be disabled. Please check your settings!\n")
-
+logger.info(f"Starting {__name__} version {__version__} ({bot.git_hash})")
 
 # load the cogs aka extensions
-
 bot.load_extensions(*ENABLED_EXTENSIONS, store=False)
+
+extensions = [extension.split(".")[-1] for extension in ENABLED_EXTENSIONS]
+
+logger.info(f"Loaded {len(ENABLED_EXTENSIONS)} extensions: [{','.join(extensions)}]")
 
 # try to start the bot with the token from the init_settings.json file catch any login errors
 try:
     bot.run(discord_token)
 except discord.LoginFailure:
-    print("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
+    logger.critical("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)

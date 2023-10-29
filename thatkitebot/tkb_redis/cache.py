@@ -24,7 +24,7 @@ class RedisCache:
 
     def _sanity_check(self, message: discord.Message):
         # things we do not want to cache
-        is_dm = isinstance(message.channel, discord.DMChannel)
+        is_dm = type(message) == discord.DMChannel
         is_system = message.is_system()
         is_me = message.author is self.bot.user
         return any((is_me, is_system, is_dm))
@@ -33,14 +33,13 @@ class RedisCache:
         """
         Adds a message to the cache. The message is stored in the following format: guild_id:channel_id:user_id:message_id
         """
-        urls = []
+        if not message or self._sanity_check(message):
+            raise CacheInvalidMessageException("Invalid Message")
+
         try:
             urls = await get_image_urls(message)
         except NoImageFoundException:
-            pass
-
-        if not message or self._sanity_check(message):
-            raise CacheInvalidMessageException("Invalid Message")
+            urls=[]
 
         hash_key = str(message.author.id)
         entry_key = f"{message.guild.id}:{message.channel.id}:{message.id}"

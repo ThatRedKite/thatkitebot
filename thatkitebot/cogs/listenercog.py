@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 
 import thatkitebot
 from thatkitebot.base.util import errormsg
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException, NoDataException
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 
 
@@ -26,8 +26,10 @@ class ListenerCog(commands.Cog):
         self.repost_redis: aioredis.Redis = bot.redis_repost
 
         self.logger: logging.Logger = bot.logger
+        self.cache: RedisCache = bot.r_cache
 
         self.database_ping.start()
+        self.cache_update.start()
 
     # global error handlers
     @commands.Cog.listener()
@@ -71,6 +73,10 @@ class ListenerCog(commands.Cog):
         except ConnectionError as exc:
             self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(ec)}")
 
+    @tasks.loop(seconds=10)
+    async def cache_update(self):
+        if len(self.cache.pipeline.command_stack) > 0:
+            await self.cache.exec()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -99,9 +105,8 @@ class ListenerCog(commands.Cog):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)
         try:
-            await cache.add_message(message)
+            await self.cache.add_message(message)
         except CacheInvalidMessageException:
             return
 
@@ -109,11 +114,9 @@ class ListenerCog(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        # add the reaction to the cached message
-        # get the message
-        cache = RedisCache(self.redis_cache, self.bot, auto_exec=True)
+
         try:
-            key, data = await cache.get_message(
+            key, data = await self.cache.get_message(
                 message_id=payload.message_id,
                 guild_id=payload.guild_id,
                 author_id=payload.user_id,
@@ -121,11 +124,15 @@ class ListenerCog(commands.Cog):
             )
         except CacheInvalidMessageException:
             return
+        
+        except NoDataException:
+            self.logger.error(f"Failed to add message {payload.message_id} to cache")
+        
         # update the reactions
         data["reactions"].append((payload.emoji.id, payload.member.id))
 
         # update the message
-        await cache.update_message(
+        await self.cache.update_message(
             author_id=payload.user_id,
             data_new=data,
             key=key
@@ -136,11 +143,14 @@ class ListenerCog(commands.Cog):
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
-        # initialize standard settings when joining a Guild
-        pipe = self.redis.pipeline()
-        await flags.set_guild_flag(pipe, guild.id, flags.IMAGE, True)
-        await flags.set_guild_flag(pipe, guild.id, flags.CACHING, True)
-        await flags.set_guild_flag(pipe, guild.id, flags.UWU, True)
+        self.logger.info(f"Joined guild {guild.name} with {guild.member_count} users.")
+
+        if not await self.redis.exists(f"flags:{guild.id}"):
+            # initialize standard settings when joining a Guild if they don't exist
+            pipe = self.redis.pipeline()
+            await flags.set_guild_flag(pipe, guild.id, flags.IMAGE, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.CACHING, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.UWU, True)
 
         # try to send a message informing about settings
         try:
@@ -152,8 +162,10 @@ class ListenerCog(commands.Cog):
                     "Use `/settings` to see what settings are available. "
                 )
             )
+        
         except TypeError:
             return
+        
         except discord.Forbidden:
             return
 

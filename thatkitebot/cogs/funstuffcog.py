@@ -3,6 +3,7 @@
 import textwrap
 import re
 import typing
+import asyncio
 from unidecode import unidecode
 from random import choice, Random
 from datetime import datetime
@@ -15,7 +16,7 @@ from uwuipy import uwuipy
 from thatkitebot.base import url, util
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.exceptions import NotEnoughMessagesException
-from thatkitebot.tkb_redis.cache import RedisCache
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
 
 
 class FunStuff(commands.Cog, name="fun commands"):
@@ -27,6 +28,9 @@ class FunStuff(commands.Cog, name="fun commands"):
         self._last_member = None
         self.dirname = bot.dir_name
         self.redis = bot.redis_cache
+        self.cache: RedisCache = bot.r_cache
+
+        self.history_semaphore = asyncio.Semaphore(2)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -45,7 +49,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
+    async def _markov(self, ctx: commands.Context, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
@@ -53,30 +57,23 @@ class FunStuff(commands.Cog, name="fun commands"):
         """
         if not user:
             user = ctx.message.author  # default to message author
-        if not channel:
-            channel_id = None  # default to current channel
-        else:
-            channel_id = channel.id
 
-        async with ctx.channel.typing():
+        if not channel:
+            channel = ctx.channel # default to current channel
+
+        async with ctx.channel.typing(), self.history_semaphore:
             try:
                 # try to get the messages from the cache
-                cache = RedisCache(self.redis, self.bot, auto_exec=True)
-                message_list = await cache.get_messages(ctx.guild.id, channel_id, user.id)
-
+                message_list = await self.cache.get_messages(ctx.guild.id, channel.id, user.id)
+                # populate the cache if there are less than 300 messages
                 if not len(message_list) > 300:
-                    # populate the cache if there are less than 300 messages
-                    if channel:
-                        # we have a channel but not enough messages, so we iterate over the user history in this channel
-                        async for message in user.history(limit=2500, oldest_first=True).filter(lambda m: m.channel.id == channel_id):
-                            await RedisCache.add_message(self.redis, message)  # add the message to the cache
-                            message_list.append(str(message.clean_content))  # add the message to the message_list
-                    else:
-                        # no channel, iterate over the user history instead
-                        async for message in user.history(limit=2500, oldest_first=True):
-                            await RedisCache.add_message(self.redis, message)
-                            message_list.append(str(message.clean_content))  # add the message to the message_list
-
+                    # we have a channel but not enough messages, so we iterate over the user history in this channel
+                    async for message in channel.history(limit=5000).filter(lambda m: m.author is user):
+                        try:
+                            await self.cache.add_message(message)  # add the message to the cache
+                        except CacheInvalidMessageException:
+                            pass
+                        message_list.append(str(message.clean_content))  # add the message to the message_list
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
@@ -88,12 +85,13 @@ class FunStuff(commands.Cog, name="fun commands"):
                 raise NotEnoughMessagesException
 
             sentences = set()  # create a set to avoid duplicate messages (only works sometimes)
-            for i in range(10):
+            for _ in range(10):
                 if sentence := model.make_sentence(tries=30):
                     sentences.add(sentence)  # add the sentence to the set
                 else:
                     sentence = model.make_short_sentence(5)  # try to make a short sentence instead
-                    sentences.add(sentence)  # and add it to the set
+                    if sentence:
+                        sentences.add(sentence)  # and add it to the set
 
             if sentences:
                 out = ". ".join(sentences)  # join the strings together with periods

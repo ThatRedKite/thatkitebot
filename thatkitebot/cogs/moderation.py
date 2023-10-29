@@ -115,7 +115,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
                     await ctx.followup.send("Error! You need to specify a warning channel!")
                     return
             case _:
-                raise ValueError("Somehow, no behavior was selected. This should not happen.")
+                self.logger.error("Somehow, no behavior was selected. This should not happen.")
 
         time_diff = parse_timestring(check_time)
 
@@ -274,9 +274,11 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         await self.redis.srem("edit_check_ignore_roles", role.id)
         await ctx.followup.send(f"Successfully removed {role.name} from the ignore list.")
 
+
     #
     #  --- Main Listener Function ---
     #
+
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
