@@ -1,9 +1,14 @@
 services:
   thatkitebot:
-    build:  .
+    build:
+      context: .
+      dockerfile: ./Dockerfile.debug
     links:
       - "redis:thatkitebot_redis"
       - "redis_cache:thatkitebot_redis_cache"
+    ports:
+      - 5678:5678
+
     volumes:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/
@@ -13,9 +18,10 @@ services:
     restart:  "no"
     environment:
       - PYTHONUNBUFFERED=1
-      - KITEBOT_DEBUG=0
+      - KITEBOT_DEBUG=1
       - DISCORD_DEBUG=0
-    command: bash -c "cd /app/ && /app/thatkitebot-venv/bin/python3 -m thatkitebot"
+
+    command: ["bash", "-c", "cd /app/ && thatkitebot-venv/bin/python3 -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m thatkitebot"]    
 
   redis:
     container_name: thatkitebot_redis

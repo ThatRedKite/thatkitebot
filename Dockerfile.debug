@@ -15,4 +15,6 @@ RUN /app/thatkitebot-venv/bin/pip3 install --upgrade pip
 
 RUN /app/thatkitebot-venv/bin/pip3 install -r /tmp/requirements.txt
 
+RUN /app/thatkitebot-venv/bin/pip3 install debugpy
+
 WORKDIR /app/
