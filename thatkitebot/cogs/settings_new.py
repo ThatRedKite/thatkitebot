@@ -1,6 +1,7 @@
 #  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import enum
+import re
 
 import discord
 from redis import asyncio as aioredis
@@ -188,6 +189,42 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         await pipe.execute()
         print("success!")
         await ctx.send(f"Successfully updated the config for {count} out of {len(self.bot.guilds)} guilds")
+    
+
+    @commands.is_owner()
+    @commands.dm_only()
+    @commands.command()
+    async def settings_cleanup(self, ctx: commands.Context):
+        old_setting = re.compile(r"^(\d+)$")
+        pipe = self.redis.pipeline()
+
+        guild_ids = [int(guild.id) for guild in self.bot.guilds]
+
+        # clean up named settings
+        async for key in self.redis.scan_iter("*:*"):
+            try:
+                id = int(key.split(":")[-1])
+            except ValueError:
+                id = int(key.split(":")[-2])
+            finally:
+                if id not in guild_ids:
+                    # bot not member of the guild it has settings for
+                    await pipe.delete(key)
+                else:
+                    continue
+        
+        # clean up old guild settings
+        async for key in self.redis.scan_iter("*"):
+            if id := old_setting.match(key):
+                id = int(id[0])
+                if id not in guild_ids:
+                    await pipe.delete(key)
+            else:
+                continue     
+
+        self.bot.logger.info(f"SETTINGS: Cleaned up {len(pipe.command_stack)} settings.")      
+        await pipe.execute()
+            
 
 
 def setup(bot):
