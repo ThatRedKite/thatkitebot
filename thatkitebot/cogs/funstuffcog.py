@@ -273,6 +273,10 @@ class FunStuff(commands.Cog, name="fun commands"):
             else:
                 await ctx.send(msg)
 
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, exception):
+        if isinstance(exception.original, NotEnoughMessagesException):
+            await ctx.send("Failed to generate a markov output. Please try another user or channel.")
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
