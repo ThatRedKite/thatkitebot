@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import Parsing
-from thatkitebot.base.util import parse_timestring, check_message_age, ids_from_link
+from thatkitebot.base.util import parse_timestring, check_message_age
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.embeds.starboard import generate_embed
 from thatkitebot.base.exceptions import *

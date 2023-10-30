@@ -115,7 +115,7 @@ async def get_image_urls(message: discord.Message, video: bool = False, gifv: bo
             embed_urls.append(embed.url)
             continue
         # check if the message has an embed of the type "rich" and if it contains an image
-        elif embed.type == "rich" and message.embeds[0].image:
+        elif embed.type == "rich" and embed.image:
             embed_urls.append(embed.image.url)
             continue
         # check if the message has a video if the :video: argument is true
@@ -129,6 +129,51 @@ async def get_image_urls(message: discord.Message, video: bool = False, gifv: bo
             raise NoImageFoundException
 
     return embed_urls
+
+def get_embed_urls(message: discord.Message, video: bool = False, gifv: bool = False):
+    """
+    clone of :get_image_urls but with different output format: [(url, embed_type), ...]
+    """
+    if message.attachments:
+        for attachment in message.attachments:
+            content_type = attachment.content_type
+            if "image" in content_type:
+                yield attachment.url, "image"
+
+            elif "video" in content_type:
+                yield attachment.url, "video"
+
+    if not message.embeds:
+        yield None, None
+        return
+
+    for embed in message.embeds:
+        if embed.type == "image":
+            # if it does, return the embed's url
+            yield embed.url, "image"
+            continue
+
+        # check if the message has an embed of the type "rich" and if it contains an image
+        elif embed.type == "rich" and embed.image:
+            yield embed.image.url, "image"
+            continue
+
+        # check if the message has a video if the :video: argument is true
+        elif embed.type == "video" and video:
+            yield embed.url, "video"
+            continue
+
+        # check if the message has a gif if the :gifv: argument is true
+        elif embed.type == "gifv" and gifv:
+            yield embed.url, "image"
+            continue
+
+        else:
+            # if it doesn't, stop the generator
+            yield None, None
+            return
+        
+    return
 
 
 class ImageFunction:
