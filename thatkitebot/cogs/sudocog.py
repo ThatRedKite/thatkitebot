@@ -28,7 +28,6 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
                 
         await ctx.send(f"All cogs reloaded.")
         self.logger.info(f"Reloaded {len(extensions)} Extensions")
-        print("\n")
 
     @commands.is_owner()
     @commands.command()
