@@ -63,12 +63,15 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
     Check if the message has already been posted to the starboard
     """
     async for starmsg in starboard_channel.history().filter(lambda m: m.embeds and m.author.bot):
-        if starmsg.author.id == bot_id:
-            continue
-        if message.jump_url in starmsg.embeds[0].description:
-            starboard_message = starmsg  # the starboard message id
-            return starboard_message
-        else:
+        try:
+            if starmsg.author.id == bot_id:
+                continue
+            if message.jump_url in starmsg.embeds[0].description:
+                starboard_message = starmsg  # the starboard message id
+                return starboard_message
+            else:
+                continue
+        except TypeError:
             continue
     return None
 
@@ -387,7 +390,7 @@ class StarBoard(commands.Cog):
                         return
 
                     # check the database if the message has already been posted to starboard
-                    in_database = (await self.star_redis.get(str(message.id)) or False)
+                    in_database = (await self.star_redis.get(f"{payload.guild_id}:{message.id}") or False)
                     already_posted = True
                     starboard_message = None
 
@@ -429,7 +432,7 @@ class StarBoard(commands.Cog):
                             new_message = await star_channel.send(embed=embed)
 
                         # add the new message to the database
-                        await self.star_redis.set(str(message.id), new_message.id)
+                        await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
                         return
 
                     elif already_posted and isinstance(starboard_message, discord.Message):
