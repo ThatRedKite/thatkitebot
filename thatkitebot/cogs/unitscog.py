@@ -93,8 +93,8 @@ async def units_converter(expression: str, target_unit: str = "") -> (float, str
     if target_unit:
         cmd.append(target_unit)
 
-    print("running command:")
-    print(cmd)
+    #print("running command:")
+    #print(cmd)
 
     # Run the command asynchronously and capture the output.
     proc = await asyncio.create_subprocess_exec(*cmd,
@@ -103,19 +103,19 @@ async def units_converter(expression: str, target_unit: str = "") -> (float, str
     
     stdout, stderr = await proc.communicate()
     
-    print("got stdout:")
-    print(stdout)
-    print("got stderr:")
-    print(stderr)
+    #print("got stdout:")
+    #print(stdout)
+    #print("got stderr:")
+    #print(stderr)
 
     # Check for errors
     if len(stderr) != 0 or "error" in stdout.decode().strip().lower():
-        print("got error")
+        #print("got error")
         return None, None, None, stdout.decode().strip()
     
     # Check for unknown units
     if "unknown" in stdout.decode().strip().lower():
-        print("got unknown")
+        #print("got unknown")
         return None, None, None, stdout.decode().strip()
     
     output = stdout.decode().strip()
@@ -190,32 +190,32 @@ class UnitsCommands(commands.Cog, name="Units Commands"):
         
         await ctx.defer()
 
-        print("got:")
-        print(expression)
-        print(target_unit)
+        #print("got:")
+        #print(expression)
+        #print(target_unit)
 
         ascii_expression = await unicode_to_ascii_exponents(expression)
         ascii_target_unit = await unicode_to_ascii_exponents(target_unit)
 
-        print("converted:")
-        print(ascii_expression)
-        print(ascii_target_unit)
+        #print("converted:")
+        #print(ascii_expression)
+        #print(ascii_target_unit)
 
         ascii_expression = await units_expander(ascii_expression)
         ascii_target_unit = await units_expander(ascii_target_unit)
 
-        print("expanded:")
-        print(ascii_expression)
-        print(ascii_target_unit)
+        #print("expanded:")
+        #print(ascii_expression)
+        #print(ascii_target_unit)
 
 
         value, unit, unit_def, err = await units_converter(ascii_expression, ascii_target_unit)
 
-        print("post converted:")
-        print(value)
-        print(unit)
-        print(unit_def)
-        print(err)
+        #print("post converted:")
+        #print(value)
+        #print(unit)
+        #print(unit_def)
+        #print(err)
         
         if err:
             embed = await gen_error_embed(ascii_expression, err)
