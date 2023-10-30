@@ -62,18 +62,35 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
     """
     Check if the message has already been posted to the starboard
     """
-    async for starmsg in starboard_channel.history().filter(lambda m: m.embeds and m.author.bot):
+    async for starmsg in starboard_channel.history(limit=None):
+        # ignore messages without embeds
+        if not starmsg.embeds:
+            continue
+
+        # ignore messages that are not somehow from the channel
+        if starmsg.channel is not starboard_channel:
+            continue
+        
+        # ignore messages that weren't sent by the bot
+        if starmsg.author.id != bot_id:
+            continue
         try:
-            if starmsg.author.id == bot_id:
+        
+            # ignore messages with empty embeds
+            if any([isinstance(embed, discord.embeds._EmptyEmbed) for embed in starmsg.embeds]):
                 continue
-            if message.jump_url in starmsg.embeds[0].description:
-                starboard_message = starmsg  # the starboard message id
-                return starboard_message
-            else:
-                continue
+            
+            # make sure that the starred message is correct
+            if message.jump_url in starmsg.embeds[0].description and starmsg.embeds[0].timestamp == message.created_at:
+                return starmsg
+            
+        # continue if this dumb error ever occurs
         except TypeError:
             continue
+
     return None
+
+    
 
 
 class StarBoard(commands.Cog):
@@ -414,7 +431,14 @@ class StarBoard(commands.Cog):
 
                         except discord.NotFound:
                             self.logger.warn(f"Message with id {in_database} has gone missing from starboard.")
-                            already_posted = False
+
+                            # double_check just to make sure that it has actually gone missing.
+                            _starboard_message = check_if_already_posted(message, star_channel, self.bot.user.id)
+                            if _starboard_message is not None:
+                                already_posted = True
+                                starboard_message = _starboard_message
+                            else:
+                                starboard_message = False
 
                     if not already_posted:
 
