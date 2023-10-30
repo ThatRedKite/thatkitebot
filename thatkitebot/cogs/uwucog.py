@@ -27,19 +27,16 @@ async def get_uwu_webhook(channel: discord.TextChannel) -> Union[discord.Webhook
     webhooks = await channel.webhooks()
     uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
     if not uwu_webhook:
-        print("trying to create new hook")
         try:
             webhooker = await channel.create_webhook(
                 name='uwuhook',
                 reason='uwuhook is for UwU'
             )
         except discord.HTTPException:
-            print("failed to create hook")
             return None
         return webhooker
 
     else:
-        print("got hook: ", uwu_webhook)
         return uwu_webhook
 
 
@@ -179,7 +176,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
             # if we failed to create it somehow, return
             if not webhook:
-                print("no hookey :(")
                 return
 
             files = []
