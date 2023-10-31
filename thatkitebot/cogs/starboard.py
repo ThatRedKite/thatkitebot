@@ -435,14 +435,7 @@ class StarBoard(commands.Cog):
 
                             except discord.NotFound:
                                 self.logger.warn(f"Message with id {in_database} has gone missing from starboard.")
-
-                                # double_check just to make sure that it has actually gone missing.
-                                _starboard_message = check_if_already_posted(message, star_channel, self.bot.user.id)
-                                if _starboard_message is not None:
-                                    already_posted = True
-                                    starboard_message = _starboard_message
-                                else:
-                                    starboard_message = False
+                                already_posted = False
 
                         if not already_posted:
 
