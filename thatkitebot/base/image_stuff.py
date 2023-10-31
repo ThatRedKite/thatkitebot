@@ -386,8 +386,8 @@ class ImageFunction:
 
     def _bubble(self):
         # grab the template files stored in the data directory
-        negative = '/app/data/static-resources/bubble_negative.png'
-        outline = '/app/data/static-resources/bubble_outline.png'
+        negative = '/app/data/resources/bubble_negative.png'
+        outline = '/app/data/resources/bubble_outline.png'
 
         # load in all the images
         with (
