@@ -91,7 +91,10 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                         yield None
                     case "image":
                         async with self.aiohttp.get(embed.url) as r:  # download the image
-                            yield hasher(await r.read())  # generate the hash
+                            try:
+                                yield hasher(await r.read())  # generate the hash
+                            except:
+                                yield None
                     case "gifv":
                         #  this feature *requires* a tenor API Token!
                         if self.tt:
@@ -238,6 +241,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         async with self.repost_database_lock:
             # iterate over every image in the message and get the image hash for them
             async for image_hash in self.extract_imagehash(message):
+                if image_hash is None:
+                    return
                 # first check for a direct match
                 async for scan_key in self.repost_redis.scan_iter(f"*:{image_hash}"):
                     # get the jump url
