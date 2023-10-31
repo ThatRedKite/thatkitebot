@@ -101,7 +101,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
         self.bot = bot
         self.redis: aioredis.Redis = bot.redis_bookmarks
 
-    bm = discord.SlashCommandGroup("bookmarks", "Bookmarks", guild_ids=[759419755253465188])
+    bm = discord.SlashCommandGroup("bookmarks", "Bookmarks")
 
     @discord.message_command(name="Bookmark Message", description="Description")
     async def _add(self, ctx: discord.ApplicationContext, msg: discord.Message):
