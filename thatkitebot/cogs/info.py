@@ -142,8 +142,13 @@ class InfoCog(commands.Cog, name="Info"):
 
     # get config file
     async def get_config(self, guild):
-        async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "r") as f:
-            return json.loads("".join([line async for line in f]))
+        try:
+            async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "r") as f:
+                return json.loads("".join([line async for line in f]))
+        except FileNotFoundError:
+            default = await self.get_default_config()
+            await self.update_config(guild, default)
+            return await self.get_config(guild=guild)
 
     # get default config file
     async def get_default_config(self):
