@@ -1,5 +1,6 @@
 #  Copyright (c) 2019-2023 ThatRedKite and contributors
 import logging
+import asyncio
 from datetime import timedelta, datetime
 
 import discord
@@ -13,6 +14,7 @@ from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.embeds.starboard import generate_embed
 from thatkitebot.base.exceptions import *
 from thatkitebot.base.util import set_up_guild_logger
+
 
 class Modes:
     GLOBAL_THRESHOLD = 1
@@ -99,6 +101,8 @@ class StarBoard(commands.Cog):
         self.redis: aioredis.Redis = bot.redis
         self.star_redis: aioredis.Redis = bot.redis_starboard
         self.logger: logging.Logger = bot.logger
+
+        self.starboard_lock = asyncio.Lock()
 
     # read the starboard blacklist from redis
     async def get_blacklist(self, guild_id):
@@ -349,130 +353,130 @@ class StarBoard(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-
-        # check if starboard is enabled on this guild
-        # this flag is 1 to disable and 0 to enable to preserve compatibility
-        if await flags.get_guild_flag(redis=self.redis, gid=payload.guild_id, flag_offset=flags.STARBOARD):
-            return
-
-        channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
-        # check if the channel is blacklisted
-        if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
-            return
-
-        if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
-            return
-
-        # load the starboard settings
-        try:
-            starboard_settings = await self.redis.hgetall(f"starboard_settings:{payload.guild_id}")
-            mode = int(starboard_settings["mode"])
-            star_emoji = starboard_settings["star_emoji"]
-            threshold = int(starboard_settings["threshold"])
-            star_channel: discord.TextChannel = await self.bot.fetch_channel(starboard_settings["channel_id"])
-            channels = starboard_settings["channels"].split(";")
-            reaction_emoji = str(payload.emoji)
-
-            # get optional settings
-            video_is_enabled = bool(starboard_settings.get("video",  0))
-            max_age = int(starboard_settings.get("max_age", 0))
-
-        except KeyError:
-            return
-
-        # load the message into the internal cache
-        message = await channel.fetch_message(payload.message_id)
-
-        match mode:
-            case Modes.GLOBAL_THRESHOLD | Modes.SINGLE_CHANNEL_THRESHOLD:
-                # make sure nothing in the starboard channel is starred and put onto the starboard
-                if star_channel == channel:
-                    return
-
-                if mode == Modes.SINGLE_CHANNEL_THRESHOLD and str(message.channel.id) not in channels:
-                    return
-
-                # check if the star emoji is the same as the starboard emoji
-                if reaction_emoji == star_emoji:
-                    # sort the reactions to get the reaction count for the star emoji
-                    message.reactions.sort(key=lambda e: str(e) == str(payload.emoji), reverse=True)
-                    count = message.reactions[0].count
-
-                    # check for the correct threshold (global or channel-specific threshold)A
-                    channel_threshold = await self.redis.hget("starboard_thresholds", str(message.channel.id)) or None
-                    if channel_threshold is not None and not count >= int(channel_threshold):
-                        return
-
-                    elif channel_threshold is None and not count >= int(threshold):
-                        return
-
-                    # check the database if the message has already been posted to starboard
-                    in_database = (await self.star_redis.get(f"{payload.guild_id}:{message.id}") or False)
-                    already_posted = True
-                    starboard_message = None
-
-                    # check starboard channel history if message was not found in the database
-                    if not in_database:
-                        _starboard_message = await check_if_already_posted(message, star_channel, self.bot.user.id)
-                        if _starboard_message is not None:
-                            starboard_message = _starboard_message
-
-                            # add the message to the database
-                            await self.star_redis.set(str(payload.message_id), _starboard_message.id)
-                        else:
-                            already_posted = False
-
-                    # use the database to avoid searching the starboard channel
-                    else:
-                        # try fetching the original message with the id from the database
-                        try:
-                            starboard_message = await star_channel.fetch_message(in_database)
-                            already_posted = True
-
-                        except discord.NotFound:
-                            self.logger.warn(f"Message with id {in_database} has gone missing from starboard.")
-
-                            # double_check just to make sure that it has actually gone missing.
-                            _starboard_message = check_if_already_posted(message, star_channel, self.bot.user.id)
-                            if _starboard_message is not None:
-                                already_posted = True
-                                starboard_message = _starboard_message
-                            else:
-                                starboard_message = False
-
-                    if not already_posted:
-
-                        # ignore messages older than allowed
-                        if max_age != 0 and check_message_age(payload.message_id, max_age):
-                            return
-                        
-                        embed, file = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session, return_file=video_is_enabled)
-                        new_message = None
-
-                        if file:
-                            new_message = await star_channel.send(embed=embed, file=file)
-
-                        else:
-                            new_message = await star_channel.send(embed=embed)
-
-                        # add the new message to the database
-                        await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
-                        return
-
-                    elif already_posted and isinstance(starboard_message, discord.Message):
-                        # update the starboard message
-                        embed, _ = await generate_embed(message, count, star_emoji)
-                        await starboard_message.edit(embed=embed)
-
-                    else:
-                        return
-
-                else:
-                    return
-
-            case _:
+        async with self.starboard_lock:
+            # check if starboard is enabled on this guild
+            # this flag is 1 to disable and 0 to enable to preserve compatibility
+            if await flags.get_guild_flag(redis=self.redis, gid=payload.guild_id, flag_offset=flags.STARBOARD):
                 return
-            
+
+            channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
+            # check if the channel is blacklisted
+            if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
+                return
+
+            if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
+                return
+
+            # load the starboard settings
+            try:
+                starboard_settings = await self.redis.hgetall(f"starboard_settings:{payload.guild_id}")
+                mode = int(starboard_settings["mode"])
+                star_emoji = starboard_settings["star_emoji"]
+                threshold = int(starboard_settings["threshold"])
+                star_channel: discord.TextChannel = await self.bot.fetch_channel(starboard_settings["channel_id"])
+                channels = starboard_settings["channels"].split(";")
+                reaction_emoji = str(payload.emoji)
+
+                # get optional settings
+                video_is_enabled = bool(starboard_settings.get("video",  0))
+                max_age = int(starboard_settings.get("max_age", 0))
+
+            except KeyError:
+                return
+
+            # load the message into the internal cache
+            message = await channel.fetch_message(payload.message_id)
+
+            match mode:
+                case Modes.GLOBAL_THRESHOLD | Modes.SINGLE_CHANNEL_THRESHOLD:
+                    # make sure nothing in the starboard channel is starred and put onto the starboard
+                    if star_channel == channel:
+                        return
+
+                    if mode == Modes.SINGLE_CHANNEL_THRESHOLD and str(message.channel.id) not in channels:
+                        return
+
+                    # check if the star emoji is the same as the starboard emoji
+                    if reaction_emoji == star_emoji:
+                        # sort the reactions to get the reaction count for the star emoji
+                        message.reactions.sort(key=lambda e: str(e) == str(payload.emoji), reverse=True)
+                        count = message.reactions[0].count
+
+                        # check for the correct threshold (global or channel-specific threshold)A
+                        channel_threshold = await self.redis.hget("starboard_thresholds", str(message.channel.id)) or None
+                        if channel_threshold is not None and not count >= int(channel_threshold):
+                            return
+
+                        elif channel_threshold is None and not count >= int(threshold):
+                            return
+
+                        # check the database if the message has already been posted to starboard
+                        in_database = (await self.star_redis.get(f"{payload.guild_id}:{message.id}") or False)
+                        already_posted = True
+                        starboard_message = None
+
+                        # check starboard channel history if message was not found in the database
+                        if not in_database:
+                            _starboard_message = await check_if_already_posted(message, star_channel, self.bot.user.id)
+                            if _starboard_message is not None:
+                                starboard_message = _starboard_message
+
+                                # add the message to the database
+                                await self.star_redis.set(str(payload.message_id), _starboard_message.id)
+                            else:
+                                already_posted = False
+
+                        # use the database to avoid searching the starboard channel
+                        else:
+                            # try fetching the original message with the id from the database
+                            try:
+                                starboard_message = await star_channel.fetch_message(in_database)
+                                already_posted = True
+
+                            except discord.NotFound:
+                                self.logger.warn(f"Message with id {in_database} has gone missing from starboard.")
+
+                                # double_check just to make sure that it has actually gone missing.
+                                _starboard_message = check_if_already_posted(message, star_channel, self.bot.user.id)
+                                if _starboard_message is not None:
+                                    already_posted = True
+                                    starboard_message = _starboard_message
+                                else:
+                                    starboard_message = False
+
+                        if not already_posted:
+
+                            # ignore messages older than allowed
+                            if max_age != 0 and check_message_age(payload.message_id, max_age):
+                                return
+                            
+                            embed, file = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session, return_file=video_is_enabled)
+                            new_message = None
+
+                            if file:
+                                new_message = await star_channel.send(embed=embed, file=file)
+
+                            else:
+                                new_message = await star_channel.send(embed=embed)
+
+                            # add the new message to the database
+                            await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
+                            return
+
+                        elif already_posted and isinstance(starboard_message, discord.Message):
+                            # update the starboard message
+                            embed, _ = await generate_embed(message, count, star_emoji)
+                            await starboard_message.edit(embed=embed)
+
+                        else:
+                            return
+
+                    else:
+                        return
+
+                case _:
+                    return
+                
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx: discord.ApplicationContext, exception):
