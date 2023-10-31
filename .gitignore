@@ -20,6 +20,4 @@ test*.*
 .vscode
 src/pcb_mod/build
 as
-info/
-!info/info.json
 __pycache__
