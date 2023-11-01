@@ -19,3 +19,5 @@ test*.*
 .idea
 .vscode
 src/pcb_mod/build
+as
+__pycache__

@@ -1,4 +1,4 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import asyncio
 import re
@@ -10,7 +10,7 @@ import discord
 import imageio
 import xkcd
 from bs4 import BeautifulSoup
-from thatkitebot.backend.util import EmbedColors as ec
+from thatkitebot.base.util import EmbedColors as ec
 
 gif_pattern = re.compile(r"(^https?://\S+.(?i)(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
@@ -21,53 +21,14 @@ tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 emoji_pattern = re.compile(r"<:\S+:\n+>")
 
 
-async def get_image_url(session: aiohttp.ClientSession, history, token=None, gif=False):
-    """
-    Deprecated.
-    """
-    if gif:
-        pattern = gif_pattern
+def get_avatar_url(user: discord.User | discord.Message):
+    if user.avatar:
+        return user.avatar.url
     else:
-        pattern = other_pattern
-
-    async for message in history:
-        attachments = message.attachments
-        if attachments:
-            found_url = pattern.findall(attachments[0].url)
-            if found_url:
-                url, fe = found_url[0]
-                break  # break the loop, a valid url has been found
+        if user.discriminator == 0:
+            return f"https://cdn.discordapp.com/embed/avatars/{(int(user.id) >> 22) % 6}.png"
         else:
-            # found_url is a list of all urls the regex found,
-            # this should only be one value, or no value at all
-            found_url = pattern.findall(message.clean_content)
-            # the tenor ID of the GIF.It only contains anything, if there actually is a tenor GIF
-            tenor = tenor_pattern.findall(message.clean_content)
-            if found_url and not tenor:  # unpack the url and the file extension
-                url, fe = found_url[0]
-                break  # break the loop, a valid url has been found
-            elif tenor:
-                # define the header and the payload:
-                headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "application/json"}
-                payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
-
-                async with session.get(url="https://api.tenor.com/v1/gifs", params=payload, headers=headers) as r:
-                    gifs = await r.json()
-                    url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
-                break  # break the loop, a valid url has been found
-
-    return str(url)
-
-
-async def download_image(session: aiohttp.ClientSession, url: str):
-    """
-    Downloads an image from a given URL. Deprecated.
-    """
-    async with session.get(url) as r:
-        with BytesIO(await r.read()) as ob:
-            reader = imageio.get_reader(ob)
-            ob.seek(0)
-        return reader
+            return f"https://cdn.discordapp.com/embed/avatars/{int(user.discriminator) % 5}.png"
 
 
 async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, count: int = 1):
@@ -75,7 +36,7 @@ async def r34url(session: aiohttp.ClientSession, tags, islist: bool = False, cou
     Gets a random image from r34 based on the tags.
     """
     urls = {}
-    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "application/xml"}
+    headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "application/xml"}
     payload = {"page": "dapi", "tags": tags, "s": "post", "q": "index", "limit": 100}
     for x in range(0, 10):  # update the :updatevalue: from 0 to 10
         payload.update(dict(pid=x))
@@ -103,7 +64,7 @@ async def monosodiumglutamate(session, tags):
     api_url = "https://www.e621.net/posts.json"
     payload = {"tags": tags, "limit": 320, "page": 0}
     # set user agent because this API is weird
-    headers = {"User-Agent": "ThatkiteBot/3.6 (from luio950)", "content-type": "application/json"}
+    headers = {"User-Agent": "ThatkiteBot/4.0 (from luio950)", "content-type": "application/json"}
     for x in range(2):  # do that stuff twice
         payload.update({"page": x})  # change the "page"
         async with session.get(api_url, headers=headers, params=payload) as r:
@@ -128,7 +89,7 @@ async def get_yan_url(session, islist: bool = False, tags=None):
     urls = set()
     for x in range(10):
         payload = {"limit": 100, "tags": tags, "page": x}
-        headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "application/json"}
+        headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "application/json"}
         async with session.get(url="https://yande.re/post.json", params=payload, headers=headers) as r:
             jsoned = await r.json()
             for entry in jsoned:
@@ -147,7 +108,7 @@ async def word(session, embedmode: bool = True):
     """
     Gets a word that does not exist from thisworddoesnotexist.com. Rarely works.
     """
-    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "text/html"}
+    headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "text/html"}
     async with session.get("https://www.thisworddoesnotexist.com/", headers=headers) as r:  # get the website contents
         bs = BeautifulSoup(await r.text(), "html.parser")
         fake_word = bs.find(id="definition-word").string  # get the word
@@ -170,7 +131,7 @@ async def inspirourl(session: aiohttp.ClientSession):
     Gets a random image from Inspirobot.
     """
     payload = {"generate": "true"}
-    headers = {"User-Agent": "ThatkiteBot/3.6", "content-type": "text/html"}
+    headers = {"User-Agent": "ThatkiteBot/4.0", "content-type": "text/html"}
     async with session.get("https://inspirobot.me/api", params=payload, headers=headers) as r:
         url = await r.text()
     embed = discord.Embed(title="A motivating quote from InspiroBot")

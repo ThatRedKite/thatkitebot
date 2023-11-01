@@ -1,6 +1,9 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import os
+import logging
+import json
+import sys
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
@@ -8,42 +11,49 @@ from pathlib import Path
 import aiohttp
 import psutil
 import discord
-import aioredis
-import json
-from discord.ext import commands, bridge
+from redis import asyncio as aioredis
+from discord.ext import bridge
 from dulwich.repo import Repo
 
-__name__ = "ThatKiteBot"
-__version__ = "3.11"
-__author__ = "ThatRedKite and contributors"
+from .extensions import ENABLED_EXTENSIONS
+from .tkb_redis.cache import RedisCache
 
-enabled_ext = [
-    "thatkitebot.cogs.funstuffcog",
-    "thatkitebot.cogs.imagecog",
-    "thatkitebot.cogs.nsfwcog",
-    "thatkitebot.cogs.listenercog",
-    "thatkitebot.cogs.uwucog",
-    "thatkitebot.cogs.sudocog",
-    "thatkitebot.cogs.utilitiescog",
-    "thatkitebot.cogs.settings",
-    "thatkitebot.cogs.help",
-    "thatkitebot.cogs.chemistry",
-    "thatkitebot.cogs.electronics",
-    "thatkitebot.cogs.electroslash",
-    "thatkitebot.cogs.laser",
-    "thatkitebot.cogs.welcomecog",
-    "thatkitebot.cogs.repost",
-    "thatkitebot.cogs.starboard",
-    "thatkitebot.cogs.info",
-    "thatkitebot.cogs.detrack"
-]
+__name__ = "ThatKiteBot"
+__version__ = "4.0a"
+__author__ = "ThatRedKite and contributors"
 
 tempdir = "/tmp/tkb/"
 data_dir = "/app/data"
 dir_name = "/app/thatkitebot"
+log_dir = "/var/log/thatkitebot"
+
 
 # this is a pretty dumb way of doing things, but it works
 intents = discord.Intents.all()
+
+# set up logging
+
+logger = logging.getLogger("global")
+discord_logger = logging.getLogger("discord")
+
+if int(os.getenv("KITEBOT_DEBUG")) == 1:
+    logger.setLevel(logging.DEBUG)
+else:    
+    logger.setLevel(logging.INFO)
+
+if int(os.getenv("DISCORD_DEBUG")) == 1:
+    discord_logger.setLevel(logging.DEBUG)
+else:    
+    discord_logger.setLevel(logging.INFO)
+
+discord_handler = logging.FileHandler(filename="/app/data/discord.log", encoding="utf-8", mode="w")
+global_handler = logging.StreamHandler(sys.stdout)
+
+discord_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
+global_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s"))
+
+discord_logger.addHandler(discord_handler)
+logger.addHandler(global_handler)
 
 # check if the init_settings.json file exists and if not, create it
 if not Path(os.path.join(data_dir, "init_settings.json")).exists():
@@ -96,38 +106,50 @@ class ThatKiteBot(bridge.Bot, ABC):
         r = Repo('.')
         self.git_hash = r.head().decode("utf-8")
         r.close()
-        print(f"Running on commit: {self.git_hash}")
 
         # ---dynamic values---
 
         # settings
         self.debug_mode = False
         self.tenor_token = tt
+        self.enable_voice = False  # global override for deactivating voice commands
         # sessions
         self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
-
+        self.logger = logger
+        
         # redis databases:
+
 
         # 0: initial settings, not accessed while the bot is running
         # 1: guild settings
         # 2: reposts
         # 3: welcome leaderboards
+        # 4: bookmarks
+        # 5: starboard
 
-        print("Connecting to redis...")
+        self.logger.info("Redis: Trying to connect")
         try:
             self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
-
-            self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=True)
+            self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
+            self.redis_starboard = aioredis.Redis(host="redis", db=5, decode_responses=True)
+            
+            self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
-            print("Connection successful.")
+            self.r_cache = RedisCache(self.redis_cache, self, auto_exec=False)
+
+            self.logger.info("Redis: Connection successful")
         except aioredis.ConnectionError:
-            print("Redis connection failed. Check if redis is running.")
+            self.logger.critical("Redis: connection failed")
             exit(1)
         # bot status info
         self.cpu_usage = 0
+
+        self.events_hour = 0
+        self.events_total = 0
+
         self.command_invokes_hour = 0
         self.command_invokes_total = 0
 
@@ -136,24 +158,20 @@ class ThatKiteBot(bridge.Bot, ABC):
 
 
 # create the bot instance
-print(f"Starting ThatKiteBot v {__version__} ...")
+
 bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents)
-print(f"Loading {len(enabled_ext)} extensions: \n")
+logger.info(f"Starting {__name__} version {__version__} ({bot.git_hash})")
 
 # load the cogs aka extensions
-for ext in enabled_ext:
-    try:
-        print(f"   loading {ext}")
-        bot.load_extension(ext)
-    except Exception as exc:
-        print(f"error loading {ext}")
-        raise exc
+bot.load_extensions(*ENABLED_EXTENSIONS, store=False)
+
+extensions = [extension.split(".")[-1] for extension in ENABLED_EXTENSIONS]
+
+logger.info(f"Loaded {len(ENABLED_EXTENSIONS)} extensions: [{','.join(extensions)}]")
 
 # try to start the bot with the token from the init_settings.json file catch any login errors
 try:
     bot.run(discord_token)
 except discord.LoginFailure:
-    print("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
+    logger.critical("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
-
-

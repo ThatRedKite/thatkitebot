@@ -1,30 +1,22 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
+
+import textwrap
+import re
+import typing
+import asyncio
+from unidecode import unidecode
+from random import choice, Random
+from datetime import datetime
 
 import discord
 import markovify
 from discord.ext import commands
-import typing
-import glob
-from random import choice, Random
-from thatkitebot.backend import url, util, cache
-from datetime import datetime
 from uwuipy import uwuipy
-import textwrap
-import re
-from unidecode import unidecode
 
-
-async def is_trainpost_channel(ctx):
-    if ctx.guild.id == 424394851170385921:
-        return ctx.channel.id in [864194488797102091, 424397590214344704]
-    else:
-        return True
-
-
-def can_send_image(ctx):
-    can_attach = ctx.channel.permissions_for(ctx.author).attach_files
-    can_embed = ctx.channel.permissions_for(ctx.author).embed_links
-    return can_attach and can_embed
+from thatkitebot.base import url, util
+from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.base.exceptions import NotEnoughMessagesException
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
 
 
 class FunStuff(commands.Cog, name="fun commands"):
@@ -36,105 +28,84 @@ class FunStuff(commands.Cog, name="fun commands"):
         self._last_member = None
         self.dirname = bot.dir_name
         self.redis = bot.redis_cache
+        self.cache: RedisCache = bot.r_cache
+
+        self.history_semaphore = asyncio.Semaphore(2)
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        # only listen for commands associated with this cog
+        if ctx.cog is not self:
+            return
+
+        if isinstance(error, NotEnoughMessagesException):
+            await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
 
     @commands.command()
-    @commands.check(can_send_image)
+    @commands.check(pc.can_send_image)
     async def inspirobot(self, ctx):
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
+    async def _markov(self, ctx: commands.Context, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
-        Optional Arguments: `user` and `channel` (they default to yourself and the current channel)
+        Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
+        it will use messages from every channel instead)
         """
-        if self.bot.debug_mode:
-            try:
-                print("Markov debug")
-                print("user", user.name)
-                print("channel", channel.name)
-            except:
-                pass
-            
         if not user:
             user = ctx.message.author  # default to message author
-        if not channel:
-            channel = ctx.channel  # default to current channel
-            
-        guild = channel.guild
-        
-        if self.bot.debug_mode:
-            print("username 2:", user.name)
-            print("user id 2:", user.id)
-            print("channel name: 2", channel.name)
-            print("channel id 2:", channel.id)
-            print("guild:", guild.name)
 
-        async with ctx.channel.typing():
+        if not channel:
+            channel = ctx.channel # default to current channel
+
+        async with ctx.channel.typing(), self.history_semaphore:
             try:
                 # try to get the messages from the cache
-                message_list = await cache.get_contents(self.redis, guild.id, channel.id, user.id)
+                message_list = await self.cache.get_messages(ctx.guild.id, channel.id, user.id)
+                # populate the cache if there are less than 300 messages
                 if not len(message_list) > 300:
-                    # populate the cache if there are less than 300 messages
-                    async for message in channel.history(limit=2500).filter(lambda m: m.author is user):
-                        await cache.add_message_to_cache(self.redis, message)  # add the message to the cache
+                    # we have a channel but not enough messages, so we iterate over the user history in this channel
+                    async for message in channel.history(limit=5000).filter(lambda m: m.author is user):
+                        try:
+                            await self.cache.add_message(message)  # add the message to the cache
+                        except CacheInvalidMessageException:
+                            pass
                         message_list.append(str(message.clean_content))  # add the message to the message_list
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
+
             try:
-                gen1 = markovify.NewlineText("\n".join(message_list))  # generate the model from the messages
+                # since people often don't use punctuation, we just use newline-separated text.
+                model = markovify.NewlineText("\n".join(message_list))  # generate the model from the messages
             except KeyError:
-                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
-                return
+                raise NotEnoughMessagesException
 
-            gen_set = set()  # create a set to avoid duplicate messages (only works sometimes)
-            for i in range(10):
-                a = gen1.make_sentence(tries=30)
-                if a:
-                    gen_set.add(a)  # add the string :a: to the gen_set
+            sentences = set()  # create a set to avoid duplicate messages (only works sometimes)
+            for _ in range(10):
+                if sentence := model.make_sentence(tries=30):
+                    sentences.add(sentence)  # add the sentence to the set
                 else:
-                    a = gen1.make_short_sentence(5)  # try to make a short sentence instead
-                    gen_set.add(a)  # add the string to the gen_set
+                    sentence = model.make_short_sentence(5)  # try to make a short sentence instead
+                    if sentence:
+                        sentences.add(sentence)  # and add it to the set
 
-            if len(gen_set) > 0:
-                out = ". ".join([a for a in gen_set if a])  # join the strings together with periods
+            if sentences:
+                out = ". ".join(sentences)  # join the strings together with periods
                 embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
                 embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
                 embed.color = 0x6E3513
                 embed.set_thumbnail(url=user.avatar.url)
                 await ctx.send(embed=embed)
+
             else:
-                await util.errormsg(ctx, "You don't appear to have enough messages for me to generate sentences!")
-
-    @commands.command()
-    async def fakeword(self, ctx):
-        """Sends a fake word from thisworddoesnotexist.com."""
-        async with ctx.channel.typing():
-            embed = await url.word(self.bot.aiohttp_session, embedmode=True)
-            await ctx.send(embed=embed)
-
-    @commands.command(hidden=True)
-    @commands.check(can_send_image)
-    async def vision(self, ctx):
-        """Ignore this."""
-        await ctx.send("https://media.discordapp.net/attachments/401372087349936139/566665541465669642/vision.gif")
-
-    @commands.cooldown(1, 1, commands.BucketType.user)
-    @commands.command(name="train", aliases=["zug"])
-    @commands.check(is_trainpost_channel)
-    @commands.check(can_send_image)
-    async def _train(self, ctx):
-        """Sends a random image of a train."""
-        images = [image for image in glob.glob("/app/data/trains/*.jpg")]
-        train = discord.File(choice(images), "train.jpg")
-        async with ctx.typing():
-            await ctx.send(file=train)
+                raise NotEnoughMessagesException
 
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
+    @commands.check(pc.can_send_image)
     @commands.command(name="1984")
     async def _1984(self, ctx):
         """
@@ -182,7 +153,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             "It is certain.",
             "It is decidedly so.",
             "Without a doubt.",
-            "Yes definately.",
+            "Yes definitely.",
             "You may rely on it.",
             "As I see it, yes.",
             "Most likely.",
@@ -200,37 +171,30 @@ class FunStuff(commands.Cog, name="fun commands"):
             "Outlook not so good.",
             "Very doubtful."
         ]
-        await ctx.send(choice(resp_list)) # Not seeded random due to there being non-committal answers
+        await ctx.send(choice(resp_list))  # Not seeded random due to there being non-committal answers
+
+    # RIP thispersondoesnotexist.com
+
+    # @commands.cooldown(1, 10, commands.BucketType.user)
+    # @commands.check(pc.can_send_image)
+    # @commands.command(name="fakecat")
+    # async def _tcdne(self, ctx):
+    #     """Send an image from thiscatdoesnotexist.com"""
+    #     file, embed = await url.tcdne(self.bot.aiohttp_session)
+    #     async with ctx.typing():
+    #         await ctx.send(file=file, embed=embed)
+
+    # @commands.cooldown(1, 10, commands.BucketType.user)
+    # @commands.check(pc.can_send_image)
+    # @commands.command(name="fakeart")
+    # async def _tadne(self, ctx):
+    #     """Send an image from thisartworkdoesnotexist.com"""
+    #     file, embed = await url.tadne(self.bot.aiohttp_session)
+    #     async with ctx.typing():
+    #         await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
-    @commands.command(name="fakeperson")
-    async def _tpdne(self, ctx):
-        """Send an image from thispersondoesnotexist.com"""
-        file, embed = await url.tpdne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
-
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
-    @commands.command(name="fakecat")
-    async def _tcdne(self, ctx):
-        """Send an image from thiscatdoesnotexist.com"""
-        file, embed = await url.tcdne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
-
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
-    @commands.command(name="fakeart")
-    async def _tadne(self, ctx):
-        """Send an image from thisartworkdoesnotexist.com"""
-        file, embed = await url.tadne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
-
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
+    @commands.check(pc.can_send_image)
     @commands.command(name="fakewaifu")
     async def _twdne(self, ctx):
         """Send an image from thiswaifudoesnotexist.net"""
@@ -239,7 +203,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             await ctx.send(file=file, embed=embed)
 
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
+    @commands.check(pc.can_send_image)
     @commands.command(name="fakefur", hidden=True)
     async def _tfdne(self, ctx):
         """Send an image from thisfursonadoesnotexist.com <:amsmiles:910537357613228072>"""
@@ -247,17 +211,14 @@ class FunStuff(commands.Cog, name="fun commands"):
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
-    @commands.command(name="fakevessel", aliases=["fakeceramic", "tvdne", "fakevase"])
-    async def _tvdne(self, ctx):
-        """Send an image from thisvesseldoesnotexist.com"""
-        file, embed = await url.tvdne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
+    # rest in peace,
+    # thisvesseldoesnotexist.com,
+    # thispersondoesnotexist.com,
+    # thiscatdoesnotexist.com
+    # and thisartworkdoesnotexist.com
 
     @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(can_send_image)
+    @commands.check(pc.can_send_image)
     @commands.command(name="xkcd", aliases=["comic", "xkcdcomic"])
     async def _xkcd(self, ctx, *, args=None):
         """Send a random or specific xkcd comic"""
@@ -270,18 +231,23 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
     async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
-        '''UwUify your text (now even more cursed'''
+        """
+        UwUify your text (now even more cursed)
+        """
+        # if not, grab the seed by using the original message id
+        if not ctx.message.reference:
+            seed = ctx.message.id
+
         # fetch the message from the reference
-        if ctx.message.reference:
+        else:
             seed = ctx.message.reference.message_id
             message = await ctx.fetch_message(seed)
             msg = message.content
-        # if not, grab the seed by using the original message id
-        else:
-            seed = ctx.message.id
+
         # if the message content is empty, return
         if not msg:
             return
+
         async with ctx.channel.typing():
             # declare a new uwu object using the message id as seed
             uwu = uwuipy(seed)
@@ -289,7 +255,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             msg = unidecode(msg)
 
             # if the user cant send images, make links not embed by surrounding them with <>
-            if not can_send_image(ctx):
+            if not pc.can_send_image(ctx):
                 links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
                 msg = re.sub(links, r"<\1>" , msg)
 
@@ -307,6 +273,10 @@ class FunStuff(commands.Cog, name="fun commands"):
             else:
                 await ctx.send(msg)
 
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, exception):
+        if isinstance(exception.original, NotEnoughMessagesException):
+            await ctx.send("Failed to generate a markov output. Please try another user or channel.")
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))

@@ -1,13 +1,16 @@
-#  Copyright (c) 2019-2022 ThatRedKite and contributors
+#  Copyright (c) 2019-2023 ThatRedKite and contributors
 
 import asyncio
 import typing
 from random import choice, choices
+
 import discord
 from discord.ext import commands
-from thatkitebot.backend import url
-from thatkitebot.backend.util import errormsg
-from thatkitebot.backend.util import EmbedColors as ec
+
+from thatkitebot.base import url
+from thatkitebot.base.util import errormsg
+from thatkitebot.base.util import EmbedColors as ec
+from thatkitebot.tkb_redis.settings import RedisFlags
 
 
 class NSFW(commands.Cog, name="NSFW commands"):
@@ -17,12 +20,12 @@ class NSFW(commands.Cog, name="NSFW commands"):
     def __init__(self, bot):
         self.bot = bot
         self.redis = bot.redis
-        self.bl = [424394851170385921]  # guild blacklist
+        self.bl = [424394851170385921]  # hardcoded guild blacklist, for my own safety
 
     async def cog_check(self, ctx):
-        return await self.redis.hget(ctx.guild.id, "NSFW") == "TRUE" and ctx.guild.id not in self.bl
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.NSFW)
 
-    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True, aliases=["rule34"])
     async def r34(self, ctx, *, tags):
         with ctx.channel.typing():
@@ -32,7 +35,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
             else:
                 await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__")
 
-    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True, aliases=["yande.re", "yandere"])
     async def yan(self, ctx, *, tags):
         #  only proceed if nsfw is enabled in the bot's settings
@@ -43,7 +46,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
             embed.set_image(url=chosen_url)
             await ctx.send(embed=embed)
 
-    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True)
     async def yanspam(self, ctx, count: typing.Optional[int] = 5, *, tags):
         if count not in range(1, 11):
@@ -57,7 +60,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
                     await ctx.send(x)
                     await asyncio.sleep(0.2)
 
-    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True)
     async def r34spam(self, ctx: commands.Context, count: typing.Optional[int] = 10, *, tags):
         if 1 >= count or count > 10:
@@ -72,7 +75,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
                     for embed in url_list:
                         await ctx.send(embed=embed)
 
-    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True)
     async def e621(self, ctx, *, tags):
         async with ctx.channel.typing():
@@ -87,7 +90,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
             finally:
                 await ctx.send(embed=embed)
 
-    @commands.is_nsfw()  # only proceed when in an nsfw channel
+    @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True)
     async def e621spam(self, ctx, *, tags):
         async with ctx.channel.typing():

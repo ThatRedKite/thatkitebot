@@ -34,6 +34,14 @@ params = "_all_"
 query = "_all_"
 fragment = "_all_"
 
+[domains.allegro]
+netloc = ".*allegro." 
+netloc_dl = "_pref_"  
+path = ""
+params = "_all_"
+query = "&*(reco_id|sid|bi_s|bi_m|bi_c|bi_t|referrer|emission_unit_id)=[^&]*"
+fragment = "_all_"
+
 [domains.ebay]
 netloc = ".*ebay."
 netloc_dl = "_pref_"
@@ -151,7 +159,7 @@ netloc = ".*youtube."
 netloc_dl = "_pref_"
 path = ""
 params = "_all_"
-query = "&*(feature|kw)=[^&]*"
+query = "&*(feature|kw|si)=[^&]*"
 fragment = "_all_"
 
 [domains.walmart]
@@ -176,14 +184,6 @@ netloc_dl = "_pref_"
 path = ""
 params = "_all_"
 query = "&*(HQS|ts|ref.{1,})=[^&]*"
-fragment = "_all_"
-
-[domains.mouser]
-netloc = ".*mouser."
-netloc_dl = "_pref_"
-path = ""
-params = "_all_"
-query = "&*(qs)=[^&]*"
 fragment = "_all_"
 
 [LUT] # this is the lookup table, it's used to simplify the regex writing by replacing parts of it with a tag

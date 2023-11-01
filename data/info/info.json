@@ -1,0 +1,215 @@
+[
+    {
+        "title": "General Science",
+        "emoji": ":microscope:",
+        "color": "9031664",
+        "fields": [
+            {
+                "name": "Youtube",
+                "value": "[Be Smart](https://www.youtube.com/c/itsokaytobesmart)\n[Brainiac](https://www.youtube.com/c/brainiac75)\n[CGP Grey](https://www.youtube.com/greymatter)\n[Cody's Lab](https://www.youtube.com/user/theCodyReeder)\n[Kurzgesagt – In a Nutshell](https://www.youtube.com/c/inanutshell)\n[QuantaScience](https://www.youtube.com/c/QuantaScienceChannel)\n[SciShow](https://www.youtube.com/c/SciShow)\n[Smarter every day](https://www.youtube.com/c/smartereveryday)\n[The Backyard Scientist](https://www.youtube.com/c/TheBackyardScientist)\n[Alpha Phoenix](https://www.youtube.com/c/AlphaPhoenixChannel)\n[Applied Science](https://www.youtube.com/c/AppliedScience)\n[Steve Mould](https://www.youtube.com/c/SteveMould)",
+                "inline": true
+            }
+        ],
+        "footer": ""
+    },
+    {
+        "title": "Chemistry",
+        "emoji": ":alembic:",
+        "color": "38655",
+        "fields": [
+            {
+                "name": "Youtube",
+                "value": "\nIf you want to start learning:\n[Safety](https://www.youtube.com/watch?v=ftACSEJ6DZA)\n[Periodic Videos](https://www.youtube.com/user/periodicvideos)\n[Thoisoi2](https://www.youtube.com/channel/UC3j3w-oUtIAm_KI857ydvUA)\n[That Chemist](https://www.youtube.com/c/ThatChemist2)\nGood source of entertainment and education:\n[Cody's Lab](https://www.youtube.com/user/theCodyReede)\n[Styropyro](https://www.youtube.com/c/styropyro)\n[Chemiolis](https://www.youtube.com/c/Chemiolis)\n[Thy Labs](https://www.youtube.com/c/THYZOIDLABORATORIES)\n[Nile Red](https://www.youtube.com/c/NileRed)\n[Nile Blue](https://www.youtube.com/c/NileRed2)\n[ChemicalForce](https://www.youtube.com/c/ChemicalForce)",
+                "inline": true
+            }
+        ],
+        "footer": ""
+    },
+    {
+        "title": "Mathematics",
+        "emoji": ":abacus:",
+        "color": "18347",
+        "fields": [
+            {
+                "name": "Youtube",
+                "value": "\n[Stand-up Maths](https://www.youtube.com/c/MindYourDecisions)\n[MindYourDecisions](https://www.youtube.com/c/MindYourDecisions)\n[3Blue1Brown](https://www.youtube.com/c/3blue1brown)\n[Mathologer](https://www.youtube.com/c/Mathologer)\n[Mathematical Visual Proofs](https://www.youtube.com/c/MicroVisualProofs)",        
+                "inline": true
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Physics",
+        "emoji": ":magnet:",
+        "color": "6111187",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value": "\n[Minute Physics](https://www.youtube.com/c/minutephysics)\n[Physics Fun](https://www.youtube.com/c/physicsfun)\n[ScienceClic English](https://www.youtube.com/c/ScienceClicEN)",
+                "inline": true
+            },
+            {
+                "name":"Lectures",
+                "value":"\nEverything from mechanics to quantum-electrodynamics:\n[Feynman's general lectures](https://www.feynmanlectures.caltech.edu/messenger.html)   \n[The Feynman Lectures on Physics Volume I](https://www.feynmanlectures.caltech.edu/I_toc.html)\n[The Feynman Lectures on Physics Vol II](https://www.feynmanlectures.caltech.edu/II_toc.html)\n[The Feynman Lectures on Physics Vol III](https://www.feynmanlectures.caltech.edu/III_toc.html)",
+                "inline": false
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Nature, Botany and Biology",
+        "emoji": ":four_leaf_clover:",
+        "color": "12533951",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"General:\n[Zefrank](https://www.youtube.com/c/zefrank)\n[Andrew Camarata](https://www.youtube.com/c/AndrewCamarata)\n[Robert E Fuller](https://youtube.com/c/RobertEFuller)\nSpiders:\n[Exotics Lair](https://www.youtube.com/c/ExoticsLair)\nMoths:\n[Bart Coppens](https://www.youtube.com/channel/UCurn5x0b5VqPvIuDohYiSaw)\nSurvival:\n[Kent Survival](https://www.youtube.com/c/KentSurvival)\nMicrobiology:\n[Journey to the Microcosmos](https://www.youtube.com/c/microcosmos)\nJars:\n[Life in Jars](https://www.youtube.com/c/LifeinJars)\n[Jartopia](https://youtube.com/c/Jartopia)",
+                "inline": true
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Meteorology",
+        "emoji": ":thunder_cloud_rain:",
+        "color": "13773611",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"\n[Skip Talbot Storm Chasing](https://www.youtube.com/c/skiptalbot)\n[Tornado Titans](https://www.youtube.com/c/tornadotitans)\n[NWSTrainingCenter](https://www.youtube.com/watch?v=6XgEsp6UMJo&list=PLYsC5TDceC_ZYXK9tpG0jJZ7rvLhFRDaO)\n[Guide to Sckew-Ts and Hodographs](https://www.youtube.com/playlist?list=PLnjboQ2ku8GDI9DGcqR8d9sr0sZKhH-qX)\n[Convective Chronicles](https://www.youtube.com/c/ConvectiveChronicles)",
+                "inline": true
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Astronomy and Rocketry",
+        "emoji": ":telescope:",
+        "color": "9109504",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"\n[Primal Space](https://www.youtube.com/channel/UClZbmi9JzfnB2CEb0fG8iew)\n[BPS space](https://www.youtube.com/c/BPSspace)\n[AstroBackyard](https://www.youtube.com/c/AstroBackyard)\n[Everyday Astronaut](https://www.youtube.com/c/EverydayAstronaut)\n[Scott Manley](https://www.youtube.com/c/szyzyg)\n[Dr. Becky ](https://www.youtube.com/channel/UCYNbYGl89UUowy8oXkipC-Q)",
+                "inline": true
+            },
+            {
+                "name":"Books",
+                "value":"\n[An Introduction to Modern Astrophysics](https://www.academia.edu/42881683/An_Introduction_to_Modern_Astrophysics)\n[Turn Left at Orion](https://www.pdfdrive.com/turn-left-at-orion-a-hundred-night-sky-objects-to-see-in-a-small-telescope-and-how-to-find-them-e175402242.html)\nThe Dobsonian Telescope - David Kriege, Richard Berry",
+                "inline": true
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Geology and Geography",
+        "emoji": ":earth_africa:",
+        "color": "12599296",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"[Cody's Lab](https://www.youtube.com/user/theCodyReeder)\n[hugefloods](https://www.youtube.com/user/hugefloods)",
+                "inline": true
+            },
+            {
+                "name":"Websites",
+                "value":"\n[GIA](https://www.gia.edu/gem-education/overview)\n[Minerals](https://www.mindat.org/)\n[USGS geologic maps](https://ngmdb.usgs.gov/ngmdb/ngmdb_home.html)",
+                "inline": true
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Engineering",
+        "emoji": ":screwdriver:",
+        "color": "16736031",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"\nGeneral:\n[MarcoReps](https://www.youtube.com/c/MarcoReps)\n[New Mind](https://www.youtube.com/c/NewMind)\n[Branch Education](https://www.youtube.com/c/BranchEducation)\n[Applied Science](https://www.youtube.com/c/AppliedScience)\n[Action BOX](https://www.youtube.com/c/ActionBOX)\n[Alpha Phoenix Channel](https://www.youtube.com/c/AlphaPhoenixChannel)\n[Nighthawkinlight](https://www.youtube.com/c/Nighthawkinlight)\n[Mark Rober](https://www.youtube.com/c/MarkRober)\n[James Bruton](https://www.youtube.com/c/jamesbruton)\n3D printing:\n[CNCKitchen](https://www.youtube.com/c/CNCKitchen)\n[SunShine](https://www.youtube.com/user/a09a21a)\n[Integza](https://www.youtube.com/c/Integza)\n[Teaching Tech](https://www.youtube.com/c/TeachingTech)\n[Chris Riley](https://www.youtube.com/c/ChrisRiley)",
+                "inline": true
+            },
+            {
+                "name":"** **",
+                "value":"\nTheory:\n[The Efficient Engineer](https://www.youtube.com/c/TheEfficientEngineer)\nGood entertainment:\n[This Old Tony](https://www.youtube.com/c/ThisOldTony)\n[AvE](https://www.youtube.com/c/arduinoversusevil2025)\nCrazy projects:\n[Colinfurze](https://www.youtube.com/c/colinfurze)\n[The Thought Emporium](https://www.youtube.com/c/thethoughtemporium)\n[Stuff Made Here](https://www.youtube.com/c/StuffMadeHere)\nRC:\n[rctestflight](https://www.youtube.com/c/rctestflight)\n[RCLifeOn](https://www.youtube.com/c/RcLifeOn)\n[ProjectAir](https://www.youtube.com/c/ProjectAirAviation)\nOther:\n[MacPuffdog](https://youtube.com/user/MacPuffdog)",
+                "inline": true
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Electronics",
+        "emoji": ":bulb:",
+        "color": "14329120",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"If you want to start learning:\n[Afrotechmods](https://www.youtube.com/c/Afrotechmods)\n[Electroboom](https://www.youtube.com/c/Electroboom/)\n[GreatScott!](https://www.youtube.com/c/greatscottlab)\nDIY projects with good explanations:\n[Leo's Bag of Tricks](https://www.youtube.com/channel/UCe1bjEcBichpiAMhExh0NiQ)\n[Electronoobs](https://www.youtube.com/c/ELECTRONOOBS)\n[Bitluni](https://www.youtube.com/c/bitlunislab)\nGood source of entertainment and education:\n[EEVBlog](https://www.youtube.com/c/EevblogDave/)\n[DiodeGoneWild](https://www.youtube.com/c/DiodeGoneWild/)\n[Marco Reps](https://www.youtube.com/c/MarcoReps)\n[Big Clive](https://www.youtube.com/c/Bigclive)",
+                "inline": true
+            },
+            {
+                "name":"** **",
+                "value":"Definitely worth your time:\n[Digi-Key](https://www.youtube.com/c/digikey)\n[Element14](https://www.youtube.com/c/element14presents/)\n[Sam Ben-Yaakov](https://www.youtube.com/user/sambenyaakov)\n[RSD Academy](https://www.youtube.com/c/RSDAcademy)\nEmbedded:\n[Jeff Geerling](https://www.youtube.com/c/JeffGeerling)\n[Mitch Davis](https://www.youtube.com/c/MitchDavis2/)\nRadio:\n[Charlie Morris](https://www.youtube.com/c/CharlieMorrisZL2CTM)\n[W2AEW](https://www.youtube.com/user/w2aew)\n[Mr Carlson's Lab](https://www.youtube.com/channel/UCU9SoQxJewrWb_3GxeteQPA)\nOthers:\n[Keysight Labs](https://www.youtube.com/c/KeysightLabs)\n[Stephen Hawes](https://www.youtube.com/c/StephenHawesVideo)",
+                "inline": true
+            },
+            {
+                "name":"Free simulators, books, software, documents and useful websites",
+                "value":"\n[The Art of Electronics 3rd edition](https://cdn.discordapp.com/attachments/426054145645215756/783850352487170078/The_Art_of_Electronics_3rd_ed_2015.pdf)\n[Designing Electronics that Work](http://designingelectronics.com/#preview)\n[KiCad](https://www.kicad.org/)\n[Falstad](https://www.falstad.com/circuit/)\n[LTspice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html)\n[SimulIDE](https://www.simulide.com/p/home.html)\n[All about circuits textbook](https://www.allaboutcircuits.com/textbook/)\n[Simon Bramble Designs and Tutorials](http://www.simonbramble.co.uk/index.htm)",
+                "inline": false
+            }
+        ],
+        "footer": "Note: You should check out all of those YT channels"
+                
+    },
+    {
+        "title": "Lasers",
+        "emoji": ":no_entry:",
+        "color": "11526575",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"\n[Zenodilodon](https://www.youtube.com/c/Zenodilodon)\n[LesLaboratory](https://www.youtube.com/c/LesLaboratory/)\n[Styropyro](https://www.youtube.com/c/styropyro)\n[Les' Lab](https://www.youtube.com/c/LesLaboratory)\n[Rocketman340](https://www.youtube.com/user/rocketman340)",
+                "inline": true
+            },
+            {
+                "name":"Websites",
+                "value":"[Sam's Laser](https://www.repairfaq.org/sam/lasersam.htm)",
+                "inline": false
+            }
+        ],
+        "footer": ""
+                
+    },
+    {
+        "title": "Computing and Programming",
+        "emoji": ":computer:",
+        "color": "5294200",
+        "fields": [
+            {
+                "name":"Youtube",
+                "value":"\nGenera\n[Level1Techs](https://www.youtube.com/c/level1techs)\nSecurity: \n[LiveOverflow](https://www.youtube.com/c/LiveOverflow) \n[Sumsubcom](https://www.youtube.com/c/Sumsubcom)\n[Lawrence systems](https://www.youtube.com/channel/UCHkYOD-3fZbuGhwsADBd9ZQ) \nRepairs\n[NorthridgeFix](https://www.youtube.com/c/NorthridgeFix) \n[Rossmanngroup](https://www.youtube.com/user/rossmanngroup)\n[SebastianLague](https://www.youtube.com/c/SebastianLague)\n[Code Parade](https://www.youtube.com/c/CodeParade)",
+                "inline": true
+            },
+            {
+                "name":"** **",
+                "value":"\nShowcase:\n[Unboxtherapy](https://www.youtube.com/c/unboxtherapy)\n[Linus Tech Tips](https://www.youtube.com/c/LinusTechTips)\n[Mrkeybrd](https://www.youtube.com/c/Mrkeybrd)",
+                "inline": true
+            },
+            {
+                "name":"Docs and Software",
+                "value":"\n[Microsoft Docs](https://docs.microsoft.com/en-us/)\n[Grafana](https://grafana.com/docs/grafana/latest/)\n[Prometheus](https://prometheus.io/docs/introduction/overview/)\n[Docker](https://docs.docker.com/)\n[TLDP](https://tldp.org/)",
+                "inline": false
+            }
+        ],
+        "footer": ""
+                
+    }
+    
+]
+
