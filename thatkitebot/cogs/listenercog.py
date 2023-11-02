@@ -105,6 +105,9 @@ class ListenerCog(commands.Cog):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
+        if not message.guild:
+            return
+
         try:
             await self.cache.add_message(message)
         except CacheInvalidMessageException:

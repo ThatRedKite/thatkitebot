@@ -46,7 +46,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         self.redis: aioredis.Redis = bot.redis
 
     async def _uwu_enabled(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.UWU)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.UWU)
 
     async def _listener_checks(self, message):
         if message.author.bot:
@@ -161,6 +161,10 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
+
+        # ignore DMs
+        if not message.guild:
+            return
 
         webhook = None
 

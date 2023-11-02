@@ -65,7 +65,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         return await self.settings_redis.sismember("REPOST_CHANNELS", channel.id)
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild.id, RedisFlags.REPOST)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.REPOST)
 
     # this is kinda dumb but i guess it works :)
     async def hash_from_url(self, urls: list[str]):
@@ -229,6 +229,11 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
+        
+        #ignore DMs
+        if not message.guild:
+            return
+
         if not message.embeds and not message.attachments:
             return  # return if the message does not contain an image
 

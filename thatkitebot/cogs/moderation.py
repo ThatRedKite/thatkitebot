@@ -285,6 +285,11 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         self.bot.events_hour += 1
         self.bot.events_total += 1
         # check if edit checking is enabled
+
+        # ignore DMs
+        if not payload.guild_id:
+            return
+
         is_enabled = await settings.RedisFlags.get_guild_flag_custom(
             redis=self.redis,
             gid=payload.guild_id,

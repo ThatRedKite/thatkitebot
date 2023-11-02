@@ -35,7 +35,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         await util.errormsg(ctx, error)
 
     async def cog_check(self, ctx) -> bool:
-        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild.id, RedisFlags.IMAGE)
+        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.IMAGE)
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed

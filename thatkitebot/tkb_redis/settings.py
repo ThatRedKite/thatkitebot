@@ -3,6 +3,7 @@
 from typing import Union
 
 
+from discord import Guild
 from redis import asyncio as aioredis
 
 
@@ -38,7 +39,7 @@ class RedisFlags:
         await redis.setbit(key, flag_offset, int(value))
 
     @staticmethod
-    async def get_guild_flag(redis: aioredis.Redis, gid, flag_offset: int) -> bool:
+    async def get_guild_flag(redis: aioredis.Redis, guild: Union[Guild, None], flag_offset: int) -> bool:
         """
         Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
         0: NSFW (nsfwcog.py) - NSFW commands
@@ -52,9 +53,33 @@ class RedisFlags:
         9: MODERATION
         10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
-        key = f"flags:{gid}"
-        return await redis.getbit(key, flag_offset)
-
+        if guild is not None:
+            key = f"flags:{guild.id}"
+            return await redis.getbit(key, flag_offset)
+        else:
+            return True
+        
+    @staticmethod
+    async def get_guild_flag_by_id(redis: aioredis.Redis, guild_id: int, flag_offset: int) -> bool:
+        """
+        Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
+        0: NSFW (nsfwcog.py) - NSFW commands
+        1: IMAGES (imagecog.py) - Image commands
+        3: WELCOME COUNTING (welcomecog.py) - Welcome Counting
+        4: UWUIFICATION (uwucog.py) - uwuify
+        5: LINK DETRACKING (detrack.py) - detracking
+        6: MUSIC (musiccog.py) - music commands
+        7: CACHING
+        8: WELCOME MESSAGE
+        9: MODERATION
+        10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
+        """
+        if guild_id is not None:
+            key = f"flags:{guild_id}"
+            return await redis.getbit(key, flag_offset)
+        else:
+            return True
+        
     @staticmethod
     async def set_guild_flag_custom(redis: aioredis.Redis, gid, name: str, value: bool, flag_offset: int) -> None:
         """

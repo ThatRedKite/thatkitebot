@@ -24,10 +24,9 @@ class RedisCache:
 
     def _sanity_check(self, message: discord.Message):
         # things we do not want to cache
-        is_dm = type(message) == discord.DMChannel
         is_system = message.is_system()
         is_me = message.author is self.bot.user
-        return any((is_me, is_system, is_dm))
+        return any((is_me, is_system))
 
     async def add_message(self, message: discord.Message):
         """

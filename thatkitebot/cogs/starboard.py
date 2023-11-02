@@ -215,7 +215,7 @@ class StarBoard(commands.Cog):
     ):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild.id, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
             raise StarboardDisabledException
         
         logger = set_up_guild_logger(ctx.guild.id)
@@ -233,7 +233,7 @@ class StarBoard(commands.Cog):
     ):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild.id, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
             raise StarboardDisabledException
         
         try:
@@ -265,7 +265,7 @@ class StarBoard(commands.Cog):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild.id, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
             raise StarboardDisabledException
 
         # check if starboard settings even exist
@@ -277,7 +277,7 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} set global threshold to {threshold} in {ctx.guild.name}")
         await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "threshold", threshold)
-        if await flags.get_guild_flag(self.redis, gid=ctx.guild.id, flag_offset=flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, gid=ctx.guild, flag_offset=flags.STARBOARD):
             await ctx.followup.send("Starboard has been disabled. The threshold has been changed but starboard remains disabled")
             return
 
@@ -302,7 +302,7 @@ class StarBoard(commands.Cog):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild.id, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
             raise StarboardDisabledException
 
         # check if starboard settings even exist
@@ -334,7 +334,7 @@ class StarBoard(commands.Cog):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild.id, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
             raise StarboardDisabledException
 
         if max_age and parse_timestring(max_age) == 0:
@@ -356,7 +356,7 @@ class StarBoard(commands.Cog):
         async with self.starboard_lock:
             # check if starboard is enabled on this guild
             # this flag is 1 to disable and 0 to enable to preserve compatibility
-            if await flags.get_guild_flag(redis=self.redis, gid=payload.guild_id, flag_offset=flags.STARBOARD):
+            if await flags.get_guild_flag_by_id(redis=self.redis, gid=payload.guild_id, flag_offset=flags.STARBOARD):
                 return
 
             channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
