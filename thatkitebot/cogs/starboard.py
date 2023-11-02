@@ -175,7 +175,8 @@ class StarBoard(commands.Cog):
             emoji: discord.Option(str, description="The emoji to count", required=True),
             starboard_channel: discord.Option(discord.abc.GuildChannel, description="The channel where starboard messages are sent", required=True),
             listen_channel: discord.Option(discord.abc.GuildChannel, description="The channel to listen in.", required=True),
-            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False)
+            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False),
+            enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False)
     ):
         await ctx.defer()
 
@@ -196,7 +197,8 @@ class StarBoard(commands.Cog):
             threshold=threshold,
             emoji=emoji,
             guild_id=ctx.guild.id,
-            channel_list=[str(listen_channel.id)]
+            channel_list=[str(listen_channel.id)],
+            video=enable_video
         )
 
         logger = set_up_guild_logger(ctx.guild.id)
@@ -245,7 +247,6 @@ class StarBoard(commands.Cog):
         
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} un-blacklisted {channel.name} in {ctx.guild.name}")
-
         await ctx.followup.send(f"Removed {channel.mention} from the starboard blacklist.")
 
 
@@ -277,7 +278,7 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} set global threshold to {threshold} in {ctx.guild.name}")
         await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "threshold", threshold)
-        if await flags.get_guild_flag(self.redis, gid=ctx.guild, flag_offset=flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, guild=ctx.guild, flag_offset=flags.STARBOARD):
             await ctx.followup.send("Starboard has been disabled. The threshold has been changed but starboard remains disabled")
             return
 
@@ -330,7 +331,11 @@ class StarBoard(commands.Cog):
 
 
     @starboard.command(name="set_max_age", description="Set the maximum age for messages to be added to starboard")
-    async def _set_max_age(self, ctx: discord.ApplicationContext, max_age: discord.Option(str, )):
+    async def _set_max_age(
+        self,
+        ctx: discord.ApplicationContext,
+        max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`",required=False)
+    ):
         await ctx.defer()
 
         # check if the disable flag is set
@@ -349,6 +354,21 @@ class StarBoard(commands.Cog):
         await ctx.followup.send("Successfully updated the maximum age for new messages.")
 
 
+    @starboard.command(name="video_enable", description="Enable or disable videos in starboard messages.")
+    async def _video(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, description="Whether to enable or disable videos", required=True)):
+        await ctx.defer()
+
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+            raise StarboardDisabledException
+        
+        await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "video", int(enable))
+        
+        logger = set_up_guild_logger(ctx.guild.id)
+        status = "enabled" if enable else "disabled"
+        logger.info(f"STARBOARD: User {ctx.author.name} {status} videos in starboard {ctx.guild.name}")
+        await ctx.followup.send(f"Videos are now **{status}** in starboard messages.")
+        
+        
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
@@ -356,7 +376,7 @@ class StarBoard(commands.Cog):
         async with self.starboard_lock:
             # check if starboard is enabled on this guild
             # this flag is 1 to disable and 0 to enable to preserve compatibility
-            if await flags.get_guild_flag_by_id(redis=self.redis, gid=payload.guild_id, flag_offset=flags.STARBOARD):
+            if await flags.get_guild_flag_by_id(redis=self.redis, guild_id=payload.guild_id, flag_offset=flags.STARBOARD):
                 return
 
             channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
@@ -378,7 +398,7 @@ class StarBoard(commands.Cog):
                 reaction_emoji = str(payload.emoji)
 
                 # get optional settings
-                video_is_enabled = bool(starboard_settings.get("video",  0))
+                video_is_enabled = bool(starboard_settings.get("video",  1))
                 max_age = int(starboard_settings.get("max_age", 0))
 
             except KeyError:
