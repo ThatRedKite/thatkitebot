@@ -391,7 +391,7 @@ class StarBoard(commands.Cog):
             if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
                 return
             
-            # check if it is a thread belonging to a blacklisted channeö
+            # check if it is a thread belonging to a blacklisted channel
             if type(channel) is discord.Thread and await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.parent_id)):
                 return
 
@@ -434,8 +434,21 @@ class StarBoard(commands.Cog):
                         message.reactions.sort(key=lambda e: str(e) == str(payload.emoji), reverse=True)
                         count = message.reactions[0].count
 
-                        # check for the correct threshold (global or channel-specific threshold)A
-                        channel_threshold = await self.redis.hget("starboard_thresholds", str(message.channel.id)) or None
+                        # check for the correct threshold (global or channel-specific threshold)
+
+                        # get the correct channelto account while accounting for threads
+                        if type(message.channel) is discord.Thread:
+                            # check if the thread has its own threshold set
+                            channel_threshold = await self.redis.hget("starboard_thresholds", str(message.channel.id)) or None
+
+                            # if no threshold for the thread has been set, use the parent's threshold
+                            if channel_threshold is None:
+                                channel_threshold = await self.redis.hget("starboard_thresholds", str(message.channel.parent_id)) or None
+
+
+                        else:
+                            channel_threshold = await self.redis.hget("starboard_thresholds", str(message.channel.id)) or None
+
                         if channel_threshold is not None and not count >= int(channel_threshold):
                             return
 
