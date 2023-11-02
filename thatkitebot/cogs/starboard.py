@@ -376,13 +376,25 @@ class StarBoard(commands.Cog):
         async with self.starboard_lock:
             # check if starboard is enabled on this guild
             # this flag is 1 to disable and 0 to enable to preserve compatibility
+            
+            # return if not in a guild
+            if not payload.guild_id:
+                return
+            
+            # check if starboad is disabled
             if await flags.get_guild_flag_by_id(redis=self.redis, guild_id=payload.guild_id, flag_offset=flags.STARBOARD):
                 return
 
-            channel: discord.TextChannel = await self.bot.fetch_channel(payload.channel_id)
+            channel = await self.bot.fetch_channel(payload.channel_id)
+
             # check if the channel is blacklisted
             if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
                 return
+            
+            # check if it is a thread belonging to a blacklisted channeö
+            if type(channel) is discord.Thread and await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.parent_id)):
+                return
+
 
             if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
                 return
