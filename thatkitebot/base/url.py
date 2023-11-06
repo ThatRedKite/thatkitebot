@@ -21,7 +21,7 @@ tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 emoji_pattern = re.compile(r"<:\S+:\n+>")
 
 
-def get_avatar_url(user: discord.User | discord.Message):
+def get_avatar_url(user: discord.User):
     if user.avatar:
         return user.avatar.url
     else:
