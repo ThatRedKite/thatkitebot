@@ -187,7 +187,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 async with self.bot.aiohttp_session.get(attachment.url) as resp:
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
-            await message.delete(reason="UwU Delete")
+            
             # convert the input string to ascii
             msg_len = len(message.content) + 20
             msg = unidecode(message.content)
@@ -203,6 +203,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             output = textwrap.wrap(msg, 2000)
             # for each new "message" send it in the channel
             # thanks paradox for breaking the >2000 msg limit
+            await message.delete(reason="UwU Delete")
             await webhook.send(
                 content=output[0],
                 username=message.author.name + "#" + message.author.discriminator,
