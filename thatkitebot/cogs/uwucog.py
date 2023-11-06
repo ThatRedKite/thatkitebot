@@ -10,11 +10,14 @@ from unidecode import unidecode
 from uwuipy import uwuipy
 from discord.ext import commands
 from redis import asyncio as aioredis
+import discord_emoji
 
 import thatkitebot
+from thatkitebot.base.url import get_avatar_url
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
+
 
 
 async def uwuify(message: str, id: int):
@@ -23,13 +26,13 @@ async def uwuify(message: str, id: int):
     return message
 
 
-async def get_uwu_webhook(channel: discord.TextChannel) -> Union[discord.Webhook, None]:
+async def get_uwu_webhook(webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
     webhooks = await channel.webhooks()
-    uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == "uwuhook"), None)
+    uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == f"uwuhook{webhook_id}"), None)
     if not uwu_webhook:
         try:
             webhooker = await channel.create_webhook(
-                name='uwuhook',
+                name=f"uwuhook{webhook_id}",
                 reason='uwuhook is for UwU'
             )
         except discord.HTTPException:
@@ -176,11 +179,19 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # ignore webhooks
         if not message.webhook_id:
             # get or create the uwu webhook
-            webhook = await get_uwu_webhook(message.channel)
+            webhook = await get_uwu_webhook("", message.channel)
 
             # if we failed to create it somehow, return
             if not webhook:
                 return
+            
+            if not webhook.token:
+                # try to create a webhook with the bot id in the name, in case another uwuhook already exists (like the dev server)
+                webhook = await get_uwu_webhook(self.bot.user.id, message.channel)
+
+                # if we still fail to create it, return
+                if not webhook:
+                    return
 
             files = []
             for attachment in message.attachments:
@@ -190,7 +201,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             
             # convert the input string to ascii
             msg_len = len(message.content) + 20
-            msg = unidecode(message.content)
+            msg = unidecode(message.content, errors="preserve")
 
             # if the user cant embed links, make links not embed by surrounding them with <>
             if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
@@ -200,16 +211,26 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             msg_small = textwrap.wrap(msg, msg_len)
             msg = await uwuify(msg_small[0], message.id)
             # split it up while maintaining whole words
+
             output = textwrap.wrap(msg, 2000)
             # for each new "message" send it in the channel
             # thanks paradox for breaking the >2000 msg limit
-            await message.delete(reason="UwU Delete")
+
+            username = message.author.name if message.author.discriminator == "0" else message.author.name + "#" + message.author.discriminator
+
             await webhook.send(
                 content=output[0],
-                username=message.author.name + "#" + message.author.discriminator,
-                avatar_url=message.author.display_avatar.url,
-                files=files
+                username=username,
+                avatar_url=get_avatar_url(user=message.author),
+                files=files,
+                allowed_mentions=discord.AllowedMentions(
+                    everyone=message.author.guild_permissions.mention_everyone,
+                    roles=False,
+                    users=True
+                ),
             )
+
+            await message.delete(reason="UwU Delete")
 
 
 def setup(bot):
