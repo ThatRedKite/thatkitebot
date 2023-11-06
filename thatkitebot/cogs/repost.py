@@ -81,7 +81,10 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         if message.attachments:
             # if the file was uploaded directly, get the image data from the attachment directly
             for attachment in message.attachments:
-                yield hasher(await attachment.read())
+                try:
+                    yield hasher(await attachment.read())
+                except:
+                    yield None
 
         elif message.embeds:
             # links to images or GIFs are embedded in the message
@@ -99,7 +102,10 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                         #  this feature *requires* a tenor API Token!
                         if self.tt:
                             # download and hash the teno r gif
-                            yield await self.get_tenor_image(message.content, self.tt) or None
+                            try:
+                                yield await self.get_tenor_image(message.content, self.tt) or None
+                            except:
+                                yield None
                     case "video":
                         yield None
         else:
@@ -195,6 +201,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
 
             async with self.repost_database_lock:
                 async for imghash in self.hash_from_url(urls):
+                    if not imghash:
+                        continue
                     try:
                         repost = False
                         async for distance, hash_key in self.check_distance(imghash):
@@ -248,6 +256,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             async for image_hash in self.extract_imagehash(message):
                 if image_hash is None:
                     return
+                
                 # first check for a direct match
                 async for scan_key in self.repost_redis.scan_iter(f"*:{image_hash}"):
                     # get the jump url
@@ -268,7 +277,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                         # if the distance is less than 20, it's a repost
                         if distance <= 20:
                             jump_url = await self.repost_redis.hget(hash_key, "jump_url")
-                            message_id, channel_id, guild_id = ids_from_link(jump_url)
+                            _, channel_id, guild_id = ids_from_link(jump_url)
                             repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
                             break
 
