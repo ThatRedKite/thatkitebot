@@ -73,10 +73,15 @@ class RedisCache:
             raise NoDataException
 
     async def get_author_id(self, message_id: Union[int, str]):
-        return int((await self.redis.hget("id_to_author", str(message_id))).decode("ASCII"))
+
+        raw = await self.redis.hget("id_to_author", str(message_id))
+        if raw is not None:
+            return int(raw.decode("ASCII"))
 
     async def get_channel_id(self, message_id: Union[int, str]):
-        return int((await self.redis.hget("id_to_channel", str(message_id))).decode("ASCII"))
+        raw = await self.redis.hget("id_to_channel", str(message_id))
+        if raw is not None:
+            return int(raw.decode("ASCII"))
 
     async def get_message(self, message_id: int, guild_id: int, channel_id: int | None = None, author_id: int | None = None):
         # get the message from the message_id
@@ -87,6 +92,7 @@ class RedisCache:
 
             if not channel_id:
                 channel_id = await self.get_channel_id(message_id)
+                
         except AttributeError:
             raise CacheInvalidMessageException
 

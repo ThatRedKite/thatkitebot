@@ -10,8 +10,9 @@ from discord.ext import commands, tasks
 
 import thatkitebot
 from thatkitebot.base.util import errormsg
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException, NoDataException
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
+from thatkitebot.base.exceptions import *
 
 
 class ListenerCog(commands.Cog):
@@ -40,11 +41,14 @@ class ListenerCog(commands.Cog):
             case commands.CommandInvokeError:
                 if self.bot.debug_mode:
                     await errormsg(ctx, repr(error))
-                raise error
+                    
+                if not isinstance(error, (NotEnoughMessagesException, StarboardDisabledException)):
+                    self.bot.logger.error("Error during command: %s", error, exc_info=True)
             case discord.errors.CheckFailure:
                 await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+            
     
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx: commands.Context, error):

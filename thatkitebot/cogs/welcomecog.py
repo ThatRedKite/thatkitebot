@@ -145,7 +145,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             author = re.findall(r":[\d]{5,}:", i)[0][1:-1]  # extract the author id
             leaderboard[f"<@{author}>"] = await self.redis_welcomes.hgetall(i)
         sorted_lb = sorted(leaderboard.items(), key=lambda x: int(x[1]['welcome_count']), reverse=True)
-
+        
         # display the total leaderboard
         if not user:
             embed = discord.Embed(title="Welcome leaderboard")
