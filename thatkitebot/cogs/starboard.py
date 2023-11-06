@@ -381,6 +381,9 @@ class StarBoard(commands.Cog):
             if not payload.guild_id:
                 return
             
+            if payload.user_id == self.bot.user.id:
+                return
+            
             # check if starboad is disabled
             if await flags.get_guild_flag_by_id(redis=self.redis, guild_id=payload.guild_id, flag_offset=flags.STARBOARD):
                 return
@@ -418,6 +421,9 @@ class StarBoard(commands.Cog):
 
             # load the message into the internal cache
             message = await channel.fetch_message(payload.message_id)
+
+            if message.author.bot:
+                return
 
             match mode:
                 case Modes.GLOBAL_THRESHOLD | Modes.SINGLE_CHANNEL_THRESHOLD:
