@@ -494,14 +494,14 @@ class StarBoard(commands.Cog):
                             if max_age != 0 and check_message_age(payload.message_id, max_age):
                                 return
                             
-                            embed, file = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session, return_file=video_is_enabled)
+                            embed, pfp_file, video_file = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session, return_file=video_is_enabled)
                             new_message = None
 
-                            if file:
-                                new_message = await star_channel.send(embed=embed, file=file)
+                            if video_file:
+                                new_message = await star_channel.send(embed=embed, files=[pfp_file, video_file])
 
                             else:
-                                new_message = await star_channel.send(embed=embed)
+                                new_message = await star_channel.send(embed=embed, files=[pfp_file])
 
                             # add the new message to the database
                             await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
@@ -509,8 +509,8 @@ class StarBoard(commands.Cog):
 
                         elif already_posted and isinstance(starboard_message, discord.Message):
                             # update the starboard message
-                            embed, _ = await generate_embed(message, count, star_emoji)
-                            await starboard_message.edit(embed=embed)
+                            embed, pfp_file, _ = await generate_embed(message, count, star_emoji, aiohttp_session=self.bot.aiohttp_session)
+                            await starboard_message.edit(embed=embed, files=[pfp_file])
 
                         else:
                             return

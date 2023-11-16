@@ -2,7 +2,7 @@
 import io
 
 import aiohttp
-from discord import Embed, Message, Color, File
+from discord import Embed, Message, Color, File, Attachment
 
 from thatkitebot.base.image_stuff import get_image_url, get_embed_urls
 from thatkitebot.base.url import get_avatar_url
@@ -21,6 +21,8 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     set_image = False
     set_video = False
 
+    video_file = None
+
     for url, content_type in get_embed_urls(message, video=True, gifv=True):
         
         if not (url or content_type):
@@ -38,8 +40,7 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
                     set_image = True
                 elif content_type == "video":
                     set_video = True
-                continue
-
+                
             # content contains an url and additional text
             elif url and url in content:
                 if content_type == "image" and not set_image:
@@ -47,41 +48,41 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
                     set_image = True
                 elif content_type == "video":
                     set_video = True
-                continue
-
+                
             # if the url does not appear in the content, the url is likely an attachment
             elif url and url not in content:
                 if content_type == "image" and not set_image:
                     embed.set_image(url=url)
                     set_image = True
-                continue
-
+                
         # no content but we have an url. Must be an attachment with no extra text.
         elif not content and content_type == "image":
             if not set_image:
                 embed.set_image(url=url)
-                set_image = True
-            continue
+                set_image = True  
 
-        elif not content and content_type == "video":
+        elif content_type == "video":
             if not set_video:
                 set_video = True
-        
+
+        if return_file and aiohttp_session and url and set_video:
+            async with aiohttp_session.get(url) as resp:
+                video_file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
+
     if content:
         embed.add_field(name="​", value=content, inline=False)
-    embed.set_thumbnail(url=get_avatar_url(message.author))
+
+    # download the profile picture to make that one guy shut up
+    async with aiohttp_session.get(get_avatar_url(message.author)) as resp:
+        pfp_file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.author.id}.{resp.content_type.split('/')[1]}")
+    
+    embed.set_thumbnail(url=f"attachment://{message.author.id}.{resp.content_type.split('/')[1]}")
     embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
     embed.color = Color.gold()
     embed.timestamp = message.created_at
 
     # check if videos are present and the session is passed
-    if return_file and aiohttp_session and url:
-        # download and attach if it is a video
-        if set_video:
-            async with aiohttp_session.get(url) as resp:
-                resp: aiohttp.ClientResponse
-                file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
-                return embed, file
-        
-
-    return embed, None
+    if return_file and video_file:
+        return embed, pfp_file, video_file
+    
+    return embed, pfp_file, None
