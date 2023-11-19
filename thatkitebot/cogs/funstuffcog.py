@@ -275,6 +275,9 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, exception):
+        if not isinstance(exception, (commands.CommandError, commands.CommandInvokeError)):
+            return
+
         if isinstance(exception.original, NotEnoughMessagesException):
             await ctx.send("Failed to generate a markov output. Please try another user or channel.")
 
