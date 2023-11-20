@@ -110,7 +110,7 @@ class ThatKiteBot(bridge.Bot, ABC):
         # ---dynamic values---
 
         # settings
-        self.debug_mode = False
+        self.debug_mode = int(os.getenv("KITEBOT_DEBUG")) == 1
         self.tenor_token = tt
         self.enable_voice = False  # global override for deactivating voice commands
         # sessions

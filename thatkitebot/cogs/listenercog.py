@@ -10,7 +10,7 @@ from discord.ext import commands, tasks
 
 import thatkitebot
 from thatkitebot.base.util import errormsg
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
+from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException, NoDataException
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.base.exceptions import *
 
@@ -114,9 +114,16 @@ class ListenerCog(commands.Cog):
 
         try:
             await self.cache.add_message(message)
+            
         except CacheInvalidMessageException:
-            return
-    """
+            if self.bot.debug_mode:
+                self.logger.debug("CACHE: Could not add message to cache, reason: Invalid Message")
+
+        except NoDataException:
+            if self.bot.debug_mode:
+                self.logger.debug("CACHE: Could not add message to cache, reason: No Data")
+
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
@@ -144,7 +151,7 @@ class ListenerCog(commands.Cog):
             data_new=data,
             key=key
         )
-    """
+    
     
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):
