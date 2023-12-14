@@ -19,7 +19,7 @@ from .extensions import ENABLED_EXTENSIONS
 from .tkb_redis.cache import RedisCache
 
 __name__ = "ThatKiteBot"
-__version__ = "4.0.1"
+__version__ = "4.0.2"
 __author__ = "ThatRedKite and contributors"
 
 tempdir = "/tmp/tkb/"
