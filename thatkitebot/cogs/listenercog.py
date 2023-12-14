@@ -75,7 +75,7 @@ class ListenerCog(commands.Cog):
             await self.redis.ping()
             await self.redis_cache.ping()
         except ConnectionError as exc:
-            self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(ec)}")
+            self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(exc)}")
 
     @tasks.loop(seconds=10)
     async def cache_update(self):
