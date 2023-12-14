@@ -381,6 +381,9 @@ class StarBoard(commands.Cog):
             if not payload.guild_id:
                 return
             
+            if payload.member.bot:
+                return
+            
             if payload.user_id == self.bot.user.id:
                 return
             
@@ -421,9 +424,6 @@ class StarBoard(commands.Cog):
 
             # load the message into the internal cache
             message = await channel.fetch_message(payload.message_id)
-
-            if message.author.bot:
-                return
 
             match mode:
                 case Modes.GLOBAL_THRESHOLD | Modes.SINGLE_CHANNEL_THRESHOLD:
