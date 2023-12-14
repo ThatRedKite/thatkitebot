@@ -23,7 +23,7 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
 
     video_file = None
 
-    for url, content_type in get_embed_urls(message, video=True, gifv=True):
+    for url, content_type in get_embed_urls(message, video_enabled=True, gifv=True):
         
         if not (url or content_type):
             break
@@ -54,6 +54,9 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
                 if content_type == "image" and not set_image:
                     embed.set_image(url=url)
                     set_image = True
+
+                elif content_type == "video":
+                    set_video = True
                 
         # no content but we have an url. Must be an attachment with no extra text.
         elif not content and content_type == "image":

@@ -18,7 +18,6 @@ from wand.font import Font
 
 from .exceptions import *
 
-
 def hasher(data):
     """
     Returns a hash of the image data.
@@ -130,7 +129,7 @@ async def get_image_urls(message: discord.Message, video: bool = False, gifv: bo
 
     return embed_urls
 
-def get_embed_urls(message: discord.Message, video: bool = False, gifv: bool = False):
+def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: bool = False) -> (str | None, str | None):
     """
     clone of :get_image_urls but with different output format: [(url, embed_type), ...]
     """
@@ -159,8 +158,22 @@ def get_embed_urls(message: discord.Message, video: bool = False, gifv: bool = F
             continue
 
         # check if the message has a video if the :video: argument is true
-        elif embed.type == "video" and video:
-            yield embed.url, "video"
+        elif embed.type == "video" and video_enabled:
+
+            # --- special cases for different websites ---
+
+            if embed._provider.get("name") == "YouTube":
+                # special case for youtube, ignore any videos, return video thumbnail instead
+                yield embed.thumbnail.url, "image"
+                continue
+
+
+            yield embed.video.url, "video"
+            continue
+
+        # embeds where a thumbnail (if present) will be returned
+        elif embed.type in ["link", "article"] and embed.thumbnail:
+            yield embed.thumbnail.url, "image"
             continue
 
         # check if the message has a gif if the :gifv: argument is true
