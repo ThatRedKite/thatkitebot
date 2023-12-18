@@ -184,7 +184,8 @@ def set_up_guild_logger(guild_id: int) -> logging.Logger:
     file_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s:%(name)s:%(message)s", "%H:%M:%S %d.%m.%Y"))
     stream_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s:%(name)s:%(message)s", "%H:%M:%S %d.%m.%Y"))
 
-    guild_logger.addHandler(file_handler)
-    guild_logger.addHandler(stream_handler)
+    if not guild_logger.hasHandlers():
+        guild_logger.addHandler(file_handler)
+        guild_logger.addHandler(stream_handler)
 
     return guild_logger
