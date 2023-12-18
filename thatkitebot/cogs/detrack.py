@@ -8,6 +8,7 @@ import toml
 import discord
 from discord.ext import commands
 from redis import asyncio as aioredis
+import discord_emoji as de
 
 import thatkitebot
 from thatkitebot.tkb_redis.settings import RedisFlags
@@ -16,6 +17,10 @@ from thatkitebot.tkb_redis.cache import RedisCache
 # Automatically removed tracking content from links
 # and de-ampifies links (not yet implemented) when the setting is turned on
 
+class DetrackView(discord.ui.View):
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.red, emoji=de.discord_to_unicode("wastebasket"))
+    async def close_button_callback(self, button, interaction: discord.Interaction):
+         pass
 
 class DetrackCog(commands.Cog, name="Detrack commands"):
     def __init__(self, bot):
@@ -117,10 +122,14 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         # return the detracted message
         if detracked_strs:
-            message_str = "Tracking links detected, below are the sanitized links. OP can press 🗑️ to remove this message\n"
+            embed = discord.Embed(title="I've cleaned tracking links contained your message!", description="You can find the clean versions below. You can copy them and edit your original message. The original author can react with '🗑️' to delete this.")
+            clean_links = ""
             for i in detracked_strs:
-                message_str += f"<{i}>\n"
-            my_mgs = await message.reply(message_str)
+                clean_links += f"```{i}```\n"
+                
+            embed.add_field(name="​", value=clean_links)
+            embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking on the right side of the link")
+            my_mgs = await message.reply(embed=embed, silent=True)
             await my_mgs.add_reaction("🗑️")
 
     @commands.Cog.listener()
