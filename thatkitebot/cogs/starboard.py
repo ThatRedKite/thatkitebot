@@ -378,13 +378,7 @@ class StarBoard(commands.Cog):
             # this flag is 1 to disable and 0 to enable to preserve compatibility
             
             # return if not in a guild
-            if not payload.guild_id:
-                return
-            
-            if payload.member.bot:
-                return
-            
-            if payload.user_id == self.bot.user.id:
+            if not payload.guild_id or payload.member.bot or payload.user_id == self.bot.user.id:
                 return
             
             # check if starboad is disabled
