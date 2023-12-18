@@ -162,7 +162,7 @@ def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: 
 
             # --- special cases for different websites ---
 
-            if embed._provider.get("name") == "YouTube":
+            if embed.provider and embed.provider.name == "YouTube":
                 # special case for youtube, ignore any videos, return video thumbnail instead
                 yield embed.thumbnail.url, "image"
                 continue

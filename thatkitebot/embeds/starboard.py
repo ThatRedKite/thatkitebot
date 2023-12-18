@@ -70,7 +70,11 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
 
         if return_file and aiohttp_session and url and set_video:
             async with aiohttp_session.get(url) as resp:
-                video_file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{resp.content_type.split('/')[1]}")
+                content_type: str = resp.content_type.split('/')[1]
+
+                # thanks, Apple
+                content_type = content_type.replace("quicktime", "mov")
+                video_file = File(fp=io.BytesIO(await resp.read()), filename=f"{message.id}.{content_type}")
 
     if content:
         embed.add_field(name="​", value=content, inline=False)
