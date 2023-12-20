@@ -128,7 +128,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                 clean_links += f"```{i}```\n"
                 
             embed.add_field(name="​", value=clean_links)
-            embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking the icon on to the right of the link.")
+            embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking the icon to the right of the link.")
             my_mgs = await message.reply(embed=embed, silent=True)
             await my_mgs.add_reaction("🗑️")
 
