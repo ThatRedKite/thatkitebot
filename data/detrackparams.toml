@@ -5,6 +5,7 @@
 # how a link looks like: <scheme>://<net_loc>/<path>;<params>?<query>#<fragment>
 # [domains.link_name] - internal name, doesn't really do much except be desriptive
 # netloc =  - the netloc regex of the site, if this is matched, the link will be processed
+# netloc_dl = "" - if this is set, the matched regex will be removed from the netloc
 # path = "" - the path regex of the path, if this is matched, the matched part will be removed
 # params = "" - same as the above, but for the params
 # query = ".*" - same as the above, but for the query
@@ -157,6 +158,13 @@ fragment = "_all_"
 [domains.youtube]
 netloc = ".*youtube."
 netloc_dl = "_pref_"
+path = ""
+params = "_all_"
+query = "&*(feature|kw|si)=[^&]*"
+fragment = "_all_"
+
+[domains.youtu_be]
+netloc = ".*youtu.be"
 path = ""
 params = "_all_"
 query = "&*(feature|kw|si)=[^&]*"
