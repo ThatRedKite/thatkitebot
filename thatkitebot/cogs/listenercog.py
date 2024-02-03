@@ -67,7 +67,7 @@ class ListenerCog(commands.Cog):
     @tasks.loop(hours=1.0)
     async def hourly_reset(self):
         self.bot.command_invokes_hour = 0
-        self.bot.events_hour += 0
+        self.bot.events_hour = 0
 
     @tasks.loop(minutes=1)
     async def database_ping(self):
