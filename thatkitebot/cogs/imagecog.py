@@ -35,7 +35,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         await util.errormsg(ctx, error)
 
     async def cog_check(self, ctx) -> bool:
-        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.IMAGE)
+        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.FlagEnum.IMAGE.value)
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed
@@ -51,6 +51,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         Applies some content aware and swirling scaling to an image.
         When the image is a GIF, it takes the first frame
         """
+        print(RedisFlags.FlagEnum.IMAGE.value)
         buf = await image_stuff.get_last_image(ctx, self.session, return_buffer=True)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 0, loop=self.loop)  # initialize the image class

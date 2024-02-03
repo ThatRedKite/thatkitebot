@@ -23,7 +23,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
         self.bl = [424394851170385921]  # hardcoded guild blacklist, for my own safety
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.NSFW)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.NSFW.value)
 
     @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True, aliases=["rule34"])

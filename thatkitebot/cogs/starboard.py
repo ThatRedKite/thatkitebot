@@ -44,7 +44,7 @@ async def set_starboard(redis, channel_id, mode, threshold, emoji, guild_id, cha
     await redis.hset(f"starboard_settings:{guild_id}", mapping=setdict)
 
     # set the disable-flag to 0
-    await flags.set_guild_flag(redis=redis, gid=guild_id, flag_offset=flags.STARBOARD, value=False)
+    await flags.set_guild_flag(redis=redis, gid=guild_id, flag_offset=flags.FlagEnum.STARBOARD.value, value=False)
 
 
 async def check_permissions(ctx, channel: discord.TextChannel):
@@ -217,7 +217,7 @@ class StarBoard(commands.Cog):
     ):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
             raise StarboardDisabledException
         
         logger = set_up_guild_logger(ctx.guild.id)
@@ -235,7 +235,7 @@ class StarBoard(commands.Cog):
     ):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
             raise StarboardDisabledException
         
         try:
@@ -266,7 +266,7 @@ class StarBoard(commands.Cog):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
             raise StarboardDisabledException
 
         # check if starboard settings even exist
@@ -278,7 +278,7 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} set global threshold to {threshold} in {ctx.guild.name}")
         await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "threshold", threshold)
-        if await flags.get_guild_flag(self.redis, guild=ctx.guild, flag_offset=flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, guild=ctx.guild, flag_offset=flags.FlagEnum.STARBOARD.value):
             await ctx.followup.send("Starboard has been disabled. The threshold has been changed but starboard remains disabled")
             return
 
@@ -303,7 +303,7 @@ class StarBoard(commands.Cog):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
             raise StarboardDisabledException
 
         # check if starboard settings even exist
@@ -326,7 +326,7 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} disabled starboard in {ctx.guild.name}")
 
-        await flags.set_guild_flag(redis=self.redis, gid=ctx.guild.id, flag_offset=flags.STARBOARD, value=True)
+        await flags.set_guild_flag(redis=self.redis, gid=ctx.guild.id, flag_offset=flags.FlagEnum.STARBOARD.value, value=True)
         await ctx.followup.send("Starboard functionality has been completely disabled (Existing settings will be kept)")
 
 
@@ -339,7 +339,7 @@ class StarBoard(commands.Cog):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
             raise StarboardDisabledException
 
         if max_age and parse_timestring(max_age) == 0:
@@ -358,7 +358,7 @@ class StarBoard(commands.Cog):
     async def _video(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, description="Whether to enable or disable videos", required=True)):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.STARBOARD):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
             raise StarboardDisabledException
         
         await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "video", int(enable))
@@ -382,7 +382,7 @@ class StarBoard(commands.Cog):
                 return
             
             # check if starboad is disabled
-            if await flags.get_guild_flag_by_id(redis=self.redis, guild_id=payload.guild_id, flag_offset=flags.STARBOARD):
+            if await flags.get_guild_flag_by_id(redis=self.redis, guild_id=payload.guild_id, flag_offset=flags.FlagEnum.STARBOARD.value):
                 return
 
             channel = await self.bot.fetch_channel(payload.channel_id)

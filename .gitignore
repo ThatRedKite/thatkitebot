@@ -20,4 +20,6 @@ test*.*
 .vscode
 src/pcb_mod/build
 as
+# python stuff
 __pycache__
+venv

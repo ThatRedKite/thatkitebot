@@ -73,13 +73,13 @@ class MusicCog(commands.Cog, name="Music"):
     music = discord.SlashCommandGroup("music", "Music commands")
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.MUSIC)
+        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.MUSIC.value)
 
     # static method for getting the right voice channel
     @staticmethod
     async def get_voice_channel(ctx: discord.ApplicationContext, check_for_bot: bool = False):
         # check if voice commands are even enabled in the guild
-        a = await RedisFlags.get_guild_flag(ctx.bot.redis, ctx.guild, RedisFlags.MUSIC)
+        a = await RedisFlags.get_guild_flag(ctx.bot.redis, ctx.guild, RedisFlags.FlagEnum.MUSIC.value)
         if not a:
             await ctx.interaction.followup.send("Music commands are disabled in this server.", ephemeral=True)
             return None, None

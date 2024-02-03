@@ -163,9 +163,9 @@ class ListenerCog(commands.Cog):
         if not await self.redis.exists(f"flags:{guild.id}"):
             # initialize standard settings when joining a Guild if they don't exist
             pipe = self.redis.pipeline()
-            await flags.set_guild_flag(pipe, guild.id, flags.IMAGE, True)
-            await flags.set_guild_flag(pipe, guild.id, flags.CACHING, True)
-            await flags.set_guild_flag(pipe, guild.id, flags.UWU, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.IMAGE.value, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.CACHING.value, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.UWU.value, True)
 
         # try to send a message informing about settings
         try:

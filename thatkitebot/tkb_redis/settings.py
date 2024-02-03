@@ -1,5 +1,5 @@
 #  Copyright (c) 2019-2023 ThatRedKite and contributors
-
+import enum
 from typing import Union
 
 
@@ -8,17 +8,19 @@ from redis import asyncio as aioredis
 
 
 class RedisFlags:
-    NSFW = 0
-    IMAGE = 1
-    REPOST = 2
-    WELCOME = 3
-    UWU = 4
-    DETRACK = 5
-    MUSIC = 6
-    CACHING = 7
-    WELCOME_MESSAGE = 8
-    MODERATION = 9
-    STARBOARD = 10
+    class FlagEnum(enum.Enum):
+        NSFW = 0
+        IMAGE = 1
+        REPOST = 2
+        WELCOME = 3
+        UWU = 4
+        DETRACK = 5
+        MUSIC = 6
+        CACHING = 7
+        WELCOME_MESSAGE = 8
+        MODERATION = 9
+        STARBOARD = 10
+
 
     @staticmethod
     async def set_guild_flag(redis: aioredis.Redis, gid, flag_offset: int, value: bool) -> None:

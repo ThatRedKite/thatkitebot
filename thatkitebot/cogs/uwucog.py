@@ -49,7 +49,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         self.redis: aioredis.Redis = bot.redis
 
     async def _uwu_enabled(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.UWU)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU.value)
 
     async def _listener_checks(self, message):
         if message.author.bot:

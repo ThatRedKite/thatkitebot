@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 from thatkitebot.base.util import PermissonChecks as pc
-
+from thatkitebot.tkb_redis.settings import RedisFlags
 
 class SudoCommands(commands.Cog, name="Bot Owner Commands"):
     """
@@ -65,6 +65,15 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
     async def _sync_commands(self, ctx):
         print("Synced all Commands!")
         await self.bot.sync_commands(method="bulk", force=True)
+
+
+    @commands.is_owner()
+    @commands.command(name="test", hidden=True)
+    async def _test(self, ctx):
+        # raise NotImplemented
+
+        print(RedisFlags.FlagEnum.IMAGE.value)
+
 
 
 def setup(bot):
