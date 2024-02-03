@@ -28,18 +28,12 @@ class SettingsCogV2(commands.Cog, name="Settings"):
     async def gen_settings_embed(self, ctx: discord.ApplicationContext, name: str, enable: bool, flag_id: int, further_config=False) -> discord.Embed:
         # set up the logging by getting the correct logger for the guild
         logger = set_up_guild_logger(ctx.guild.id)
-        try:
-            # make sure that the flag_id is valid
-            assert flag_id in [flag.value for flag in RedisFlags.FlagEnum]
 
-            # set the corresponding value
-            await RedisFlags.set_guild_flag(self.redis, ctx.guild.id, flag_id, value=enable)
+        # make sure that the flag_id is valid
+        assert flag_id in [flag.value for flag in RedisFlags.FlagEnum]
 
-            # make sure nothing has gone terribly wrong while writing the flag
-            assert await RedisFlags.get_guild_flag(self.redis , ctx.guild.id, flag_id) == enable
-        
-        except AssertionError:
-            logger.critical("SETTINGS: Something has gone terribly wrong while trying to write a setting!")
+        # set the corresponding value
+        await RedisFlags.set_guild_flag(self.redis, ctx.guild, flag_id, value=enable)
 
         # turn the bool into a string
         status = "Enabled" if enable else "Disabled"
@@ -64,7 +58,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE.value))
 
 
     @settings.command(name="nsfw")
@@ -75,18 +69,18 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW.value))
 
 
     @settings.command(name="repost")
-    async def enable_repost(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_repost(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle Repost Commands. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST.value, further_config=True))
 
 
     @settings.command(name="uwu")
@@ -97,18 +91,17 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU.value, further_config=True))
 
 
     @settings.command(name="detrack")
-    async def enable_detrack(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_detrack(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
         """
         Toggle de-tracking commands. Can be used by everyone with "manage_guild" permissions.
         """
-        # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK.value))
 
 
     @settings.command(name="welcome_leaderboard")
@@ -119,7 +112,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME.value))
 
 
     @settings.command(name="welcome_message")
@@ -130,7 +123,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE.value))
 
 
     @settings.command(name="moderation")
@@ -141,7 +134,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.followup.send(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION.value, further_config=True))
 
 
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")

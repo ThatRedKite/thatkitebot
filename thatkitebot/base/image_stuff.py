@@ -3,8 +3,9 @@
 import functools
 import re
 import asyncio
-from typing import Union
+from typing import Union, Optional
 from io import BytesIO
+from concurrent.futures import ProcessPoolExecutor
 
 import discord
 import imagehash
@@ -18,12 +19,38 @@ from wand.font import Font
 
 from .exceptions import *
 
-def hasher(data):
+def _hasher(data: bytes) -> Optional[str]:
     """
     Returns a hash of the image data.
     """
-    pil_image = PILImage.open(BytesIO(data))
-    return str(imagehash.phash(pil_image, hash_size=16))
+    # load the raw bytes into a BytesIO buffer so that PIL can handle it better
+    with BytesIO(data) as data_buffer:
+        try:
+            with PILImage.open(data_buffer) as pil_image:
+                hash_string = str(imagehash.phash(pil_image, hash_size=16))
+            
+        except Exception:
+            # return None if the image cannot be opened correctly for whatever reason
+            return None
+        
+    return hash_string
+    
+
+# async function to run the hashing in its own process without blocking
+async def hasher(loop: asyncio.AbstractEventLoop, data: bytes, pool: Optional[ProcessPoolExecutor] = None) -> Optional[str]:
+    # placeholder variable for the hash string
+    hash_string: Optional[str] = None
+
+    try:
+        # try to get the hash string from the executor
+        hash_string = await asyncio.wait_for(loop.run_in_executor(pool, functools.partial(_hasher, data)))
+
+    except asyncio.TimeoutError:
+        return None
+    
+    return hash_string
+    
+
 
 async def download_image(session: aiohttp.ClientSession, url: str):
     """
@@ -184,11 +211,15 @@ def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: 
         
     return
 
-
 class ImageFunction:
-    def __init__(self, buffer: BytesIO, fn: int, loop: asyncio.AbstractEventLoop):
+    def __init__(self, buffer: BytesIO, fn: int, loop: asyncio.AbstractEventLoop, process_pool: Optional[ProcessPoolExecutor]):
         buffer.seek(0)
         self.loop = loop
+        self.process_pool = process_pool
+
+
+        
+
         self.image = WandImage(file=buffer)
 
         if self.image.height >= 6000 or self.image.height >= 6000:
@@ -198,17 +229,18 @@ class ImageFunction:
         self.fn = fn
 
     async def image_worker(self, func, name="_", gif: bool = False, does_return=False):
+
         if not does_return:
             # for some reason it never runs the function if you use an actual executor
             # so this is a temporary workaround
             try:
-                await asyncio.wait_for(self.loop.run_in_executor(executor=None, func=func), timeout=30.0)
+                await asyncio.wait_for(self.loop.run_in_executor(executor=self.process_pool, func=func), timeout=30.0)
             except asyncio.TimeoutError:
                 self.image.destroy()
                 return
         else:
             try:
-                b2, fn = await asyncio.wait_for(self.loop.run_in_executor(None, func), timeout=30.0)
+                b2, fn = await asyncio.wait_for(self.loop.run_in_executor(self.process_pool, func), timeout=30.0)
             except asyncio.TimeoutError:
                 self.image.destroy()
                 return
@@ -351,8 +383,12 @@ class ImageFunction:
         await self.image_worker(self._deepfry)
 
     def _deepfry(self):
-        self.image.modulate(saturation=600.00)
-        self.image.noise('gaussian', attenuate=0.1)
+        self.image.sharpen(30,16)
+        self.image.colorize(color="#f9fc12", alpha="rgb(10%, 10%, 10%)")
+        self.image.modulate(saturation=500.00)
+        self.image.noise('gaussian', attenuate=0.076)
+        self.image.sharpen(7,16)
+        
 
     async def rotate(self, angle: int = 90):
         await self.image_worker(functools.partial(self._rotate, angle))

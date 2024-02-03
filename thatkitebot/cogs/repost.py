@@ -5,6 +5,8 @@ import typing
 import re
 import logging
 
+from concurrent.futures import ProcessPoolExecutor
+
 import imagehash
 import discord
 
@@ -40,6 +42,9 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.repost_database_lock = asyncio.Lock()
         self.logger: logging.Logger = bot.logger
 
+        self.loop = self.bot.loop
+        self.hasher_pool = bot.process_pool
+
     async def get_tenor_image(self, url, token):
         """
         Downloads a tenor gif and returns the hash of the image.
@@ -48,6 +53,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         tenor = tenor_pattern.findall(url)
         if not tenor:
             return
+        
         headers = {"User-Agent": "ThatKiteBot/4.0", "content-type": "application/json"}
         payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
 
@@ -56,7 +62,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
 
         async with self.aiohttp.get(url) as r2:
-            return hasher(await r2.read())
+             return await hasher(self.loop, await r2.read(), self.hasher_pool)
 
     async def channel_is_enabled(self, channel):
         """
@@ -65,7 +71,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         return await self.settings_redis.sismember("REPOST_CHANNELS", channel.id)
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.REPOST)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.REPOST.value)
 
     # this is kinda dumb but i guess it works :)
     async def hash_from_url(self, urls: list[str]):
@@ -82,7 +88,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             # if the file was uploaded directly, get the image data from the attachment directly
             for attachment in message.attachments:
                 try:
-                    yield hasher(await attachment.read())
+                    yield await hasher(self.loop, await attachment.read(), self.hasher_pool)
                 except:
                     yield None
 
@@ -95,7 +101,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                     case "image":
                         async with self.aiohttp.get(embed.url) as r:  # download the image
                             try:
-                                yield hasher(await r.read())  # generate the hash
+                                yield await hasher(self.loop, await r.read(), self.hasher_pool)  # generate the hash
                             except:
                                 yield None
                     case "gifv":

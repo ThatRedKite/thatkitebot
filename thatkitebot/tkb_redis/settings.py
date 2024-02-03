@@ -23,7 +23,7 @@ class RedisFlags:
 
 
     @staticmethod
-    async def set_guild_flag(redis: aioredis.Redis, gid, flag_offset: int, value: bool) -> None:
+    async def set_guild_flag(redis: aioredis.Redis, guild: Union[Guild, None], flag_offset: int, value: bool) -> None:
         """
         Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
         0: NSFW (nsfwcog.py) - NSFW commands
@@ -37,7 +37,7 @@ class RedisFlags:
         9: MODERATION
         10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
-        key = f"flags:{gid}"
+        key = f"flags:{guild.id}"
         await redis.setbit(key, flag_offset, int(value))
 
     @staticmethod

@@ -11,6 +11,8 @@ from pathlib import Path
 import aiohttp
 import psutil
 import discord
+
+from concurrent.futures import ProcessPoolExecutor
 from redis import asyncio as aioredis
 from discord.ext import bridge
 from dulwich.repo import Repo
@@ -19,7 +21,7 @@ from .extensions import ENABLED_EXTENSIONS
 from .tkb_redis.cache import RedisCache
 
 __name__ = "ThatKiteBot"
-__version__ = "4.0.2a"
+__version__ = "4.0.3"
 __author__ = "ThatRedKite and contributors"
 
 tempdir = "/tmp/tkb/"
@@ -86,7 +88,6 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
         print("init_settings.json is not valid json. Please fix it.")
         exit(1)
 
-
 # define the bot class
 class ThatKiteBot(bridge.Bot, ABC):
     def __init__(self, command_prefix, dir_name, tt, help_command=None, description=None, **options):
@@ -117,6 +118,8 @@ class ThatKiteBot(bridge.Bot, ABC):
         self.aiohttp_session = None  # give the aiohttp session an initial value
         self.loop.run_until_complete(self.aiohttp_start())
         self.logger = logger
+        self.process_pool = None
+        
         
         # redis databases:
 
@@ -134,8 +137,8 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
             self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
-            self.redis_starboard = aioredis.Redis(host="redis", db=5, decode_responses=True)
-            
+            self.redis_starboard = aioredis.Redis(host="redos", db=5, decode_responses=True)
+
             self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
             self.r_cache = RedisCache(self.redis_cache, self, auto_exec=False)

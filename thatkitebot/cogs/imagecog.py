@@ -23,12 +23,15 @@ class ImageStuff(commands.Cog, name="image commands"):
     """
     def __init__(self, bot):
         self.bot = bot
-        self.sem = asyncio.Semaphore(12)
-        self.processpool = ProcessPoolExecutor(max_workers=4)
+        self.tt = bot.tenor_token
         self.datadir = bot.data_dir  # data directory
-        self.loop = asyncio.get_event_loop()
-        self.session = self.bot.aiohttp_session
-        self.tt = self.bot.tenor_token
+
+        self.session = bot.aiohttp_session
+
+        self.loop = bot.loop
+        self.sem = asyncio.Semaphore(12)
+        self.process_pool = bot.process_pool
+
         self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
     async def cog_command_error(self, ctx, error):
@@ -54,7 +57,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         print(RedisFlags.FlagEnum.IMAGE.value)
         buf = await image_stuff.get_last_image(ctx, self.session, return_buffer=True)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 0, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.magik()
             embed, file = await image.make_blob_close(name="magik")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -69,7 +72,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """
         buf = await image_stuff.get_last_image(ctx, self.session, return_buffer=True)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 1, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 1, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.swirlmagik(angle)
             embed, file = await image.make_blob_close(name="smagik")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -81,7 +84,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """'Deepfries' an image by oversaturating it and applying noise"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 2, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 2, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.deepfry()
             embed, file = await image.make_blob_close(name="deepfry")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -93,7 +96,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Horizontally stretch an image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 3, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 3, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.wide()
             embed, file = await image.make_blob_close(name="wide")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -105,7 +108,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Remove the alpha channel and replace it with white"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 4, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 4, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.opacify()
             embed, file = await image.make_blob_close(name="opacify")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -117,7 +120,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Explodes an image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 5, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 5, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.explode(factor)
             embed, file = await image.make_blob_close(name="explode")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -129,7 +132,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Implodes an image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 6, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 6, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.implode(factor)
             embed, file = await image.make_blob_close(name="implode")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -141,7 +144,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Invert an image's colors"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 7, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 7, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.invert()
             embed, file = await image.make_blob_close(name="invert")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -153,7 +156,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Reduces an image's total colors"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 8, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 8, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.reduce()
             embed, file = await image.make_blob_close(name="reduce")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -165,7 +168,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Swirl an image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 9, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 9, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.swirl(angle)
             embed, file = await image.make_blob_close(name="swirl")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -181,7 +184,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 10, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 10, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.caption(text=text, path="/app/data/static-resources/")
             embed, file = await image.make_blob_close(name="caption")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -193,7 +196,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Rotate an image clockwise 90 degrees by default, you can specify the degree value as an argument"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 11, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 11, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.rotate(angle)
             embed, file = await image.make_blob_close(name="rotate")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -205,7 +208,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Make an image black and white"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 12, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 12, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.black_white()
             embed, file = await image.make_blob_close(name="blackwhite")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -217,7 +220,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Add a sepia filter to an image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 13, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 13, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.sepia()
             embed, file = await image.make_blob_close(name="sepia")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -229,7 +232,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Add a polaroid filter to an image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 14, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 14, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.polaroid()
             embed, file = await image.make_blob_close(name="polaroid")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -241,7 +244,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Add a charcoal filter to an image, making it look like a charcoal drawing"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 15, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 15, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.charcoal(radius, sigma)
             embed, file = await image.make_blob_close(name="charcoal")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -253,7 +256,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Tries to emulate old school 3d effect"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 16, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 16, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.make_vignette(sigma, x , y)
             embed, file = await image.make_blob_close(name="vignette")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -265,7 +268,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Create a speech bubble like those memes"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 17, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 17, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.bubble()
             embed, file = await image.make_blob_close(name="bubble", gif=True)
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -277,7 +280,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Resizes an image to a set factor"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 18, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 18, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.scale(scale)
             embed, file = await image.make_blob_close(name="resize")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -289,7 +292,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Applies blur"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 19, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 19, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.blur(radius, sigma)
             embed, file = await image.make_blob_close(name="blur")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -301,7 +304,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Applies blur, but tries to utilize edge detect for a better result"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 20, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 20, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.adaptive_blur(radius, sigma)
             embed, file = await image.make_blob_close(name="ablur")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -313,7 +316,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Applies motion blur"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 21, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 21, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.motion_blur(radius, sigma, angle)
             embed, file = await image.make_blob_close(name="motion_blur")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -325,7 +328,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Returns a black and white image with edges in white and the rest in black"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 22, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 22, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.edge(radius)
             embed, file = await image.make_blob_close(name="edge")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -337,7 +340,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Creates an embossed image"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 23, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 23, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.emboss(radius, sigma)
             embed, file = await image.make_blob_close(name="emboss")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -349,7 +352,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Attempts to smooth the image while preserving edges"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 24, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 24, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.kuwahara(radius, sigma)
             embed, file = await image.make_blob_close(name="kuwahara")
             await ctx.reply(embed=embed, file=file, mention_author=False)
@@ -361,7 +364,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Attempts to smooth the image while preserving edges"""
         buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 25, loop=self.loop)  # initialize the image class
+            image = ImageFunction(buf, 25, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.shade(gray, azimuth, elevation)
             embed, file = await image.make_blob_close(name="shade")
             await ctx.reply(embed=embed, file=file, mention_author=False)
