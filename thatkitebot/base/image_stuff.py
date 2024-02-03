@@ -25,14 +25,12 @@ def hasher(data):
     pil_image = PILImage.open(BytesIO(data))
     return str(imagehash.phash(pil_image, hash_size=16))
 
-
 async def download_image(session: aiohttp.ClientSession, url: str):
     """
     Downloads an image from a given URL. Deprecated.
     """
     async with session.get(url) as r:
         return await r.read()
-
 
 async def get_last_image(ctx, aiohttp_session: aiohttp.ClientSession, return_buffer=False) -> Union[
     BytesIO, bytes, None]:
@@ -71,7 +69,6 @@ async def get_last_image(ctx, aiohttp_session: aiohttp.ClientSession, return_buf
         else:
             return await resp.read()
 
-
 async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[
     tuple[str, str], tuple[None, None]]:
     # check if the message has an attachment or embed of the type "image"
@@ -97,7 +94,6 @@ async def get_image_url(message: discord.Message, video: bool = False, gifv: boo
     else:
         # if it doesn't, return None
         return None, None
-
 
 async def get_image_urls(message: discord.Message, video: bool = False, gifv: bool = False) -> list[str]:
     # check if the message has an attachment or embed of the type "image"
