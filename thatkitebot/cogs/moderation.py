@@ -319,6 +319,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         # return if that somehow didn't exist
         if not check_settings:
             return
+        
         # check if message is too old
         if check_message_age(payload.message_id, int(check_settings["age"])):
             # message is too old, let's decide what to do with it
@@ -342,12 +343,12 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
                     # get the message from the API
                     try:
                         await message.delete(reason="Automatic removal of old messages suddenly edited.")
-                        logger = set_up_guild_logger(ctx.guild.id)
+                        logger = set_up_guild_logger(payload.guild_id)
                         logger.info(f"MODERATION: Message {message.id} by {message.author} deleted by edit-checker.")
                         return
                     
                     except Exception:
-                        logger = set_up_guild_logger(ctx.guild.id)
+                        logger = set_up_guild_logger(payload.guild_id)
                         logger.warn(f"MODERATION: Edit-checker failed to delete {message.id} by {message.author}")
                         return
 
