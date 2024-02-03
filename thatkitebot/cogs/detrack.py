@@ -13,6 +13,7 @@ import discord_emoji as de
 import thatkitebot
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis.cache import RedisCache
+from thatkitebot.base.util import errormsg
 
 # Automatically removed tracking content from links
 # and de-ampifies links (not yet implemented) when the setting is turned on
@@ -51,6 +52,10 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
                 }
             self.reassembled_regexes.update(new_values)
 
+    @staticmethod
+    def get_detrack_aliases():
+        return ["detrack", "det"]   # this is here to make sure we don't detrack our own messages (the first alias is the command name)
+
     def construct_re(self, data, return_pattern = True):
         # replace parts that are in the LUT
         for key in self.LUT:
@@ -82,17 +87,42 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             url = url._replace(fragment=fragment_pattern.sub("", url.fragment))
         return url
 
+    async def raw_detrack_link(self, input_string: str):
+        """
+        Detracks the link provided. Returns None if the link is not valid.
+        """
+        url = urlparse(input_string.strip())
+        if url.scheme not in ["http", "https"]:
+            return None
+
+        # try to match url.netloc to a domain regex
+        for domain in self.domains:
+            if domain == "global": # skip the global domain for now
+                continue
+            if self.reassembled_regexes[domain]["netloc"].match(url.netloc):
+                url = self._remove_tracking(url, domain)
+                return url.geturl().strip('?&;#')
+
+        url = self._remove_tracking(url, "global")
+        # return the untracked url
+        return url.geturl().strip('?&;#')
+
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-
         # Check if the user is a bot 
         if message.author.bot:
             return
 
+        # check if the message starts with our detrack command
+        for alias in self.get_detrack_aliases():
+            if message.content.startswith(f"{self.bot.prefix}{alias}"):
+                return        
+
         # do not detrack in DMs
-        elif isinstance(message.channel, discord.DMChannel):
+        if isinstance(message.channel, discord.DMChannel):
             return
 
         # find all urls in the message
@@ -108,27 +138,23 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         detracked_strs = []
         for p in urls:
-            url = urlparse(p.strip())
-            if url.scheme not in ["http", "https"]:
-                return
-                # check if we match a domain
-            if (domain := url.netloc.split(".")[-2]) in self.domains.keys():
-                url = self._remove_tracking(url, domain)
-
-            url = self._remove_tracking(url, "global")
+            p = p.strip()
+            url = await self.raw_detrack_link(p)
+            if url is None:
+                continue
             # return the untracked url
-            if len(url.geturl()) + 5 < len(p):
-                detracked_strs.append(url.geturl().strip('?&;#'))
+            if len(url) + 5 < len(p):
+                detracked_strs.append(url)
 
         # return the detracted message
         if detracked_strs:
-            embed = discord.Embed(title="I've cleaned tracking links contained your message!", description="You can find the clean versions below. You can copy them and edit your original message. The original author can react with '🗑️' to delete this.")
+            embed = discord.Embed(title="I've cleaned tracking links contained in your message!", description="You can find the clean versions below. You can copy them and edit your original message. The original author can react with '🗑️' to delete this.")
             clean_links = ""
             for i in detracked_strs:
                 clean_links += f"```{i}```\n"
                 
             embed.add_field(name="​", value=clean_links)
-            embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking on the right side of the link")
+            embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking the icon to the right of the link.")
             my_mgs = await message.reply(embed=embed, silent=True)
             await my_mgs.add_reaction("🗑️")
 
@@ -164,6 +190,46 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             # delete the message
             await message.delete()
 
+    @commands.command(aliases=get_detrack_aliases()[1:])
+    async def detrack(self, ctx: commands.Context, *, args=""):
+        """
+        Peroforms detracking on the string provided. Automatically detracks all the links in the string.
+        """
+        # we need to traverse the message to find all the links, detrack them, and re assemble the message
+        message = args
+
+        if len(message) == 0:
+            # check if this is a reply
+            if ctx.message.reference is not None:
+                message = (await ctx.fetch_message(ctx.message.reference.message_id)).content
+            else:
+                await errormsg(ctx, "No message provided.")
+                return
+
+        # split the message along the urls
+        url_pattern = r'https?://\S+'
+        msg_parts = re.split(r'('+url_pattern+')', message)
+
+        if len(msg_parts) == 1:
+            await errormsg(ctx, "No valid links found in the message.")
+            return
+        
+        # detrack all the urls
+        for i, part in enumerate(msg_parts):
+                if re.match(url_pattern, part):
+                    # Detrack the url
+                    msg_parts[i] = await self.raw_detrack_link(part)
+        
+        # reassemble the message
+        new_msg = "".join(msg_parts)
+
+        # add ``` around the message if it is not a code block
+        if not (args.startswith("```") and args.endswith("```")):
+            new_msg = f"```{new_msg}```"
+
+        await ctx.send(new_msg)
+        return
+        
 
 def setup(bot):
     bot.add_cog(DetrackCog(bot))
