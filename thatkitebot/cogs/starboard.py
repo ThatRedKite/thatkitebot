@@ -64,7 +64,7 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
     """
     Check if the message has already been posted to the starboard
     """
-    async for starmsg in starboard_channel.history(limit=None):
+    async for starmsg in starboard_channel.history(limit=300):
         # ignore messages without embeds
         if not starmsg.embeds:
             continue
