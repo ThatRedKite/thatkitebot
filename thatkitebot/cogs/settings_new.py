@@ -39,7 +39,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         status = "Enabled" if enable else "Disabled"
 
         # log it to the server log
-        logger.info(f"{RedisFlags.FlagEnum(flag_id)}: User {ctx.author.name} {status} {name} in {ctx.guild.name}")
+        logger.info(f"{RedisFlags.FlagEnum(flag_id).name}: User {ctx.author.name} {status} {name} in {ctx.guild.name}")
 
         embed = discord.Embed(title="Success!", description=f"**{status}** {name}", color=ec.lime_green)
 
