@@ -93,8 +93,6 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
     return None
 
     
-
-
 class StarBoard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
