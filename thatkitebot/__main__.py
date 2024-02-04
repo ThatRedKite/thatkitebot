@@ -21,7 +21,7 @@ from .extensions import ENABLED_EXTENSIONS
 from .tkb_redis.cache import RedisCache
 
 __name__ = "ThatKiteBot"
-__version__ = "4.0.4"
+__version__ = "4.0.4 version not found"
 __author__ = "ThatRedKite and contributors"
 
 tempdir = "/tmp/tkb/"

@@ -148,14 +148,22 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         # return the detracted message
         if detracked_strs:
-            embed = discord.Embed(title="I've cleaned tracking links contained in your message!", description="You can find the clean versions below. You can copy them and edit your original message. The original author can react with '🗑️' to delete this.")
+            embed = discord.Embed(
+                title="I've cleaned tracking links contained in your message!",
+                description=
+                    " You can find the clean versions below."
+                    " You can copy them and edit your original message."
+                    " The original author can react with '🗑️' to delete this"
+                    "\nThis ~~tape~~ message will self-destruct in 30 seconds."
+            )
+                  
             clean_links = ""
             for i in detracked_strs:
                 clean_links += f"```{i}```\n"
                 
             embed.add_field(name="​", value=clean_links)
             embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking the icon to the right of the link.")
-            my_mgs = await message.reply(embed=embed, silent=True)
+            my_mgs = await message.reply(embed=embed, silent=True, delete_after=30.0)
             await my_mgs.add_reaction("🗑️")
 
     @commands.Cog.listener()
