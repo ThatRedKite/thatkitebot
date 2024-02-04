@@ -53,7 +53,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
-        it will use messages from every channel instead)
+        it will use the channel the command was issued in.)
         """
         if not user:
             user = ctx.message.author  # default to message author
@@ -74,6 +74,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                         except CacheInvalidMessageException:
                             pass
                         message_list.append(str(message.clean_content))  # add the message to the message_list
+
             except discord.Forbidden:
                 await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
                 return
@@ -278,8 +279,11 @@ class FunStuff(commands.Cog, name="fun commands"):
         if not isinstance(exception, (commands.CommandError, commands.CommandInvokeError)):
             return
 
-        if isinstance(exception.original, NotEnoughMessagesException):
-            await ctx.send("Failed to generate a markov output. Please try another user or channel.")
+        try:
+            if isinstance(exception.original, NotEnoughMessagesException):
+                await ctx.send("Failed to generate a markov output. Please try another user or channel.")
+        except:
+            return
 
 def setup(bot):
     bot.add_cog(FunStuff(bot))
