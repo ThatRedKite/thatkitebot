@@ -6,11 +6,12 @@ import textwrap
 from typing import Union
 
 import discord
+
 from unidecode import unidecode
 from uwuipy import uwuipy
+from discord import abc
 from discord.ext import commands
 from redis import asyncio as aioredis
-import discord_emoji
 
 import thatkitebot
 from thatkitebot.base.url import get_avatar_url
@@ -20,11 +21,13 @@ from thatkitebot.tkb_redis.settings import RedisFlags
 
 
 
-async def uwuify(message: str, id: int):
-    uwu = uwuipy(id)
+async def uwuify(message: str, id: int, intensity: float = 1.0, enable_nsfw = False):
+    # initialize the uwuipy class, multiplying the default intensites by :intensity:
+    uwu = uwuipy(id, *map(lambda m: (m * intensity), (0.1, 0.05, 0.0075)),nsfw_actions=enable_nsfw)
     message = uwu.uwuify(message)
-    return message
 
+    # return without that awfully long message 
+    return message.replace("***breaks into your house and aliases neofetch to rm -rf --no-preserve-root /***", "")
 
 async def get_uwu_webhook(webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
     webhooks = await channel.webhooks()
@@ -50,6 +53,40 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
     async def _uwu_enabled(self, ctx):
         return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU.value)
+    
+    async def _change_uwu_status(self, ctx:discord.ApplicationContext, to_change: Union[abc.GuildChannel, discord.User, discord.Member], intensity: float) -> bool:
+        logger = set_up_guild_logger(ctx.guild.id)
+
+        # make sure none of the IDs are 0
+        assert to_change.id != 0 and ctx.guild.id != 0
+
+        if isinstance(to_change, abc.GuildChannel):
+            key = f"uwu_channels:{ctx.guild.id}"
+            symbol = "#"
+            int_key = f"c:{to_change.id}"
+
+        elif isinstance(to_change, abc.User):
+            key = f"uwu_users:{ctx.guild.id}"
+            symbol = "@"
+            int_key = f"u:{to_change.id}"
+
+        else:
+            raise ValueError
+        
+        # try to remove the user from the list and see if it was successful
+        if await self.redis.srem(key, to_change.id) == 0:
+            # if unsuccessful, the user was not in the list, so we add them
+            await self.redis.sadd(key, to_change.id)
+            # set the intensity
+            await self.redis.hset(f"uwui:{ctx.guild.id}", int_key, intensity)
+            logger.info(f"UWU: {ctx.author.name} uwuified {symbol}{to_change.name} in '{ctx.guild.name}'")
+            return False
+        
+        else:
+            # if successful, do nothing but resetting the intensity and logging, we already removed the thing from the list
+            await self.redis.hdel(f"uwui:{ctx.guild.id}", int_key)
+            logger.info(f"UWU: {ctx.author.name} de-uwuified {symbol}{to_change.name} in '{ctx.guild.name}'")
+            return True
 
     async def _listener_checks(self, message):
         if message.author.bot:
@@ -77,80 +114,74 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         checks=[pc.mods_can_change_settings, lambda ctx: ctx.guild is not None]
     )
 
-    @uwu.command(
-        name="channel",
-        description="Make a channel automatically UwU every message",
-        checks=[pc.mods_can_change_settings]
-    )
-    async def _add_channel(self, ctx: discord.ApplicationContext, channel: discord.TextChannel):
-        """
-        uwuifies an entire channel by deleting the original messages
-        and replacing them with bot clones.
-
-        Usage:
-        `+uwu_channel #channel` - toggles the setting for a channel
-
-        Only administrators and moderators can use this command.
-        """
-        await ctx.defer()
-        logger = set_up_guild_logger(ctx.guild.id)
-
-        key = f"uwu_channels:{ctx.guild.id}"
-
+    @uwu.command(name="channel",description="Make a channel automatically UwU every message",checks=[pc.mods_can_change_settings])
+    async def _add_channel(
+        self,
+        ctx: discord.ApplicationContext,
+        channel: discord.Option(abc.GuildChannel, description="The Channel to uwuify"),
+        intensity: discord.Option(
+            float,
+            description="The intensity of the uwuification, default is 1.0",
+            default=1.0,
+            required=False,
+            min_value=0.1,
+            max_value=10.0,
+            ),
+        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)
+    ):
         if not await self._uwu_enabled(ctx):
-            return await ctx.followup.send("This command is disabled on this server.")
+            return ctx.interaction.response.send_message("This command is disabled on this server.")
 
-        if not await self.redis.sismember(key, str(channel.id)):
-            await self.redis.sadd(key, channel.id)
-            await ctx.followup.send(f"{channel.mention} is now an UwU channel.")
-            logger.info(f"UWU: {ctx.author.name} uwuified #{channel.name} in {ctx.guild.name}")
-
+        if not await self._change_uwu_status(ctx, channel, intensity):
+            await ctx.interaction.response.send_message(f"{channel.mention} has been uwuified. Run for your lives!", ephemeral=silent)
         else:
-            try:
-                await self.redis.srem(key, channel.id)
-            except aioredis.ResponseError:
-                await ctx.followup.send(f"{channel.mention} is not an UwU channel.")
-                return
+            await ctx.interaction.response.send_message(f"{channel.mention} has been liberated from uwuification. Thank goodneess!", ephemeral=silent)
 
-            await ctx.respond(f"{channel.mention} is no longer an UwU channel.")
-            logger.info(f"UWU: {ctx.author.name} de-uwuified #{channel.name} in {ctx.guild.name}")
 
     @uwu.command(name="user", description="Turn every message from this user into unintelligible uwu gibberish.")
     async def add_user(
             self,
             ctx: discord.ApplicationContext,
-            user: discord.Option(discord.User, description="The user to uwuify.", required=True)
+            user: discord.Option(discord.User, description="The user to uwuify.", required=True),
+            intensity: discord.Option(
+                float,
+                description="The intensity of the uwuification, default is 1.0",
+                default=1.0,
+                required=False,
+                min_value=0.1,
+                max_value=10.0,
+            ),
+        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)
     ):
-        """
-        uwuifies all messages sent by a specific person by deleting
-        their original messages and replacing them with a bot clone.
-
-        Usage:
-        `+uwu_user @user True` - toggle the setting for a user
-
-        Only admins and moderators can use this command.
-        """
-        await ctx.defer()
-        logger = set_up_guild_logger(ctx.guild.id)
-        
         if not await self._uwu_enabled(ctx):
-            return await ctx.followup.send("This command is disabled on this server.")
+            return await ctx.interaction.response.send_message("This command is **disabled** on this server.")
 
-        key = f"uwu_users:{ctx.guild.id}"
-
-        if not await self.redis.sismember(key, user.id):
-            await self.redis.sadd(key, user.id)
-            await ctx.followup.send(f"{user.name} is now fucked.")
-            logger.info(f"UWU: {ctx.author.name} uwuified #{user.name} in {ctx.guild.name}")
-
+        if not await self._change_uwu_status(ctx, user, intensity):
+            await ctx.interaction.response.send_message(f"{user.name} is now fucked. **Pick a god and pray**.", ephemeral=silent)
         else:
-            await self.redis.srem(key, user.id)
-            await ctx.followup.send(f"{user.name} is now unfucked.")
-            logger.info(f"UWU: {ctx.author.name} de-uwuified #{user.name} in {ctx.guild.name}")
+            await ctx.interaction.response.send_message(f"{user.name} is now unfucked.", ephemeral=silent)
 
-    #
-    #   --- main listener function ---
-    #
+    @uwu.command(name="intensity", description="Change the global uwu intensity.")
+    async def change_intensity(
+        self,
+        ctx: discord.ApplicationContext,
+        intensity: discord.Option(
+            float,
+            description="The intensity of the uwuification, default is 1.0",
+            default=1.0,
+            required=False,
+            min_value=0.1,
+            max_value=10.0,
+        ),
+    ):
+        logger = set_up_guild_logger(ctx.guild.id)
+
+        if not await self._uwu_enabled(ctx):
+            return await ctx.interaction.response.send_message("This command is **disabled** on this server.")
+        
+        await self.redis.hset("uwui", "g", intensity)
+        logger.info(f"UWU: {ctx.author.name} set global intensity to {intensity} in '{ctx.guild.name}'")
+        return await ctx.interaction.response.send_message(f"Set the global intensity to **{intensity}**")
 
     @commands.command(name="uwu_user")
     async def _uwu_user(self, ctx):
@@ -160,6 +191,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     async def _uwu_channel(self, ctx):
         await ctx.send("This command is deprecated, please use the slash command version")
 
+
+    #
+    #   --- main listener function ---
+    #
+    
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
@@ -209,7 +245,19 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 msg = re.sub(links, r"<\1>", msg)
 
             msg_small = textwrap.wrap(msg, msg_len)
-            msg = await uwuify(msg_small[0], message.id)
+
+            # - all intensities override each other, individual user being the strongest one -
+
+            # try to get the global intensity
+            intensity = await self.redis.hget(f"uwui:{message.guild.id}", "g") or 1.0
+
+            # try to get the channel's intensity
+            intensity = float(await self.redis.hget(f"uwui:{message.guild.id}", f"c:{message.channel.id}") or intensity)
+
+            # try to get the user's individual intensity
+            intensity = float(await self.redis.hget(f"uwui:{message.guild.id}", f"u:{message.author.id}") or intensity)
+
+            msg = await uwuify(msg_small[0], message.id, intensity, message.channel.nsfw)
             # split it up while maintaining whole words
 
             output = textwrap.wrap(msg, 2000)
