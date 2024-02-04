@@ -77,8 +77,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         if await self.redis.srem(key, to_change.id) == 0:
             # if unsuccessful, the user was not in the list, so we add them
             await self.redis.sadd(key, to_change.id)
-            # set the intensity
-            await self.redis.hset(f"uwui:{ctx.guild.id}", int_key, intensity)
+            if intensity != 1.0:
+                # set the intensity
+                await self.redis.hset(f"uwui:{ctx.guild.id}", int_key, intensity)
             logger.info(f"UWU: {ctx.author.name} uwuified {symbol}{to_change.name} in '{ctx.guild.name}'")
             return False
         
