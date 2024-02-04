@@ -137,7 +137,7 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
             self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
-            self.redis_starboard = aioredis.Redis(host="redos", db=5, decode_responses=True)
+            self.redis_starboard = aioredis.Redis(host="redis", db=5, decode_responses=True)
 
             self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
