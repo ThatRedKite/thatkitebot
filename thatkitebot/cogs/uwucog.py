@@ -23,11 +23,11 @@ from thatkitebot.tkb_redis.settings import RedisFlags
 
 async def uwuify(message: str, id: int, intensity: float = 1.0, enable_nsfw = False):
     # initialize the uwuipy class, multiplying the default intensites by :intensity:
-    uwu = uwuipy(id, *map(lambda m: (m * intensity), (0.1, 0.05, 0.0075)),nsfw_actions=enable_nsfw)
+    uwu = uwuipy(id, *map(lambda m: (m * intensity), (0.1, 0.05, 0.0075)), 1.0, nsfw_actions=enable_nsfw)
     message = uwu.uwuify(message)
 
-    # return without that awfully long message 
-    return message.replace("***breaks into your house and aliases neofetch to rm -rf --no-preserve-root /***", "")
+    return message
+
 
 async def get_uwu_webhook(webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
     webhooks = await channel.webhooks()
