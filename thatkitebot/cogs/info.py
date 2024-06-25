@@ -30,6 +30,7 @@ class Config:
         await self.update(guild, await self.get_default())
 
     async def get(self, guild):
+        """Get config json file"""
         try:
             async with aiofiles.open(os.path.join(self.data_dir, f"info/{guild.id}.json"), "r") as f:
                 return json.loads(await f.read())
@@ -44,12 +45,13 @@ class Config:
             await f.write(json.dumps(config))
 
     async def get_sections(self, ctx: discord.AutocompleteContext):
+        """Autocomplete function for section names."""
         config = await self.get(ctx.interaction.guild)
         return [f"{id + 1}. {section['title']}" for id, section in enumerate(config) if section['title'].lower().startswith(ctx.value.lower())]
 
 
 
-class Navigation(View):
+class NavigationView(View):
     def __init__(self, config_file = None, buttons: bool=False, dropdown: bool=True):
         super().__init__(timeout = None)
         if dropdown:
@@ -58,6 +60,7 @@ class Navigation(View):
             self.add_buttons()
 
     def add_buttons(self):
+        """Add navigation buttons."""
         prev = Button(emoji="⬅️", style=discord.ButtonStyle.gray, custom_id="prev")
         next = Button(emoji="➡️", style=discord.ButtonStyle.gray, custom_id="next")
 
@@ -68,6 +71,7 @@ class Navigation(View):
         self.add_item(next)
 
     def add_dropdown(self, config_file):
+        """Add dropdown with options."""
         options = []
         for id, section in enumerate(config_file):
             if discord_emoji.to_uni(section["emoji"]):
@@ -87,12 +91,15 @@ class Navigation(View):
         self.add_item(select)
 
     async def prev_button_callback(self, interaction: discord.Interaction):
+        """Callback function for the previous button."""
         await interaction.response.send_message("You selected prev button!")
 
     async def next_button_callback(self, interaction: discord.Interaction):
+        """Callback function for the next button."""
         await interaction.response.send_message("You selected next button!")
 
     async def dropdown_callback(self, interaction: discord.Interaction):
+        """Callback function for the dropdown selection."""
         await interaction.response.send_message("You selected a section!")
 
 
@@ -118,11 +125,13 @@ class InfoCog(commands.Cog):
             return
         
         config_file = await self.config.get(ctx.guild)
-        navigation = Navigation(config_file, buttons=False, dropdown=True)
+        navigation = NavigationView(config_file, buttons=False, dropdown=True)
 
         await ctx.respond("Choose a section!", view=navigation)
         
+    # TODO it's just temporary debug function    
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Error handler for the cog."""
         await ctx.send(f"{error}")
 
     @commands.Cog.listener(name="on_guild_join")
