@@ -5,10 +5,8 @@ Pillow
 Wand
 markovify
 psutil
-imageio
 numpy
 molmass
-si-prefix
 redis
 lxml
 scipy
@@ -17,8 +15,7 @@ matplotlib
 xkcd
 imagehash
 uwuipy
-py-cord[speed]==2.4.1
-cchardet
+py-cord[speed]==2.5.0
 brotlipy
 aiodns
 toml

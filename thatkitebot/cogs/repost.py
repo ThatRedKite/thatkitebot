@@ -20,8 +20,8 @@ from thatkitebot.tkb_redis import cache as ca
 from thatkitebot.base.util import PermissonChecks as pc
 
 
-tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
-otherpattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
+tenor_pattern = re.compile(r"(?i)^https://tenor.com\S+-(\d+)$")
+otherpattern = re.compile(r"(?i)(^https?://\S+.(png|webp|gif|jpe?g))")
 
 
 class RepostCog(commands.Cog, name="Repost Commands"):

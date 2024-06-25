@@ -7,18 +7,17 @@ from random import choice, choices
 from random import randrange
 import aiohttp
 import discord
-import imageio
 import xkcd
 from bs4 import BeautifulSoup
 from thatkitebot.base.util import EmbedColors as ec
 
-gif_pattern = re.compile(r"(^https?://\S+.(?i)(gif))")  # only gif images
+gif_pattern = re.compile(r"(?i)(^https?://\S+.(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-other_pattern = re.compile(r"(^https?://\S+.(?i)(png|webp|gif|jpe?g))")
+other_pattern = re.compile(r"(?i)(^https?://\S+.(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
-tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
+tenor_pattern = re.compile(r"(?i)^https://tenor.com\S+-(\d+)$")
 
-emoji_pattern = re.compile(r"<:\S+:\n+>")
+emoji_pattern = re.compile(r"(?i)<:\S+:\n+>")
 
 
 def get_avatar_url(user: discord.User):

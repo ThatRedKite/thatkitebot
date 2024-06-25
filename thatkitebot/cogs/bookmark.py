@@ -110,7 +110,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
         await ctx.send_modal(modal)
 
     @bm.command(name="clear", description="Deletes all bookmarks")
-    async def _clear(self, ctx: discord):
+    async def _clear(self, ctx: discord.ApplicationContext):
         modal = ConfirmDeleteModal(self.redis, title="Do you really want to delete all bookmarks?")
         await ctx.send_modal(modal)
 
