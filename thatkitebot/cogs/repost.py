@@ -15,13 +15,10 @@ from discord.ext import commands
 
 from thatkitebot.base.image_stuff import hasher, download_image, get_image_urls
 from thatkitebot.base.util import ids_from_link, set_up_guild_logger
+from thatkitebot.base.url import TENOR_PATTERN
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis import cache as ca
 from thatkitebot.base.util import PermissonChecks as pc
-
-
-tenor_pattern = re.compile(r"(?i)^https://tenor.com\S+-(\d+)$")
-otherpattern = re.compile(r"(?i)(^https?://\S+.(png|webp|gif|jpe?g))")
 
 
 class RepostCog(commands.Cog, name="Repost Commands"):
@@ -50,7 +47,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         Downloads a tenor gif and returns the hash of the image.
         """
         # define the header and the payload:
-        tenor = tenor_pattern.findall(url)
+        tenor = TENOR_PATTERN.findall(url)
         if not tenor:
             return
         

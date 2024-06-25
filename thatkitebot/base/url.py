@@ -11,13 +11,13 @@ import xkcd
 from bs4 import BeautifulSoup
 from thatkitebot.base.util import EmbedColors as ec
 
-gif_pattern = re.compile(r"(?i)(^https?://\S+.(gif))")  # only gif images
+GIF_PATTERN = re.compile(r"(?i)(^https?://\S+.(gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-other_pattern = re.compile(r"(?i)(^https?://\S+.(png|webp|gif|jpe?g))")
+OTHER_PATTERN = re.compile(r"(?i)(^https?://\S+.(png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
-tenor_pattern = re.compile(r"(?i)^https://tenor.com\S+-(\d+)$")
+TENOR_PATTERN = re.compile(r"(?i)^https://tenor.com\S+-(\d+)$")
 
-emoji_pattern = re.compile(r"(?i)<:\S+:\n+>")
+EMOJI_PATTERN = re.compile(r"(?i)<:\S+:\n+>")
 
 
 def get_avatar_url(user: discord.User):

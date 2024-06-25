@@ -14,7 +14,7 @@ from discord.ext.bridge import BridgeApplicationContext
 
 from redis import asyncio as aioredis
 
-
+LE_REGEX = re.compile(r"(?i)([0-9]{1,3})([s,h,d,w,m,y])")
 class EmbedColors:
     blood_orange = 0xe25303
     lime_green = 0x00b51a
@@ -29,10 +29,9 @@ class EmbedColors:
 
 
 def parse_timestring(time_string:str):
-    le_regex = r"([0-9]{1,3})([s,h,d,w,m,y])"
     total_delta = 0
 
-    for matched in re.finditer(le_regex, time_string):
+    for matched in re.finditer(LE_REGEX, time_string):
         match matched[2]:
             case "s":
                 total_delta += int(datetime.timedelta(seconds=int(matched[1])).total_seconds())

@@ -14,6 +14,8 @@ from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.util import set_up_guild_logger
 
+OLD_SETTING = re.compile(r"^(\d+)$")
+
 class SettingsCogV2(commands.Cog, name="Settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
@@ -201,7 +203,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
     @commands.dm_only()
     @commands.command()
     async def settings_cleanup(self, ctx: commands.Context):
-        old_setting = re.compile(r"^(\d+)$")
+        
         pipe = self.redis.pipeline()
 
         guild_ids = [int(guild.id) for guild in self.bot.guilds]
@@ -221,7 +223,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         
         # clean up old guild settings
         async for key in self.redis.scan_iter("*"):
-            if id := old_setting.match(key):
+            if id := OLD_SETTING.match(key):
                 id = int(id[0])
                 if id not in guild_ids:
                     await pipe.delete(key)

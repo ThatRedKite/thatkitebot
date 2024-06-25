@@ -59,68 +59,34 @@ async def download_image(session: aiohttp.ClientSession, url: str):
     async with session.get(url) as r:
         return await r.read()
 
-async def get_last_image(ctx, aiohttp_session: aiohttp.ClientSession, return_buffer=False) -> Union[
-    BytesIO, bytes, None]:
+async def download_last_image(
+        ctx: Union[discord.ApplicationContext, commands.Context],
+        aiohttp_session: aiohttp.ClientSession,
+        search_len: int = 30
+    ) -> BytesIO:
+    
     # search past 30 messages for suitable media content, only search messages with an attachment or embed
     # first, get a suitable message
     if ctx.message.reference:
         # fetch the message from the reference
         message = await ctx.fetch_message(ctx.message.reference.message_id)
-        url, embed_type = await get_image_url(message)
-
-    # check if the message has an attachment
-    elif ctx.message.attachments or ctx.message.embeds:
-        url, embed_type = await get_image_url(ctx.message)
+        url = [url for url in get_embed_urls(message)].get(0)
     else:
-        # iterate over the last 30 messages
-        async for msg in ctx.channel.history(limit=30).filter(lambda m: m.attachments or m.embeds):
-            # get the url of the image and break the loop if it's not None
-            url, embed_type = await get_image_url(msg)
-            if url:
-                break
+        async for msg in ctx.channel.history(limit=search_len):
+            for urls in get_embed_urls(msg):
+                if (new_url := urls[0]) is not None and urls[1] == "image":
+                    url = new_url
+                    break
             else:
                 continue
-
-    # if the url is None, return None because there is no suitable image in the last 30 messages
-    if not url:
-        raise commands.BadArgument("No suitable image found.")
+            break
 
     # if the url is not None, download the image and return it
     async with aiohttp_session.get(url) as resp:
         # if return_buffer is True, return a BytesIO buffer of the image and seek to the beginning
-        if return_buffer:
-            buf = BytesIO(await resp.read())
-            buf.seek(0)
-            return buf
-        # if return_buffer is False, return the image as a blob
-        else:
-            return await resp.read()
-
-async def get_image_url(message: discord.Message, video: bool = False, gifv: bool = False) -> Union[
-    tuple[str, str], tuple[None, None]]:
-    # check if the message has an attachment or embed of the type "image"
-    if message.attachments:
-        return message.attachments[0].url, message.attachments[0].content_type
-
-    if not message.embeds:
-        return None, None
-
-    if message.embeds[0].type == "image":
-        # if it does, return the embed's url
-        return message.embeds[0].url, "image"
-    # check if the message has an embed of the type "rich" and if it contains an image
-    elif message.embeds[0].type == "rich" and message.embeds[0].image:
-        # if it does, return the embed's url
-        return message.embeds[0].image.url, "rich"
-    # check if the message has a video if the :video: argument is true
-    elif message.embeds[0].type == "video" and video:
-        return message.embeds[0].url, "video"
-    # check if the message has a gif if the :gifv: argument is true
-    elif message.embeds[0].type == "gifv" and gifv:
-        return message.embeds[0].url, "gifv"
-    else:
-        # if it doesn't, return None
-        return None, None
+        buf = BytesIO(await resp.read())
+        buf.seek(0)
+        return buf
 
 async def get_image_urls(message: discord.Message, video: bool = False, gifv: bool = False) -> list[str]:
     # check if the message has an attachment or embed of the type "image"
@@ -216,9 +182,6 @@ class ImageFunction:
         buffer.seek(0)
         self.loop = loop
         self.process_pool = process_pool
-
-
-        
 
         self.image = WandImage(file=buffer)
 

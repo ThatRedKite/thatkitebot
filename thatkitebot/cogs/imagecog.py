@@ -23,7 +23,6 @@ class ImageStuff(commands.Cog, name="image commands"):
     """
     def __init__(self, bot):
         self.bot = bot
-        self.tt = bot.tenor_token
         self.datadir = bot.data_dir  # data directory
 
         self.session = bot.aiohttp_session
@@ -31,8 +30,6 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.loop = bot.loop
         self.sem = asyncio.Semaphore(12)
         self.process_pool = bot.process_pool
-
-        self.tenor_pattern = re.compile(r"^https://tenor.com\S+-(\d+)$")
 
     async def cog_command_error(self, ctx, error):
         await util.errormsg(ctx, error)
@@ -55,7 +52,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         When the image is a GIF, it takes the first frame
         """
         print(RedisFlags.FlagEnum.IMAGE.value)
-        buf = await image_stuff.get_last_image(ctx, self.session, return_buffer=True)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.magik()
@@ -70,7 +67,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         Applies some content aware and swirling scaling to an image.
         When the image is a GIF, it takes the first frame
         """
-        buf = await image_stuff.get_last_image(ctx, self.session, return_buffer=True)
+        buf = await image_stuff.download_last_image(ctx, saiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 1, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.swirlmagik(angle)
@@ -82,7 +79,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def deepfry(self, ctx: commands.Context):
         """'Deepfries' an image by oversaturating it and applying noise"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 2, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.deepfry()
@@ -94,7 +91,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def wide(self, ctx: commands.Context):
         """Horizontally stretch an image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 3, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.wide()
@@ -106,7 +103,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["opacity"])
     async def opacify(self, ctx: commands.Context):
         """Remove the alpha channel and replace it with white"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 4, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.opacify()
@@ -118,7 +115,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["inflate"])
     async def explode(self, ctx: commands.Context, factor: float = 2.0):
         """Explodes an image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 5, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.explode(factor)
@@ -130,7 +127,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["deflate"])
     async def implode(self, ctx: commands.Context, factor: float = 1.0):
         """Implodes an image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 6, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.implode(factor)
@@ -142,7 +139,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["inverse", "anti"])
     async def invert(self, ctx: commands.Context):
         """Invert an image's colors"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 7, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.invert()
@@ -154,7 +151,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def reduce(self, ctx: commands.Context):
         """Reduces an image's total colors"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 8, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.reduce()
@@ -166,7 +163,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def swirl(self, ctx: commands.Context, angle: int = 60):
         """Swirl an image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 9, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.swirl(angle)
@@ -182,7 +179,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22` or `caption funny color:firebrick`
         A full list of colors can be found here: https://imagemagick.org/script/color.php
         """
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 10, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.caption(text=text, path="/app/data/static-resources/")
@@ -194,7 +191,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def rotate(self, ctx: commands.Context, angle: int = 90):
         """Rotate an image clockwise 90 degrees by default, you can specify the degree value as an argument"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 11, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.rotate(angle)
@@ -206,7 +203,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["bw", "blackwhite"])
     async def grey(self, ctx: commands.Context):
         """Make an image black and white"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 12, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.black_white()
@@ -218,7 +215,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["piss"])
     async def sepia(self, ctx: commands.Context, threshold: float = 0.8):
         """Add a sepia filter to an image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 13, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.sepia()
@@ -230,7 +227,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def polaroid(self, ctx: commands.Context):
         """Add a polaroid filter to an image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 14, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.polaroid()
@@ -242,7 +239,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["coal"])
     async def charcoal(self, ctx: commands.Context, radius: float = 1.5, sigma: float = 0.5):
         """Add a charcoal filter to an image, making it look like a charcoal drawing"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 15, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.charcoal(radius, sigma)
@@ -254,7 +251,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def vignette(self, ctx: commands.Context, sigma: int = 3, x: int = 10, y: int = 10):
         """Tries to emulate old school 3d effect"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 16, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.make_vignette(sigma, x , y)
@@ -266,7 +263,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["bubble"])
     async def speech_bubble(self, ctx: commands.Context, flip: bool = False):
         """Create a speech bubble like those memes"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 17, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.bubble()
@@ -278,7 +275,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["scale"])
     async def resize(self, ctx: commands.Context, scale: float = 0.5):
         """Resizes an image to a set factor"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 18, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.scale(scale)
@@ -290,7 +287,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3):
         """Applies blur"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 19, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.blur(radius, sigma)
@@ -302,7 +299,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["ablur"])
     async def adaptive_blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3):
         """Applies blur, but tries to utilize edge detect for a better result"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 20, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.adaptive_blur(radius, sigma)
@@ -314,7 +311,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["mblur"])
     async def motion_blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3, angle: int = -45):
         """Applies motion blur"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 21, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.motion_blur(radius, sigma, angle)
@@ -326,7 +323,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def edge(self, ctx: commands.Context, radius: int = 1):
         """Returns a black and white image with edges in white and the rest in black"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 22, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.edge(radius)
@@ -338,7 +335,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def emboss(self, ctx: commands.Context, radius: float = 3.0, sigma: float = 1.75):
         """Creates an embossed image"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 23, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.emboss(radius, sigma)
@@ -350,7 +347,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command(aliases=["smooth"])
     async def kuwahara(self, ctx: commands.Context, radius: int = 1, sigma: float = 1.5):
         """Attempts to smooth the image while preserving edges"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 24, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.kuwahara(radius, sigma)
@@ -362,7 +359,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @commands.command()
     async def shade(self, ctx: commands.Context, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
         """Attempts to smooth the image while preserving edges"""
-        buf = await image_stuff.get_last_image(ctx, return_buffer=True, aiohttp_session=self.session)
+        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 25, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
             await image.shade(gray, azimuth, elevation)

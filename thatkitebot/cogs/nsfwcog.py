@@ -20,7 +20,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
     def __init__(self, bot):
         self.bot = bot
         self.redis = bot.redis
-        self.bl = [424394851170385921]  # hardcoded guild blacklist, for my own safety
+        self.bl = [424394851170385921]  # hardcoded guild blacklist, for my own sanity
 
     async def cog_check(self, ctx):
         return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.NSFW.value)
