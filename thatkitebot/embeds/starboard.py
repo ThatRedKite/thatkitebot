@@ -4,7 +4,7 @@ import io
 import aiohttp
 from discord import Embed, Message, Color, File, Attachment
 
-from thatkitebot.base.image_stuff import get_image_url, get_embed_urls
+from thatkitebot.base.image_stuff import get_embed_urls
 from thatkitebot.base.url import get_avatar_url
 
 
