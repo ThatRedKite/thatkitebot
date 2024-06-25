@@ -96,6 +96,7 @@ class Navigation(View):
         await interaction.response.send_message("You selected a section!")
 
 
+
 class InfoCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
