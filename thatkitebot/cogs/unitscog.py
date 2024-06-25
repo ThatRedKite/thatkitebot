@@ -8,7 +8,6 @@ from thatkitebot.embeds.units import gen_embed, gen_error_embed, gen_help_embed
 from discord.ext import commands
 
 
-
 async def unicode_to_ascii_exponents(expression: str) -> str:
     """Convert unicode exponents to ASCII exponents."""
     unicode_to_ascii = {
