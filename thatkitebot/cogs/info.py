@@ -11,6 +11,8 @@ from discord.ext import commands
 from discord.ui import Select, View, Button
 from discord.commands import Option, SlashCommandGroup
 
+from thatkitebot.embeds.info import *
+
 class Config:
     def __init__(self, bot, data_dir):
         self.bot = bot
@@ -29,6 +31,11 @@ class Config:
         """Load default config for guild."""
         await self.update(guild, await self.get_default())
 
+    async def update(self, guild, config):
+        """Update guild config."""
+        async with aiofiles.open(os.path.join(self.data_dir, f"info/{guild.id}.json"), "w") as f:
+            await f.write(json.dumps(config))
+
     async def get(self, guild):
         """Get config json file"""
         try:
@@ -39,25 +46,32 @@ class Config:
             await self.update(guild, default)
             return await self.get(guild)
 
-    async def update(self, guild, config):
-        """Update guild config."""
-        async with aiofiles.open(os.path.join(self.data_dir, f"info/{guild.id}.json"), "w") as f:
-            await f.write(json.dumps(config))
-
     async def get_sections(self, ctx: discord.AutocompleteContext):
         """Autocomplete function for section names."""
         config = await self.get(ctx.interaction.guild)
         return [f"{id + 1}. {section['title']}" for id, section in enumerate(config) if section['title'].lower().startswith(ctx.value.lower())]
 
 
-
 class NavigationView(View):
-    def __init__(self, config_file = None, buttons: bool=False, dropdown: bool=True):
+    def __init__(self, config, config_file, buttons, dropdown, toggle):
         super().__init__(timeout = None)
+
+        self.config = config 
+        self.config_file = config_file
+
+        # Current states of the view contents
+        self.toggle = toggle
+        self.state_buttons = buttons
+        self.state_dropdown = dropdown
+
         if dropdown:
             self.add_dropdown(config_file)
         if buttons:
             self.add_buttons()
+
+    @staticmethod
+    async def create(guild, config: Config = None, buttons: bool=False, dropdown: bool= True, toggle: bool = False):
+        return NavigationView(config, await config.get(guild), buttons, dropdown, toggle)
 
     def add_buttons(self):
         """Add navigation buttons."""
@@ -75,9 +89,9 @@ class NavigationView(View):
         options = []
         for id, section in enumerate(config_file):
             if discord_emoji.to_uni(section["emoji"]):
-                options.append(discord.SelectOption(label=f'{id + 1}. {section["title"]}', emoji=discord_emoji.to_uni(section["emoji"])))
+                options.append(discord.SelectOption(label=f'{id + 1}. {section["title"]}', emoji=discord_emoji.to_uni(section["emoji"]), value = f"{id}"))
             else:
-                options.append(discord.SelectOption(label=f'{id + 1}. {section["title"]}', emoji=section["emoji"]))
+                options.append(discord.SelectOption(label=f'{id + 1}. {section["title"]}', emoji=section["emoji"], value = f"{id}"))
 
         select = Select(
             placeholder='Select a section...', 
@@ -100,7 +114,22 @@ class NavigationView(View):
 
     async def dropdown_callback(self, interaction: discord.Interaction):
         """Callback function for the dropdown selection."""
-        await interaction.response.send_message("You selected a section!")
+        id = int(interaction.data["values"][0])
+        config_file = await self.config.get(interaction.guild)
+
+        embed = await get_embed(id, config_file)
+
+        if(self.toggle):
+            self.disable_all_items
+        else:
+            if(not self.state_buttons): 
+                self.add_buttons()
+                self.state_buttons = True
+            if(not self.state_dropdown): 
+                self.add_dropdown(config_file)
+                self.state_dropdown =  True
+
+        await interaction.response.edit_message(embed=embed, content=None, view = self)
 
 
 
@@ -124,8 +153,7 @@ class InfoCog(commands.Cog):
             await ctx.respond("Specify a section to disable navigation!", ephemeral=True)
             return
         
-        config_file = await self.config.get(ctx.guild)
-        navigation = NavigationView(config_file, buttons=False, dropdown=True)
+        navigation = await NavigationView.create(ctx.guild, self.config, toggle = disable_navigation)
 
         await ctx.respond("Choose a section!", view=navigation)
         
