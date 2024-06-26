@@ -46,6 +46,11 @@ class Config:
             await self.update(guild, default)
             return await self.get(guild)
 
+    async def size(self, guild):
+        """Get an amount of entries in config file"""
+        config_file = await self.get(guild)
+        return len(config_file)
+
     async def get_sections(self, ctx: discord.AutocompleteContext):
         """Autocomplete function for section names."""
         config = await self.get(ctx.interaction.guild)
@@ -63,6 +68,7 @@ class NavigationView(View):
         self.toggle = toggle
         self.state_buttons = buttons
         self.state_dropdown = dropdown
+        self.current_embed_id = None
 
         if dropdown:
             self.add_dropdown(config_file)
@@ -78,8 +84,8 @@ class NavigationView(View):
         prev = Button(emoji="⬅️", style=discord.ButtonStyle.gray, custom_id="prev")
         next = Button(emoji="➡️", style=discord.ButtonStyle.gray, custom_id="next")
 
-        prev.callback = self.prev_button_callback
-        next.callback = self.next_button_callback
+        prev.callback = self.button_callback
+        next.callback = self.button_callback
 
         self.add_item(prev)
         self.add_item(next)
@@ -104,20 +110,27 @@ class NavigationView(View):
 
         self.add_item(select)
 
-    async def prev_button_callback(self, interaction: discord.Interaction):
-        """Callback function for the previous button."""
-        await interaction.response.send_message("You selected prev button!")
-
-    async def next_button_callback(self, interaction: discord.Interaction):
+    async def button_callback(self, interaction: discord.Interaction):
         """Callback function for the next button."""
-        await interaction.response.send_message("You selected next button!")
+        max_id = await self.config.size(interaction.guild)
+
+        if interaction.custom_id == "next":
+            self.current_embed_id = (self.current_embed_id + 1) % max_id
+        else:
+            self.current_embed_id = (self.current_embed_id - 1) % max_id
+
+        config_file = await self.config.get(interaction.guild)
+        embed = await get_embed(self.current_embed_id, config_file)
+
+        await interaction.response.edit_message(embed=embed, content=None, view = self)
+
 
     async def dropdown_callback(self, interaction: discord.Interaction):
         """Callback function for the dropdown selection."""
-        id = int(interaction.data["values"][0])
+        self.current_embed_id = int(interaction.data["values"][0])
         config_file = await self.config.get(interaction.guild)
 
-        embed = await get_embed(id, config_file)
+        embed = await get_embed(self.current_embed_id, config_file)
 
         if(self.toggle):
             self.disable_all_items
