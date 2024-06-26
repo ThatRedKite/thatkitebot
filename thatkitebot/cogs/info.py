@@ -53,7 +53,7 @@ class Config:
 
     async def get_sections(self, ctx: discord.AutocompleteContext):
         """Autocomplete function for section names."""
-        config = await self.get(ctx.interaction.guild)
+        config = await self.config.get(ctx.interaction.guild)
         return [f"{id + 1}. {section['title']}" for id, section in enumerate(config) if section['title'].lower().startswith(ctx.value.lower())]
 
 
@@ -70,9 +70,9 @@ class NavigationView(View):
         self.state_dropdown = dropdown
         self.current_embed_id = None
 
-        if dropdown:
+        if dropdown and not toggle:
             self.add_dropdown(config_file)
-        if buttons:
+        if buttons and not toggle:
             self.add_buttons()
 
     @staticmethod
@@ -162,12 +162,20 @@ class InfoCog(commands.Cog):
         # load default config if not already done
         await self.load_defaults(ctx.guild)
 
+        config_file = await self.config.get(ctx.guild)
+
         if disable_navigation and not section:
             await ctx.respond("Specify a section to disable navigation!", ephemeral=True)
             return
         
-        navigation = await NavigationView.create(ctx.guild, self.config, toggle = disable_navigation)
+        if section:
+            navigation = await NavigationView.create(ctx.guild, self.config, toggle = disable_navigation, buttons= True)
+            section_id = await self.retrive_section_id(section, len(config_file))
+            embed = await get_embed(section_id, config_file)
+            await ctx.respond(embed = embed, content = None, view=navigation)
+            return
 
+        navigation = await NavigationView.create(ctx.guild, self.config, toggle = disable_navigation)
         await ctx.respond("Choose a section!", view=navigation)
         
     # TODO it's just temporary debug function    
@@ -180,6 +188,17 @@ class InfoCog(commands.Cog):
         """Load default config file when bot joins guild."""
         if not self.config.exists(guild):
             await self.config.load_default(guild)
+
+    # Utility
+    async def retrive_section_id(self, section_name, config_len):
+        try:
+            id = int(section_name.split(".")[0]) - 1
+            if not (id >= 0 and id < config_len):
+                return -1
+        except:
+            return -1
+
+        return id 
 
 def setup(bot):
     bot.add_cog(InfoCog(bot))
