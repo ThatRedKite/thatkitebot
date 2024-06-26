@@ -86,21 +86,10 @@ async def generate_embed(message: Message, count: int, star_emoji, return_file=F
     embed.set_thumbnail(url=f"attachment://{message.author.id}.{resp.content_type.split('/')[1]}")
     embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
 
-    match count / 5:
-        case 1:
-            embed.color = Color.dark_red
-        case 2:
-            embed.color = Color.red
-        case 3:
-            embed.color = Color.dark_blue
-        case 4:
-            embed.color = Color.blue
-        case 5:
-            embed.color = Color.dark_gold
-        case 6:
-            embed.color = Color.gold
-        case _:
-            embed.color = Color.blurple
+    if count < 13:
+        embed.color = int(hex(message.guild.id)[4:10],16)
+    elif count > 13:
+        embed.color = Color.gold()
 
     embed.timestamp = message.created_at
 

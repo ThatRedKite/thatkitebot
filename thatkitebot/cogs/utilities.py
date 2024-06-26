@@ -1,11 +1,14 @@
 #  Copyright (c) 2019-2024 ThatRedKite and contributors
 
+from io import BytesIO
 import discord
 from discord.ext import commands
 from thatkitebot.base.util import EmbedColors as ec
 import psutil
 
 from datetime import datetime, timezone
+from wand.image import Image as WandImage
+from wand.color import Color as WandColor
 from dateutil.relativedelta import relativedelta
 
 from thatkitebot.embeds.status import gen_embed as status_embed
@@ -101,6 +104,18 @@ class UtilityCommands(commands.Cog, name="Potentially useful commands"):
         await ctx.author.send(
             f"https://discord.com/api/oauth2/authorize?client_id={self.bot.user.id}&permissions=275418311744&scope=bot%20applications.commands"
         )
+    
+    @commands.command()
+    async def color_test(self,ctx,id):
+        id_color = hex(int(id))[4:10].replace("0x","")  
+        with WandImage(width=256, height=256, background=WandColor(f"#{id_color}")) as colorimg:
+            b = colorimg.make_blob(format="jpeg")
+        file = discord.File(BytesIO(b), filename="id_color.jpeg")
+
+        embed = discord.Embed(title=f"ID color tester")
+
+        embed.set_image(url="attachment://id_color.jpeg")
+        await ctx.send(file=file, embed=embed)
 
 
 def setup(bot):

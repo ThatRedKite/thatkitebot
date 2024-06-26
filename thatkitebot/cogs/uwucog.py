@@ -52,7 +52,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         self.redis: aioredis.Redis = bot.redis
 
     async def _uwu_enabled(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU.value)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU)
     
     async def _change_uwu_status(self, ctx:discord.ApplicationContext, to_change: Union[abc.GuildChannel, discord.User, discord.Member], intensity: float) -> bool:
         logger = set_up_guild_logger(ctx.guild.id)

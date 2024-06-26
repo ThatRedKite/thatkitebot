@@ -55,7 +55,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         self.settings_redis: aioredis.Redis = bot.redis
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.WELCOME.value)
+        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.WELCOME)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -69,7 +69,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             return
 
         # check, if welcome features are even enabled
-        if not await RedisFlags.get_guild_flag(self.settings_redis, message.guild, RedisFlags.FlagEnum.WELCOME.value):
+        if not await RedisFlags.get_guild_flag(self.settings_redis, message.guild, RedisFlags.FlagEnum.WELCOME):
             return
 
         # make sure we are in the system channel. If not, return
@@ -97,7 +97,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         self.bot.events_hour += 1
         self.bot.events_total += 1
         # check, if welcome features are even enabled
-        if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME.value):
+        if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME):
             return
 
         # get some values
@@ -118,7 +118,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
         # write the data
         await self.redis_welcomes.hset(key, mapping=datadict)
-        if await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME_MESSAGE.value):
+        if await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME_MESSAGE):
             await joined_member.guild.system_channel.send("welcome")
 
     # TODO: honestly, this should just be completely rewritten using a sorted set instead of hashes

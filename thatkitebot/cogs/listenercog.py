@@ -1,8 +1,8 @@
 #  Copyright (c) 2019-2024 ThatRedKite and contributors
 
 import logging
-
 import discord
+from datetime import datetime
 
 from redis.exceptions import ConnectionError
 from redis import asyncio as aioredis
@@ -28,9 +28,6 @@ class ListenerCog(commands.Cog):
 
         self.logger: logging.Logger = bot.logger
         self.cache: RedisCache = bot.r_cache
-
-        self.database_ping.start()
-        self.cache_update.start()
 
     # global error handlers
     @commands.Cog.listener()
@@ -74,6 +71,9 @@ class ListenerCog(commands.Cog):
         try:
             await self.redis.ping()
             await self.redis_cache.ping()
+            # update last online time as well
+            await self.redis.set("last", int(datetime.now().timestamp()))
+
         except ConnectionError as exc:
             self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(exc)}")
 
@@ -84,10 +84,20 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"\n{self.bot.user.name} is up and ready.")
+        self.logger.info(f"\n{self.bot.user.name} is now ready")
 
-        print("Starting task loops…\n")
-        self.hourly_reset.start()
+        # try to get and set the last online thingies
+        self.bot.last_online = int(await self.redis.get("last")) or 0
+        if self.bot.last_online > 0:
+            self.logger.info(f"{self.bot.user.name} was last started at {datetime.fromtimestamp(float(self.bot.last_online))} UTC")
+
+        await self.redis.set("last", int(datetime.now().timestamp()))
+
+        self.logger.info("Starting background loops…\n")
+        
+        self.hourly_reset.start()        
+        self.cache_update.start()
+        self.database_ping.start()
 
         await self.bot.change_presence(
             activity=discord.Activity(name="a battle against russia", type=5),
@@ -163,9 +173,9 @@ class ListenerCog(commands.Cog):
         if not await self.redis.exists(f"flags:{guild.id}"):
             # initialize standard settings when joining a Guild if they don't exist
             pipe = self.redis.pipeline()
-            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.IMAGE.value, True)
-            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.CACHING.value, True)
-            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.UWU.value, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.IMAGE, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.CACHING, True)
+            await flags.set_guild_flag(pipe, guild.id, flags.FlagEnum.UWU, True)
 
         # try to send a message informing about settings
         try:

@@ -10,3 +10,7 @@ class CacheInvalidMessageException(Exception):
 
 class NoDataException(Exception):
     pass
+
+
+class InvalidGuildException(Exception):
+    pass

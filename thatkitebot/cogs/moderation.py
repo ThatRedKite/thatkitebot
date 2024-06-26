@@ -21,7 +21,7 @@ class Offsets:
 
 async def enable_check(ctx: discord.ApplicationContext):
     redis = ctx.bot.redis
-    is_enabled = await settings.RedisFlags.get_guild_flag(redis, ctx.guild, flag_offset=settings.RedisFlags.FlagEnum.MODERATION.value)
+    is_enabled = await settings.RedisFlags.get_guild_flag(redis, ctx.guild, flag_offset=settings.RedisFlags.FlagEnum.MODERATION)
     return is_enabled
 
 

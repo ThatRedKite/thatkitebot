@@ -32,7 +32,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         logger = set_up_guild_logger(ctx.guild.id)
 
         # make sure that the flag_id is valid
-        assert flag_id in [flag.value for flag in RedisFlags.FlagEnum]
+        assert flag_id in [flag for flag in RedisFlags.FlagEnum]
 
         # set the corresponding value
         await RedisFlags.set_guild_flag(self.redis, ctx.guild, flag_id, value=enable)
@@ -60,7 +60,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE))
 
 
     @settings.command(name="nsfw")
@@ -71,7 +71,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW))
 
 
     @settings.command(name="repost")
@@ -82,7 +82,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST, further_config=True))
 
 
     @settings.command(name="uwu")
@@ -93,7 +93,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU, further_config=True))
 
 
     @settings.command(name="detrack")
@@ -103,7 +103,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         """
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK))
 
 
     @settings.command(name="welcome_leaderboard")
@@ -114,7 +114,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME))
 
 
     @settings.command(name="welcome_message")
@@ -125,7 +125,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE))
 
 
     @settings.command(name="moderation")
@@ -136,7 +136,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION, further_config=True))
 
 
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")

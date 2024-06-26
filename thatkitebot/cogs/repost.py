@@ -68,7 +68,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         return await self.settings_redis.sismember("REPOST_CHANNELS", channel.id)
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.REPOST.value)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.REPOST)
 
     # this is kinda dumb but i guess it works :)
     async def hash_from_url(self, urls: list[str]):

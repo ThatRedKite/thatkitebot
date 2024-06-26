@@ -41,7 +41,8 @@ class ImageStuff(commands.Cog, name="image commands"):
 
     def cog_unload(self):
         # make sure to cancel all futures before unloading
-        self.processpool.shutdown(cancel_futures=True, wait=False)
+        if self.process_pool is not None:
+            self.process_pool.shutdown(cancel_futures=True, wait=False)
 
     @commands.cooldown(3, 5, commands.BucketType.guild)
     @commands.command(aliases=["magic", "magick"])

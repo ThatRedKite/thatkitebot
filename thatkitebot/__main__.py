@@ -119,7 +119,7 @@ class ThatKiteBot(bridge.Bot, ABC):
         self.loop.run_until_complete(self.aiohttp_start())
         self.logger = logger
         self.process_pool = None
-        
+        self.last_online = 0
         
         # redis databases:
 
@@ -144,9 +144,12 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.r_cache = RedisCache(self.redis_cache, self, auto_exec=False)
 
             self.logger.info("Redis: Connection successful")
+
         except aioredis.ConnectionError:
             self.logger.critical("Redis: connection failed")
             exit(1)
+
+        
         # bot status info
         self.cpu_usage = 0
 

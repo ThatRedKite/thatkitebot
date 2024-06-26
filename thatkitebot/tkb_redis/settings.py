@@ -6,6 +6,8 @@ from typing import Union
 from discord import Guild
 from redis import asyncio as aioredis
 
+from .exceptions import InvalidGuildException
+
 
 class RedisFlags:
     class FlagEnum(enum.Enum):
@@ -23,7 +25,7 @@ class RedisFlags:
 
 
     @staticmethod
-    async def set_guild_flag(redis: aioredis.Redis, guild: Union[Guild, None], flag_offset: int, value: bool) -> None:
+    async def set_guild_flag(redis: aioredis.Redis, gid: Union[Guild, int, None], flag_offset: FlagEnum, value: bool) -> int:
         """
         Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
         0: NSFW (nsfwcog.py) - NSFW commands
@@ -37,11 +39,19 @@ class RedisFlags:
         9: MODERATION
         10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
+        # raise invalid guild exception if command is somehow doesn't get a guild id or guild object
+        if not gid:
+            raise InvalidGuildException
+        
+        if isinstance(gid, int):
+            guild_id = gid
+        elif isinstance(gid, Guild):
+            guild_id = gid.id
 
-        await redis.setbit(f"flags:{guild.id}", flag_offset, int(value))
+        return await redis.setbit(f"flags:{guild_id}", flag_offset.value, int(value))
 
     @staticmethod
-    async def get_guild_flag(redis: aioredis.Redis, guild: Union[Guild, None], flag_offset: int) -> bool:
+    async def get_guild_flag(redis: aioredis.Redis, guild: Union[Guild, int, None], flag_offset: FlagEnum) -> bool:
         """
         Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
         0: NSFW (nsfwcog.py) - NSFW commands
@@ -56,61 +66,58 @@ class RedisFlags:
         10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
         if guild is not None:
-            key = f"flags:{guild.id}"
-            return await redis.getbit(key, flag_offset)
+            if isinstance(guild, int):
+                guild_id = guild
+            elif isinstance(guild, Guild):
+                guild_id = guild.id
+
+            return await redis.getbit(f"flags:{guild_id}", flag_offset.value)
         else:
             return True
         
     @staticmethod
-    async def get_guild_flag_by_id(redis: aioredis.Redis, guild_id: int, flag_offset: int) -> bool:
-        """
-        Sets flags for a guild. They are stored as Bitfields. The flags are stored at the following offsets:
-        0: NSFW (nsfwcog.py) - NSFW commands
-        1: IMAGES (imagecog.py) - Image commands
-        3: WELCOME COUNTING (welcomecog.py) - Welcome Counting
-        4: UWUIFICATION (uwucog.py) - uwuify
-        5: LINK DETRACKING (detrack.py) - detracking
-        6: MUSIC (musiccog.py) - music commands
-        7: CACHING
-        8: WELCOME MESSAGE
-        9: MODERATION
-        10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
-        """
-        if guild_id is not None:
-            key = f"flags:{guild_id}"
-            return await redis.getbit(key, flag_offset)
-        else:
-            return True
-        
-    @staticmethod
-    async def set_guild_flag_custom(redis: aioredis.Redis, gid, name: str, value: bool, flag_offset: int) -> None:
+    async def set_guild_flag_custom(redis: aioredis.Redis, gid: Union[Guild, int, None], name: str, value: bool, flag_offset: int) -> int:
         """
         Sets flags for a guild with a custom name. They are stored as Bitfields.
         """
-        key = f"flags-{name}:{gid}"
-        await redis.setbit(key, flag_offset, int(value))
+        if isinstance(gid, int):
+            guild_id = gid
+        elif isinstance(gid, Guild):
+            guild_id = gid.id
+
+        return await redis.setbit(f"flags-{name}:{guild_id}", flag_offset, int(value))
 
     @staticmethod
-    async def get_guild_flag_custom(redis: aioredis.Redis, gid, name: str, flag_offset: int,) -> None:
+    async def get_guild_flag_custom(redis: aioredis.Redis, gid: Union[Guild, int], name: str, flag_offset: int) -> bool:
         """
         Gets flags for a guild with a custom name. They are stored as Bitfields.
         """
-        key = f"flags-{name}:{gid}"
-        return await redis.getbit(key, flag_offset)
+        if not gid:
+            return False
+        
+        if isinstance(gid, int):
+            guild_id = gid
+        elif isinstance(gid, Guild):
+            guild_id = gid.id
+
+        return bool(await redis.getbit(f"flags-{name}:{guild_id}", flag_offset))
 
     @staticmethod
-    async def get_guild_flags(redis: aioredis.Redis, gid: Union[str, int], *flag_offsets):
+    async def get_guild_flags(redis: aioredis.Redis, gid: Union[Guild, int], *flag_offsets: FlagEnum) -> list[bool]:
         """
         Checks multiple flags at once, useful for checking multiple flags at once
         """
+        if isinstance(gid, int):
+            guild_id = gid
+        elif isinstance(gid, Guild):
+            guild_id = gid.id
+        
+        items = [("u1", offset.value) for offset in flag_offsets]
 
-        key = f"flags:{gid}"
-        items = [("u1", offset) for offset in flag_offsets]
-
-        values = await redis.bitfield_ro(key, "u1", 0, items=items)
+        return [bool(value) for value in await redis.bitfield_ro(f"flags:{guild_id}", "u1", 0, items=items)]
 
     @staticmethod
-    async def toggle_guild_flag(redis: aioredis.Redis, gid, flag_offset: int) -> bool:
+    async def toggle_guild_flag(redis: aioredis.Redis, gid: Union[Guild, int, None], flag_offset: FlagEnum) -> bool:
         """
         Sets flags for a guild. They are stored as Bitfields. The flags are stored in the following order:
         0: NSFW (nsfwcog.py) - NSFW commands
@@ -124,12 +131,14 @@ class RedisFlags:
         9: MODERATION
         10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
-        key = f"flags:{gid}"
-        current = await RedisFlags.get_guild_flag(redis, gid, flag_offset)
-        await redis.setbit(key, flag_offset, int(not current))
+        if not gid:
+            raise InvalidGuildException
+        
+        if isinstance(gid, int):
+            guild_id = gid
+        elif isinstance(gid, Guild):
+            guild_id = gid.id        
+
+        current = await RedisFlags.get_guild_flag(redis, gid, flag_offset.value)
+        await redis.setbit(f"flags:{guild_id}", flag_offset, int(not current))
         return not current
-
-
-
-
-

@@ -72,7 +72,7 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
     async def _test(self, ctx):
         # raise NotImplemented
 
-        print(RedisFlags.FlagEnum.IMAGE.value)
+        print(RedisFlags.FlagEnum.IMAGE)
 
 
 

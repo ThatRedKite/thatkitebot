@@ -133,7 +133,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             return
 
         # check if detracking is enabled
-        if not await RedisFlags.get_guild_flag(self.redis, message.guild, RedisFlags.FlagEnum.DETRACK.value):
+        if not await RedisFlags.get_guild_flag(self.redis, message.guild, RedisFlags.FlagEnum.DETRACK):
             return
 
         detracked_strs = []
