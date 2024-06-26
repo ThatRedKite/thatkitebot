@@ -11,6 +11,7 @@ from discord.ext import commands
 from discord.ui import Select, View, Button
 from discord.commands import Option, SlashCommandGroup
 
+from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.embeds.info import *
 
 class Config:
@@ -170,14 +171,89 @@ class InfoCog(commands.Cog):
         
         if section:
             navigation = await NavigationView.create(ctx.guild, self.config, toggle = disable_navigation, buttons= True)
-            section_id = await self.retrive_section_id(section, len(config_file))
+            section_id = await Utility.retrive_section_id(section, len(config_file))
             embed = await get_embed(section_id, config_file)
             await ctx.respond(embed = embed, content = None, view=navigation)
             return
 
         navigation = await NavigationView.create(ctx.guild, self.config, toggle = disable_navigation)
         await ctx.respond("Choose a section!", view=navigation)
-        
+
+
+    ###### Group commands ######
+
+    info_settings = SlashCommandGroup(
+        "info-settings",
+        "Settings for /info command",
+        checks=[pc.mods_can_change_settings]
+    )
+
+    @info_settings.command(name="add-section")
+    async def new_section(self, ctx: discord.ApplicationContext,
+                          name: Option(str, "Choose a name!", required=True, max_lenght=256),
+                          emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True),
+                          color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):
+        """
+        Create new section in /info command
+        """
+        config_file = await self.config.get(ctx.guild)
+
+        # check if given string is valid discord emoji
+        if not Utility.check_emoji(emoji=emoji):
+            await ctx.respond("Invalid emoji!", ephemeral=True)
+            return
+
+        # if it's unicode emoji, convert it into string
+        if discord_emoji.to_discord(emoji):
+            emoji = f":{discord_emoji.to_discord(emoji, get_all=True)}:"
+
+        # check if color format is valid
+        if color:
+            if Utility.check_hex(color):
+                color = int(color, base=16)
+            else:
+                await ctx.respond("Invalid color format!", ephemeral=True)
+                return
+        else:
+            color = int(Utility.gen_random_hex_color(), base=16)
+
+        dictionary = {
+            "title": f"{name}",
+            "emoji": f"{emoji}",
+            "color": f"{color}",
+            "fields": [
+                {
+                    "name": "",
+                    "value": "",
+                    "inline": True
+                }
+            ],
+            "footer": "false"
+        }
+
+        config_file.append(dictionary)
+        await self.config.update(ctx.guild, config_file)
+
+        await ctx.respond(f"Section {name} {emoji} has been created, now you can add a new field or edit existing one.")
+
+    @info_settings.command(name="remove-section")
+    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections)):
+        """Remove section in /info command"""
+        config_file = await self.config.get(ctx.guild)
+
+        id = await Utility.retrive_section_id(name, len(config_file))
+        if id < 0:
+            await ctx.respond("Incorrect section name!", ephemeral=True)
+            return
+
+        name = config_file[id]["title"]
+        emoji = config_file[id]["emoji"]
+
+        del config_file[id]
+
+        await self.config.update(ctx.guild, config_file)
+        await ctx.respond(f"Section {name} {emoji} has been removed.")
+
     # TODO it's just temporary debug function    
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """Error handler for the cog."""
@@ -189,16 +265,48 @@ class InfoCog(commands.Cog):
         if not self.config.exists(guild):
             await self.config.load_default(guild)
 
-    # Utility
-    async def retrive_section_id(self, section_name, config_len):
+    
+class Utility:
+    # generate random 24 bit number
+    @staticmethod
+    def gen_random_hex_color():
+        def get_int():
+            return random.randint(0, 255)
+
+        return f'0x{get_int():02X}{get_int():02X}{get_int():02X}'
+
+
+    # check if given string is valid discord emoji
+    @staticmethod
+    def check_emoji(emoji):
+        emoji_regex = r"<\S+:\d+>"
+        if len(emoji) == 1:
+            return True
+        elif re.match(emoji_regex, emoji):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def check_hex(s):
+        if s.startswith('#'):
+            s = s[1:]
+        try:
+            int(s, 16)
+            return True
+        except ValueError:
+            return False
+    
+    @staticmethod
+    async def retrive_section_id(section_name, config_len):
         try:
             id = int(section_name.split(".")[0]) - 1
-            if not (id >= 0 and id < config_len):
+            if not (id >= 0 and id <= config_len):
                 return -1
         except:
             return -1
 
-        return id 
+        return id
 
 def setup(bot):
     bot.add_cog(InfoCog(bot))
