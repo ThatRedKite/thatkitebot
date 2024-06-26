@@ -4,7 +4,7 @@ from math import sin, atan
 from io import BytesIO
 
 import discord
-import si_prefix
+import si_prefix # type: ignore
 from discord.ext import commands
 from wand.image import Image as WandImage
 from wand.color import Color as WandColor

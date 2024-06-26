@@ -4,7 +4,6 @@
 import asyncio
 import re
 from typing import Optional
-from concurrent.futures import ProcessPoolExecutor
 from urllib.parse import urlparse, parse_qs, urlencode
 
 import discord

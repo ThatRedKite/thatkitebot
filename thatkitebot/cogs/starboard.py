@@ -294,8 +294,8 @@ class StarBoard(commands.Cog):
                 description="The threshold you want to use",
                 max_value=99,
                 min_value=1
-            ),
-            channel: discord.Option(discord.TextChannel, description="The channel you want to change")
+            ), # type: ignore
+            channel: discord.Option(discord.TextChannel, description="The channel you want to change") # type: ignore
     ):
         await ctx.defer()
 

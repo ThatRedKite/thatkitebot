@@ -68,7 +68,7 @@ def link_from_ids(guild_id: int, channel_id: int, message_id: int):
     return f"https://discord.com/channels/{guild_id}/{channel_id}/{message_id}"
 
 
-def ids_from_link(url: str) -> (int, int, int):
+def ids_from_link(url: str) -> (int, int, int): # type: ignore
     """
     Gets the message-, channel- and guild id from a jump url
     """

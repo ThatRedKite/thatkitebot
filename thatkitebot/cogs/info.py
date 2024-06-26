@@ -189,8 +189,8 @@ class InfoCog(commands.Cog, name="Info"):
 
     @commands.slash_command(name="info")
     async def info(self, ctx: discord.ApplicationContext,
-                   section: Option(str, "Pick a section!", required=False, autocomplete=get_sections) = None,
-                   disable_navigation: Option(bool, "True or False", required=False, name="disable-navigation") = None):
+                   section: Option(str, "Pick a section!", required=False, autocomplete=get_sections) = None,#type:ignore
+                   disable_navigation: Option(bool, "True or False", required=False, name="disable-navigation") = None):#type:ignore
         """
         Sends YT channels, documents, books etc. related to chosen science topic arranged in convenient way.
         """
@@ -237,9 +237,9 @@ class InfoCog(commands.Cog, name="Info"):
 
     @info_settings.command(name="add-section")
     async def new_section(self, ctx: discord.ApplicationContext,
-                          name: Option(str, "Choose a name!", required=True, max_lenght=256),
-                          emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True),
-                          color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):
+                          name: Option(str, "Choose a name!", required=True, max_lenght=256),#type:ignore
+                          emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True),#type:ignore
+                          color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):#type:ignore
         """
         Create new section in /info command
         """
@@ -284,7 +284,7 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond(f"Section {name} {emoji} has been created, now you can add a new field or edit existing one.")
 
     @info_settings.command(name="remove-section")
-    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections)):
+    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections)):#type:ignore
         """Remove section in /info command"""
         config = await self.get_config(ctx.guild)
 
@@ -303,8 +303,8 @@ class InfoCog(commands.Cog, name="Info"):
 
     @info_settings.command(name="edit-field")
     async def edit_field(self, ctx: discord.ApplicationContext,
-                         section: Option(str, "Pick a section!", required=True, autocomplete=get_sections),
-                         option: Option(str, "Choose option.", required=True, autocomplete=get_options)):
+                         section: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
+                         option: Option(str, "Choose option.", required=True, autocomplete=get_options)): # type: ignore
         """Add, edit or remove a field in section"""
 
         config = await self.get_config(ctx.guild)
@@ -364,10 +364,10 @@ class InfoCog(commands.Cog, name="Info"):
 
     @info_settings.command(name="edit-section")
     async def edit_section(self, ctx: discord.ApplicationContext,
-                           section: Option(str, "Choose a section", required=True, autocomplete=get_sections),
-                           title: Option(str, "Choose a title!", max_lenght=256, required=False) = None,
-                           emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=False) = None,
-                           color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):
+                           section: Option(str, "Choose a section", required=True, autocomplete=get_sections), # type: ignore
+                           title: Option(str, "Choose a title!", max_lenght=256, required=False) = None,#type:ignore
+                           emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=False) = None,#type:ignore
+                           color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):#type:ignore
         """Change name, emoji or color of given section"""
 
         config = await self.get_config(ctx.guild)
@@ -413,8 +413,8 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond(f"{counter} properties has been changed in {_title} {_emoji}")
 
     @info_settings.command(name="edit-footer")
-    async def edit_footer(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections),
-                          footer: Option(str, required=True, max_lenght=2048)):
+    async def edit_footer(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
+                          footer: Option(str, required=True, max_lenght=2048)): # type: ignore
         """Edit section footer in /info command"""
         config = await self.get_config(ctx.guild)
 

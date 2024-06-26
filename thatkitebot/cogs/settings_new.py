@@ -53,7 +53,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
     
 
     @settings.command(name="images")
-    async def enable_images(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_images(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle image commands. Can be used by everyone with "manage_guild" permissions.
         """
@@ -64,7 +64,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="nsfw")
-    async def enable_nsfw(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_nsfw(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle NSFW commands. Can be used by everyone with "manage_guild" permissions.
         """
@@ -75,7 +75,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="repost")
-    async def enable_repost(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_repost(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle Repost Commands. Can be used by everyone with "manage_guild" permissions.
         """
@@ -86,7 +86,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="uwu")
-    async def enable_uwu(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_uwu(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle UwU Commands. Can be used by everyone with "manage_guild" permissions.
         """
@@ -97,7 +97,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="detrack")
-    async def enable_detrack(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_detrack(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle de-tracking commands. Can be used by everyone with "manage_guild" permissions.
         """
@@ -107,7 +107,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="welcome_leaderboard")
-    async def enable_welcome_leaderboard(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_welcome_leaderboard(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle the welcome leaderboard. Can be used by everyone with "manage_guild" permissions.
         """
@@ -118,7 +118,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="welcome_message")
-    async def enable_welcome_message(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_welcome_message(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle the welcome message. Can be used by everyone with "manage_guild" permissions.
         """
@@ -129,7 +129,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
 
     @settings.command(name="moderation")
-    async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle all Moderation features. Can be used by everyone with "manage_guild" permissions.
         """

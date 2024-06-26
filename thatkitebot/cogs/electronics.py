@@ -2,7 +2,7 @@
 
 import discord
 from discord.ext import commands
-import si_prefix
+import si_prefix #type:ignore
 
 from thatkitebot.base.util import Parsing as p
 from thatkitebot.base.util import errormsg

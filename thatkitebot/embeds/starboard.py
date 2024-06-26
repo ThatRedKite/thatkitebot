@@ -8,7 +8,7 @@ from thatkitebot.base.image_stuff import get_embed_urls
 from thatkitebot.base.url import get_avatar_url
 
 
-async def generate_embed(message: Message, count: int, star_emoji, return_file=False, aiohttp_session=None) -> (Embed, File, ):
+async def generate_embed(message: Message, count: int, star_emoji, return_file=False, aiohttp_session=None) -> tuple[Embed,File]:
     embed = Embed(
         title=f"{message.author.name}",
         description=f"**[Click here to Jump to the message]({message.jump_url})**",

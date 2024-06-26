@@ -24,10 +24,10 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     async def _rc(
             self,
             ctx: discord.ApplicationContext,
-            c1: discord.Option(str, "Value for C1:", required=False, default=None),
-            r1: discord.Option(str, "Value for R1", required=False, default=None),
-            fcut: discord.Option(str, "cutoff frequency:", required=False, default=None),
-            draw_plot: discord.Option(bool, "Display plot", required=False, default=False)
+            c1: discord.Option(str, "Value for C1:", required=False, default=None), #type:ignore
+            r1: discord.Option(str, "Value for R1", required=False, default=None),#type:ignore
+            fcut: discord.Option(str, "cutoff frequency:", required=False, default=None),#type:ignore
+            draw_plot: discord.Option(bool, "Display plot", required=False, default=False)#type:ignore
     ):
         """
         Calculate different aspects of an RC filter.
@@ -67,10 +67,10 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     async def _divider(
             self,
             ctx: discord.ApplicationContext,
-            r1: discord.Option(str, "Value for R1", required=False, default=None),
-            r2: discord.Option(str, "Value for R2", required=False, default=None),
-            vin: discord.Option(str, "Input voltage", required=False, default=None),
-            vout: discord.Option(str, "Output Voltage", required=False, default=False)
+            r1: discord.Option(str, "Value for R1", required=False, default=None),#type:ignore
+            r2: discord.Option(str, "Value for R2", required=False, default=None),#type:ignore
+            vin: discord.Option(str, "Input voltage", required=False, default=None),#type:ignore
+            vout: discord.Option(str, "Output Voltage", required=False, default=False)#type:ignore
     ):
         """
         Calculate values of an unloaded voltage divider. Run the command for more details.
@@ -89,11 +89,11 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     async def lm317(
             self,
             ctx: discord.ApplicationContext,
-            r1: discord.Option(str, "Value for R1:", required=False, default=None),
-            r2: discord.Option(str, "Value for R2:", required=False, default=None),
-            vin: discord.Option(str, "Input Voltage", required=False, default=None),
-            vout: discord.Option(str, "Output Voltage", required=False, default=None),
-            iout: discord.Option(str, "Output Current", required=False, default=None)
+            r1: discord.Option(str, "Value for R1:", required=False, default=None),#type:ignore
+            r2: discord.Option(str, "Value for R2:", required=False, default=None),#type:ignore
+            vin: discord.Option(str, "Input Voltage", required=False, default=None),#type:ignore
+            vout: discord.Option(str, "Output Voltage", required=False, default=None),#type:ignore
+            iout: discord.Option(str, "Output Current", required=False, default=None)#type:ignore
     ):
         """
         Calculate resistor values for an LM317 in CV and CC mode. Run the command for more details.

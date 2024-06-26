@@ -119,7 +119,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     async def _add_channel(
         self,
         ctx: discord.ApplicationContext,
-        channel: discord.Option(abc.GuildChannel, description="The Channel to uwuify"),
+        channel: discord.Option(abc.GuildChannel, description="The Channel to uwuify"),#type:ignore
         intensity: discord.Option(
             float,
             description="The intensity of the uwuification, default is 1.0",
@@ -127,8 +127,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             required=False,
             min_value=0.1,
             max_value=10.0,
-            ),
-        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)
+            ),#type:ignore
+        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
             return ctx.interaction.response.send_message("This command is disabled on this server.")
@@ -143,7 +143,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     async def add_user(
             self,
             ctx: discord.ApplicationContext,
-            user: discord.Option(discord.User, description="The user to uwuify.", required=True),
+            user: discord.Option(discord.User, description="The user to uwuify.", required=True),#type:ignore
             intensity: discord.Option(
                 float,
                 description="The intensity of the uwuification, default is 1.0",
@@ -151,8 +151,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 required=False,
                 min_value=0.1,
                 max_value=10.0,
-            ),
-        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)
+            ),#type:ignore
+        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
             return await ctx.interaction.response.send_message("This command is **disabled** on this server.")
@@ -173,7 +173,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             required=False,
             min_value=0.1,
             max_value=10.0,
-        ),
+        ),#type:ignore
     ):
         logger = set_up_guild_logger(ctx.guild.id)
 

@@ -72,20 +72,20 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
                 str,
                 description="Maximum age of messages that can be edited. Format like `1y 2w 3d 4h 5m 6s`",
                 required=True
-            ),
+            ),#type:ignore
 
             behavior: discord.Option(
                 str,
                 description="If the selected option sends a warning, warn_channel is a required parameter.",
                 choices=["Nothing", "Warn", "Delete", "Warn & Delete"],
                 required=True
-            ),
+            ),#type:ignore
 
             warn_channel: discord.Option(
                 discord.TextChannel,
                 description="Channel to send a warning in. Required if selected behavior sends a warning.",
                 required=False
-            )
+            )#type:ignore
 
     ):
         behavior_int = 0
@@ -157,7 +157,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
                 str,
                 "Maximum age of messages that can be edited. Format like `1y 2w 3d 4h 5m 6s`",
                 required=True
-            )
+            )#type:ignore
     ):
         time_diff = 0
 
@@ -210,7 +210,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     async def _ignore_channel(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.TextChannel, required=True, description="The channel to ignore")
+            channel: discord.Option(discord.TextChannel, required=True, description="The channel to ignore")#type:ignore
     ):
         await ctx.defer()
         if not ctx.guild:
@@ -226,7 +226,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     async def _unignore_channel(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.TextChannel, required=True, description="The channel to un-ignore")
+            channel: discord.Option(discord.TextChannel, required=True, description="The channel to un-ignore")#type:ignore
     ):
         await ctx.defer()
         if not ctx.guild:
@@ -246,7 +246,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     async def _ignore_role(
             self,
             ctx: discord.ApplicationContext,
-            role: discord.Option(discord.Role, required=True, description="The role to ignore")
+            role: discord.Option(discord.Role, required=True, description="The role to ignore")#type:ignore
     ):
         await ctx.defer()
         if not ctx.guild:
@@ -262,7 +262,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
     async def _unignore_role(
             self,
             ctx: discord.ApplicationContext,
-            role: discord.Option(discord.Role, required=True, description="The role to un-ignore")
+            role: discord.Option(discord.Role, required=True, description="The role to un-ignore")#type:ignore
     ):
         await ctx.defer()
         if not ctx.guild:

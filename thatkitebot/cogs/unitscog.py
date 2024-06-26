@@ -83,7 +83,7 @@ async def units_expander(expression: str) -> str:
     expanded_expression = ''.join(processed_segments)
     return expanded_expression
 
-async def units_converter(expression: str, target_unit: str = "") -> (float, str, str, str):
+async def units_converter(expression: str, target_unit: str = "") -> tuple:
     """Asynchronous wrapper for the units command."""
     
     # Construct the command to be executed.
@@ -178,12 +178,12 @@ class UnitsCommands(commands.Cog, name="Units Commands"):
                 str,
                 description="The units expression to evaluate.",
                 required=True
-            ), 
+            ),#type:ignore
             target_unit: discord.Option(
                 str,
                 description="The target unit to convert to (optional).",
                 required=False
-            )
+            )#type:ignore
     ):
         """Evaluate a units expression."""
         

@@ -37,8 +37,8 @@ class RedisFlags:
         9: MODERATION
         10: STARBOARD (Disable-Flag, 1 = Disabled 0 = Enabled)
         """
-        key = f"flags:{guild.id}"
-        await redis.setbit(key, flag_offset, int(value))
+
+        await redis.setbit(f"flags:{guild.id}", flag_offset, int(value))
 
     @staticmethod
     async def get_guild_flag(redis: aioredis.Redis, guild: Union[Guild, None], flag_offset: int) -> bool:
