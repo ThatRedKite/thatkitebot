@@ -1,4 +1,4 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#  Copyright (c) 2019-2024 ThatRedKite and contributors
 import io
 
 import aiohttp
@@ -8,10 +8,10 @@ from thatkitebot.base.image_stuff import get_embed_urls
 from thatkitebot.base.url import get_avatar_url
 
 
-async def generate_embed(message: Message, count, star_emoji, return_file=False, aiohttp_session=None):
+async def generate_embed(message: Message, count: int, star_emoji, return_file=False, aiohttp_session=None) -> (Embed, File, ):
     embed = Embed(
         title=f"{message.author.name}",
-        description=f"**[Click here to Jump to the message]({message.jump_url})**"
+        description=f"**[Click here to Jump to the message]({message.jump_url})**",
     )
 
 
@@ -85,7 +85,23 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     
     embed.set_thumbnail(url=f"attachment://{message.author.id}.{resp.content_type.split('/')[1]}")
     embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
-    embed.color = Color.gold()
+
+    match count / 5:
+        case 1:
+            embed.color = Color.dark_red
+        case 2:
+            embed.color = Color.red
+        case 3:
+            embed.color = Color.dark_blue
+        case 4:
+            embed.color = Color.blue
+        case 5:
+            embed.color = Color.dark_gold
+        case 6:
+            embed.color = Color.gold
+        case _:
+            embed.color = Color.blurple
+
     embed.timestamp = message.created_at
 
     # check if videos are present and the session is passed

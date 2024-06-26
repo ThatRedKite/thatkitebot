@@ -1,3 +1,3 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#  Copyright (c) 2019-2024 ThatRedKite and contributors
 
 from . import *

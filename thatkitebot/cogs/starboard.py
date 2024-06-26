@@ -1,7 +1,6 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#  Copyright (c) 2019-2024 ThatRedKite and contributors
 import logging
 import asyncio
-from datetime import timedelta, datetime
 
 import discord
 from redis import asyncio as aioredis
@@ -129,10 +128,10 @@ class StarBoard(commands.Cog):
     async def _starboard_enable(
             self,
             ctx: discord.ApplicationContext,
-            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99),
-            channel: discord.Option(discord.abc.GuildChannel, "The channel where starboard messages are sent", required=True),
-            emoji: discord.Option(str, "The emoji to count", required=True),
-            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False)
+            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99), # type: ignore
+            channel: discord.Option(discord.abc.GuildChannel, "The channel where starboard messages are sent", required=True), # type: ignore
+            emoji: discord.Option(str, "The emoji to count", required=True), # type: ignore
+            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False) # type: ignore
     ):
         await ctx.defer()
 
@@ -169,12 +168,12 @@ class StarBoard(commands.Cog):
     async def _starboard_channel_specific(
             self,
             ctx: discord.ApplicationContext,
-            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99),
-            emoji: discord.Option(str, description="The emoji to count", required=True),
-            starboard_channel: discord.Option(discord.abc.GuildChannel, description="The channel where starboard messages are sent", required=True),
-            listen_channel: discord.Option(discord.abc.GuildChannel, description="The channel to listen in.", required=True),
-            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False),
-            enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False)
+            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99), # type: ignore
+            emoji: discord.Option(str, description="The emoji to count", required=True), # type: ignore
+            starboard_channel: discord.Option(discord.abc.GuildChannel, description="The channel where starboard messages are sent", required=True), # type: ignore
+            listen_channel: discord.Option(discord.abc.GuildChannel, description="The channel to listen in.", required=True), # type: ignore
+            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False), # type: ignore
+            enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False) # type: ignore
     ):
         await ctx.defer()
 
@@ -211,7 +210,7 @@ class StarBoard(commands.Cog):
     async def blacklist_add(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want to blacklist", required=True)
+            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want to blacklist", required=True) # type: ignore
     ):
         await ctx.defer()
 
@@ -229,7 +228,7 @@ class StarBoard(commands.Cog):
     async def starboard_blacklist_remove(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want whitelist", required=True)
+            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want whitelist", required=True) # type: ignore
     ):
         await ctx.defer()
 
@@ -259,7 +258,7 @@ class StarBoard(commands.Cog):
                 max_value=99,
                 min_value=1,
                 required=True
-            )
+            ) # type: ignore
     ):
         await ctx.defer()
 
@@ -332,7 +331,7 @@ class StarBoard(commands.Cog):
     async def _set_max_age(
         self,
         ctx: discord.ApplicationContext,
-        max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`",required=False)
+        max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`",required=False) # type: ignore
     ):
         await ctx.defer()
 
@@ -353,7 +352,7 @@ class StarBoard(commands.Cog):
 
 
     @starboard.command(name="video_enable", description="Enable or disable videos in starboard messages.")
-    async def _video(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, description="Whether to enable or disable videos", required=True)):
+    async def _video(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, description="Whether to enable or disable videos", required=True)): # type: ignore
         await ctx.defer()
 
         if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
