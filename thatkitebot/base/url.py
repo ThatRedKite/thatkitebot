@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import asyncio
 import re
 from io import BytesIO
@@ -10,14 +35,16 @@ import discord
 import xkcd
 from bs4 import BeautifulSoup
 from thatkitebot.base.util import EmbedColors as ec
+#endregion
 
-GIF_PATTERN = re.compile(r"(?i)(^https?://\S+.(gif))")  # only gif images
+#region Regex Patterns
+GIF_PATTERN = re.compile(r"(?i)(^https?://\S+.(?P<extension>gif))")  # only gif images
 # detects PNG, JPEG, WEBP and GIF images
-OTHER_PATTERN = re.compile(r"(?i)(^https?://\S+.(png|webp|gif|jpe?g))")
+OTHER_PATTERN = re.compile(r"(?i)(^https?://\S+.(?P<extension>png|webp|gif|jpe?g))")
 # gets the ID of a tenor GIF from its URL
-TENOR_PATTERN = re.compile(r"(?i)^https://tenor.com\S+-(\d+)$")
-
-EMOJI_PATTERN = re.compile(r"(?i)<:\S+:\n+>")
+TENOR_PATTERN = re.compile(r"(?i)^https://tenor.com\S+-(?P<id>\d+)$")
+# pattern for
+EMOJI_PATTERN = re.compile(r"(?i)<:(?P<name>\S+):(?P<id>\d+)>")
 
 
 def get_avatar_url(user: discord.User):

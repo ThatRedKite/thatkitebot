@@ -1,7 +1,32 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
+
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import logging
 import asyncio
-from datetime import timedelta, datetime
 
 import discord
 from redis import asyncio as aioredis
@@ -14,14 +39,16 @@ from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.embeds.starboard import generate_embed
 from thatkitebot.base.exceptions import *
 from thatkitebot.base.util import set_up_guild_logger
+#endregion
 
-
+#region Modes
 class Modes:
     GLOBAL_THRESHOLD = 1
     SINGLE_CHANNEL_THRESHOLD = 2
+#endregion
 
-
-async def set_starboard(redis, channel_id, mode, threshold, emoji, guild_id, channel_list=None, video: bool = True, time_string: str = ""):
+#region Functions
+async def set_starboard(redis: aioredis.Connection, channel_id, mode, threshold, emoji, guild_id, channel_list=None, video: bool = True, time_string: str = "") -> bool:
     redis: aioredis.Redis
     """
     Set the starboard settings for a guild
@@ -44,8 +71,7 @@ async def set_starboard(redis, channel_id, mode, threshold, emoji, guild_id, cha
     await redis.hset(f"starboard_settings:{guild_id}", mapping=setdict)
 
     # set the disable-flag to 0
-    await flags.set_guild_flag(redis=redis, gid=guild_id, flag_offset=flags.FlagEnum.STARBOARD.value, value=False)
-
+    return await flags.set_guild_flag(redis=redis, gid=guild_id, flag_offset=flags.FlagEnum.STARBOARD,value=False) == flags.FlagEnum.STARBOARD.value
 
 async def check_permissions(ctx, channel: discord.TextChannel):
     if not channel.permissions_for(ctx.me).send_messages:
@@ -58,7 +84,6 @@ async def check_permissions(ctx, channel: discord.TextChannel):
         await ctx.followup.send("I don't have permission to manage messages in that channel.")
         return False
     return True
-
 
 async def check_if_already_posted(message: discord.Message, starboard_channel: discord.TextChannel, bot_id: int):
     """
@@ -77,10 +102,10 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
         if starmsg.author.id != bot_id:
             continue
         try:
-        
+            # FIXME
             # ignore messages with empty embeds
-            if any([isinstance(embed, discord.embeds._EmptyEmbed) for embed in starmsg.embeds]):
-                continue
+            for embed in starmsg.embeds:
+                print(len(embed))
             
             # make sure that the starred message is correct
             if message.jump_url in starmsg.embeds[0].description and starmsg.embeds[0].timestamp == message.created_at:
@@ -91,8 +116,9 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
             continue
 
     return None
+#endregion
 
-    
+#region Cog
 class StarBoard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -107,6 +133,7 @@ class StarBoard(commands.Cog):
         key = f"starboard_blacklist:{guild_id}"
         return await self.redis.hgetall(key)
 
+    #region command groups
     starboard: discord.SlashCommandGroup = discord.SlashCommandGroup(
         name="starboard",
         description="starboard Commands",
@@ -125,14 +152,15 @@ class StarBoard(commands.Cog):
         checks=[pc.can_change_settings, lambda ctx: ctx.guild is not None],
     )
 
+    #region enable commands
     @starboard.command(name="enable", description="Set the starboard settings for this guild. Overrides previous settings.", checks=[pc.can_change_settings])
     async def _starboard_enable(
             self,
             ctx: discord.ApplicationContext,
-            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99),
-            channel: discord.Option(discord.abc.GuildChannel, "The channel where starboard messages are sent", required=True),
-            emoji: discord.Option(str, "The emoji to count", required=True),
-            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False)
+            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99), # type: ignore
+            channel: discord.Option(discord.abc.GuildChannel, "The channel where starboard messages are sent", required=True), # type: ignore
+            emoji: discord.Option(str, "The emoji to count", required=True), # type: ignore
+            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False) # type: ignore
     ):
         await ctx.defer()
 
@@ -169,12 +197,12 @@ class StarBoard(commands.Cog):
     async def _starboard_channel_specific(
             self,
             ctx: discord.ApplicationContext,
-            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99),
-            emoji: discord.Option(str, description="The emoji to count", required=True),
-            starboard_channel: discord.Option(discord.abc.GuildChannel, description="The channel where starboard messages are sent", required=True),
-            listen_channel: discord.Option(discord.abc.GuildChannel, description="The channel to listen in.", required=True),
-            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False),
-            enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False)
+            threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99), # type: ignore
+            emoji: discord.Option(str, description="The emoji to count", required=True), # type: ignore
+            starboard_channel: discord.Option(discord.abc.GuildChannel, description="The channel where starboard messages are sent", required=True), # type: ignore
+            listen_channel: discord.Option(discord.abc.GuildChannel, description="The channel to listen in.", required=True), # type: ignore
+            max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False), # type: ignore
+            enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False) # type: ignore
     ):
         await ctx.defer()
 
@@ -205,17 +233,18 @@ class StarBoard(commands.Cog):
         await ctx.followup.send(
             f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
         )
+    #endregion
 
-
+    #region blacklist commands
     @_blacklist.command(name="add", description="Blacklists a channel from appearing on starboard")
     async def blacklist_add(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want to blacklist", required=True)
+            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want to blacklist", required=True) # type: ignore
     ):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD):
             raise StarboardDisabledException
         
         logger = set_up_guild_logger(ctx.guild.id)
@@ -229,11 +258,11 @@ class StarBoard(commands.Cog):
     async def starboard_blacklist_remove(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want whitelist", required=True)
+            channel: discord.Option(discord.abc.GuildChannel, description="The channel you want whitelist", required=True) # type: ignore
     ):
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD):
             raise StarboardDisabledException
         
         try:
@@ -246,8 +275,9 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} un-blacklisted {channel.name} in {ctx.guild.name}")
         await ctx.followup.send(f"Removed {channel.mention} from the starboard blacklist.")
+    #endregion
 
-
+    #region threshold commands
     @_threshold.command(name="set_global", description="Sets the global threshold, does not affect thresholds for individual channels.")
     async def _set_global(
             self,
@@ -259,12 +289,12 @@ class StarBoard(commands.Cog):
                 max_value=99,
                 min_value=1,
                 required=True
-            )
+            ) # type: ignore
     ):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD):
             raise StarboardDisabledException
 
         # check if starboard settings even exist
@@ -276,7 +306,7 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} set global threshold to {threshold} in {ctx.guild.name}")
         await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "threshold", threshold)
-        if await flags.get_guild_flag(self.redis, guild=ctx.guild, flag_offset=flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, guild=ctx.guild, flag_offset=flags.FlagEnum.STARBOARD):
             await ctx.followup.send("Starboard has been disabled. The threshold has been changed but starboard remains disabled")
             return
 
@@ -295,13 +325,13 @@ class StarBoard(commands.Cog):
                 description="The threshold you want to use",
                 max_value=99,
                 min_value=1
-            ),
-            channel: discord.Option(discord.TextChannel, description="The channel you want to change")
+            ), # type: ignore
+            channel: discord.Option(discord.TextChannel, description="The channel you want to change") # type: ignore
     ):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD):
             raise StarboardDisabledException
 
         # check if starboard settings even exist
@@ -315,7 +345,9 @@ class StarBoard(commands.Cog):
         await self.redis.hset(f"starboard_thresholds", str(channel.id), threshold)
         await ctx.followup.send(f"The threshold for {channel.mention} has been set to **{threshold}**.")
 
-
+    #endregion
+    
+    #region settings
     @starboard.command(name="disable", description="Disables all starboard functionality while keeping all settings", checks=[pc.can_change_settings])
     async def _disable(self, ctx: discord.ApplicationContext):
         await ctx.defer()
@@ -324,7 +356,7 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} disabled starboard in {ctx.guild.name}")
 
-        await flags.set_guild_flag(redis=self.redis, gid=ctx.guild.id, flag_offset=flags.FlagEnum.STARBOARD.value, value=True)
+        await flags.set_guild_flag(redis=self.redis, gid=ctx.guild.id, flag_offset=flags.FlagEnum.STARBOARD,value=True)
         await ctx.followup.send("Starboard functionality has been completely disabled (Existing settings will be kept)")
 
 
@@ -332,12 +364,12 @@ class StarBoard(commands.Cog):
     async def _set_max_age(
         self,
         ctx: discord.ApplicationContext,
-        max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`",required=False)
+        max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`",required=False) # type: ignore
     ):
         await ctx.defer()
 
         # check if the disable flag is set
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD):
             raise StarboardDisabledException
 
         if max_age and parse_timestring(max_age) == 0:
@@ -353,10 +385,10 @@ class StarBoard(commands.Cog):
 
 
     @starboard.command(name="video_enable", description="Enable or disable videos in starboard messages.")
-    async def _video(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, description="Whether to enable or disable videos", required=True)):
+    async def _video(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, description="Whether to enable or disable videos", required=True)): # type: ignore
         await ctx.defer()
 
-        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD.value):
+        if await flags.get_guild_flag(self.redis, ctx.guild, flags.FlagEnum.STARBOARD):
             raise StarboardDisabledException
         
         await self.redis.hset(f"starboard_settings:{ctx.guild.id}", "video", int(enable))
@@ -365,8 +397,9 @@ class StarBoard(commands.Cog):
         status = "enabled" if enable else "disabled"
         logger.info(f"STARBOARD: User {ctx.author.name} {status} videos in starboard {ctx.guild.name}")
         await ctx.followup.send(f"Videos are now **{status}** in starboard messages.")
-        
-        
+    #endregion    
+    
+    #region main listeners
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
@@ -380,7 +413,7 @@ class StarBoard(commands.Cog):
                 return
             
             # check if starboad is disabled
-            if await flags.get_guild_flag_by_id(redis=self.redis, guild_id=payload.guild_id, flag_offset=flags.FlagEnum.STARBOARD.value):
+            if await flags.get_guild_flag(redis=self.redis, guild=payload.guild_id, flag_offset=flags.FlagEnum.STARBOARD):
                 return
 
             channel = await self.bot.fetch_channel(payload.channel_id)
@@ -512,7 +545,7 @@ class StarBoard(commands.Cog):
 
                 case _:
                     return
-                
+                   
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx: discord.ApplicationContext, exception):
@@ -520,7 +553,7 @@ class StarBoard(commands.Cog):
                 await ctx.followup.send("Starboard has been disabled. Please re-enable it to change settings.")
         else:
             return
-
+    #endregion
 
 def setup(bot):
     bot.add_cog(StarBoard(bot))

@@ -1,17 +1,43 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
+
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region imports
 import io
 
-import aiohttp
-from discord import Embed, Message, Color, File, Attachment
+from discord import Embed, Message, Color, File
 
 from thatkitebot.base.image_stuff import get_embed_urls
 from thatkitebot.base.url import get_avatar_url
+#endregion
 
-
-async def generate_embed(message: Message, count, star_emoji, return_file=False, aiohttp_session=None):
+#region main code
+async def generate_embed(message: Message, count: int, star_emoji, return_file=False, aiohttp_session=None) -> tuple[Embed,File]:
     embed = Embed(
         title=f"{message.author.name}",
-        description=f"**[Click here to Jump to the message]({message.jump_url})**"
+        description=f"**[Click here to Jump to the message]({message.jump_url})**",
     )
 
 
@@ -85,7 +111,12 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
     
     embed.set_thumbnail(url=f"attachment://{message.author.id}.{resp.content_type.split('/')[1]}")
     embed.add_field(name="​", value=f"{count} - {star_emoji}'s")
-    embed.color = Color.gold()
+
+    if count < 13:
+        embed.color = int(hex(message.guild.id)[4:10],16)
+    elif count > 13:
+        embed.color = Color.gold()
+
     embed.timestamp = message.created_at
 
     # check if videos are present and the session is passed
@@ -93,3 +124,4 @@ async def generate_embed(message: Message, count, star_emoji, return_file=False,
         return embed, pfp_file, video_file
     
     return embed, pfp_file, None
+#endregion

@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import re
 import io
 import textwrap
@@ -18,9 +43,10 @@ from thatkitebot.base.url import get_avatar_url
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
+#endregion
 
 
-
+#region Functions
 async def uwuify(message: str, id: int, intensity: float = 1.0, enable_nsfw = False):
     # initialize the uwuipy class, multiplying the default intensites by :intensity:
     uwu = uwuipy(id, *map(lambda m: (m * intensity), (0.1, 0.05, 0.0075)), 1.0, nsfw_actions=enable_nsfw)
@@ -44,15 +70,17 @@ async def get_uwu_webhook(webhook_id, channel: discord.TextChannel) -> Union[dis
 
     else:
         return uwu_webhook
+#endregion
 
-
+#region Cog
 class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
 
+    #region private methods
     async def _uwu_enabled(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU.value)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU)
     
     async def _change_uwu_status(self, ctx:discord.ApplicationContext, to_change: Union[abc.GuildChannel, discord.User, discord.Member], intensity: float) -> bool:
         logger = set_up_guild_logger(ctx.guild.id)
@@ -104,10 +132,13 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         #    return False
 
         return is_user or is_channel
+    #endregion
 
     #
     #   --- UwU command groups
     #
+
+    #region slash commands
 
     uwu = discord.SlashCommandGroup(
         "uwu",
@@ -119,7 +150,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     async def _add_channel(
         self,
         ctx: discord.ApplicationContext,
-        channel: discord.Option(abc.GuildChannel, description="The Channel to uwuify"),
+        channel: discord.Option(abc.GuildChannel, description="The Channel to uwuify"),#type:ignore
         intensity: discord.Option(
             float,
             description="The intensity of the uwuification, default is 1.0",
@@ -127,8 +158,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             required=False,
             min_value=0.1,
             max_value=10.0,
-            ),
-        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)
+            ),#type:ignore
+        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
             return ctx.interaction.response.send_message("This command is disabled on this server.")
@@ -138,12 +169,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         else:
             await ctx.interaction.response.send_message(f"{channel.mention} has been liberated from uwuification. Thank goodneess!", ephemeral=silent)
 
-
     @uwu.command(name="user", description="Turn every message from this user into unintelligible uwu gibberish.")
     async def add_user(
             self,
             ctx: discord.ApplicationContext,
-            user: discord.Option(discord.User, description="The user to uwuify.", required=True),
+            user: discord.Option(discord.User, description="The user to uwuify.", required=True),#type:ignore
             intensity: discord.Option(
                 float,
                 description="The intensity of the uwuification, default is 1.0",
@@ -151,8 +181,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 required=False,
                 min_value=0.1,
                 max_value=10.0,
-            ),
-        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)
+            ),#type:ignore
+        silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
             return await ctx.interaction.response.send_message("This command is **disabled** on this server.")
@@ -173,7 +203,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             required=False,
             min_value=0.1,
             max_value=10.0,
-        ),
+        ),#type:ignore
     ):
         logger = set_up_guild_logger(ctx.guild.id)
 
@@ -183,7 +213,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         await self.redis.hset("uwui", "g", intensity)
         logger.info(f"UWU: {ctx.author.name} set global intensity to {intensity} in '{ctx.guild.name}'")
         return await ctx.interaction.response.send_message(f"Set the global intensity to **{intensity}**")
+    #endregion
 
+    #region prefixed commands
     @commands.command(name="uwu_user")
     async def _uwu_user(self, ctx):
         await ctx.send("This command is deprecated, please use the slash command version")
@@ -191,12 +223,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     @commands.command(name="uwu_channel")
     async def _uwu_channel(self, ctx):
         await ctx.send("This command is deprecated, please use the slash command version")
+    #endregion
 
-
-    #
-    #   --- main listener function ---
-    #
-    
+    #region main listener
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
@@ -280,7 +309,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             )
 
             await message.delete(reason="UwU Delete")
-
+    #endregion
+#endregion
 
 def setup(bot):
     bot.add_cog(UwuCog(bot))

@@ -1,6 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 from random import uniform
 
 import discord
@@ -11,8 +35,9 @@ from thatkitebot.base.util import errormsg
 from thatkitebot.calculators.electronics.rc_filter import RCFilter
 from thatkitebot.calculators import electronics as el
 from thatkitebot.calculators.electronics.exceptions import *
+#endregion
 
-
+#region Cog
 class ElectroSlashCog(Cog, name="Electronics slash commands"):
     """
     A cog for slash commands related to electronics.
@@ -24,10 +49,10 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     async def _rc(
             self,
             ctx: discord.ApplicationContext,
-            c1: discord.Option(str, "Value for C1:", required=False, default=None),
-            r1: discord.Option(str, "Value for R1", required=False, default=None),
-            fcut: discord.Option(str, "cutoff frequency:", required=False, default=None),
-            draw_plot: discord.Option(bool, "Display plot", required=False, default=False)
+            c1: discord.Option(str, "Value for C1:", required=False, default=None), #type:ignore
+            r1: discord.Option(str, "Value for R1", required=False, default=None),#type:ignore
+            fcut: discord.Option(str, "cutoff frequency:", required=False, default=None),#type:ignore
+            draw_plot: discord.Option(bool, "Display plot", required=False, default=False)#type:ignore
     ):
         """
         Calculate different aspects of an RC filter.
@@ -67,10 +92,10 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     async def _divider(
             self,
             ctx: discord.ApplicationContext,
-            r1: discord.Option(str, "Value for R1", required=False, default=None),
-            r2: discord.Option(str, "Value for R2", required=False, default=None),
-            vin: discord.Option(str, "Input voltage", required=False, default=None),
-            vout: discord.Option(str, "Output Voltage", required=False, default=False)
+            r1: discord.Option(str, "Value for R1", required=False, default=None),#type:ignore
+            r2: discord.Option(str, "Value for R2", required=False, default=None),#type:ignore
+            vin: discord.Option(str, "Input voltage", required=False, default=None),#type:ignore
+            vout: discord.Option(str, "Output Voltage", required=False, default=False)#type:ignore
     ):
         """
         Calculate values of an unloaded voltage divider. Run the command for more details.
@@ -89,11 +114,11 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
     async def lm317(
             self,
             ctx: discord.ApplicationContext,
-            r1: discord.Option(str, "Value for R1:", required=False, default=None),
-            r2: discord.Option(str, "Value for R2:", required=False, default=None),
-            vin: discord.Option(str, "Input Voltage", required=False, default=None),
-            vout: discord.Option(str, "Output Voltage", required=False, default=None),
-            iout: discord.Option(str, "Output Current", required=False, default=None)
+            r1: discord.Option(str, "Value for R1:", required=False, default=None),#type:ignore
+            r2: discord.Option(str, "Value for R2:", required=False, default=None),#type:ignore
+            vin: discord.Option(str, "Input Voltage", required=False, default=None),#type:ignore
+            vout: discord.Option(str, "Output Voltage", required=False, default=None),#type:ignore
+            iout: discord.Option(str, "Output Current", required=False, default=None)#type:ignore
     ):
         """
         Calculate resistor values for an LM317 in CV and CC mode. Run the command for more details.
@@ -126,7 +151,7 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
         except ImpossibleValueError:
             await errormsg(ctx, "Get real. <:troll:910540961958989934>")
             return
-
+#endregion
 
 def setup(bot):
     bot.add_cog(ElectroSlashCog(bot))
