@@ -239,11 +239,6 @@ class InfoCog(commands.Cog):
         await ctx.send_modal(modal)
 
 
-    # TODO it's just temporary debug function    
-    async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        """Error handler for the cog."""
-        await ctx.send(f"{error}")
-
     @commands.Cog.listener(name="on_guild_join")
     async def load_defaults(self, guild):
         """Load default config file when bot joins guild."""
