@@ -236,8 +236,8 @@ class FieldModal(discord.ui.Modal):
 
         _inline = discord.ui.InputText(
             label="In-line",
-            value=inline if inline != "" else "True",
-            placeholder="True or False",
+            value=inline if inline != "" else "true",
+            placeholder="Type \"true\" or \"false\"",
             max_length=5
         )
 
@@ -250,11 +250,11 @@ class FieldModal(discord.ui.Modal):
         self.config_file[self.section_id]["fields"][self.field_id]["name"] = self.children[0].value  # set title of the field
         self.config_file[self.section_id]["fields"][self.field_id]["value"] = self.children[1].value  # set value of the field
 
-        # check if "inline" input value is correct
-        if str(self.children[2].value).lower() == "true":
-            self.config_file[self.section_id]["fields"][self.field_id]["inline"] = True
-        elif str(self.children[2].value).lower() == "false":
-            self.config_file[self.section_id]["fields"][self.field_id]["inline"] = False
+        # Check if "inline" input value is correct
+        inline_value = str(self.children[2].value).strip().lower()
+
+        if inline_value in {"true", "false"}:
+            self.config_file[self.section_id]["fields"][self.field_id]["inline"] = (inline_value == "true")
         else:
             await interaction.response.send_message("Invalid `in-line` value!", ephemeral=True)
             return
@@ -458,6 +458,7 @@ class InfoCog(commands.Cog):
 
     @info_settings.command(name="factory-reset")
     async def factory_reset(self, ctx):
+        """Factory reset of all the sections in /info """
         modal = FactoryResetModal(title="Factory Reset!", config=self.config)
         await ctx.send_modal(modal)
 
