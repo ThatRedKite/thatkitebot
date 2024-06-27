@@ -104,9 +104,9 @@ class InfoCog(commands.Cog):
 
     @info_settings.command(name="add-section")
     async def new_section(self, ctx: discord.ApplicationContext,
-                          name: Option(str, "Choose a name!", required=True, max_lenght=256),
-                          emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True),
-                          color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):
+                          name: Option(str, "Choose a name!", required=True, max_lenght=256), # type: ignore
+                          emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True), # type: ignore
+                          color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None): # type: ignore
         """
         Create new section in /info command
         """
@@ -151,7 +151,7 @@ class InfoCog(commands.Cog):
         await ctx.respond(f"Section {name} {emoji} has been created, now you can add a new field or edit existing one.")
 
     @info_settings.command(name="remove-section")
-    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections)):
+    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections)): # type: ignore
         """Remove section in /info command"""
         config_file = await self.config.get(ctx.guild)
 
@@ -170,8 +170,8 @@ class InfoCog(commands.Cog):
 
     @info_settings.command(name="edit-field")
     async def edit_field(self, ctx: discord.ApplicationContext,
-                         section: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections),
-                         option: Option(str, "Choose option.", required=True, choices=["edit", "remove", "add"])):
+                         section: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections), # type: ignore
+                         option: Option(str, "Choose option.", required=True, choices=["edit", "remove", "add"])): # type: ignore
         """Add, edit or remove a field in section"""
 
         config_file = await self.config.get(ctx.guild)
@@ -221,7 +221,7 @@ class InfoCog(commands.Cog):
 
     @info_settings.command(name="edit-section")
     async def edit_section(self, ctx: discord.ApplicationContext,
-                            section: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections)):
+                            section: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections)): # type: ignore
         """Change name, emoji, footer or color of a given section"""
         config_file = await self.config.get(ctx.guild)
 
