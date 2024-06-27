@@ -1,4 +1,30 @@
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import os
 import io
 import logging
@@ -12,7 +38,7 @@ from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import check_message_age, parse_timestring, set_up_guild_logger
 from thatkitebot.embeds import moderation as mod_embeds
 from thatkitebot.tkb_redis import settings
-
+#endregion
 
 class Offsets:
     EDIT_CHECKER = 0
@@ -24,7 +50,7 @@ async def enable_check(ctx: discord.ApplicationContext):
     is_enabled = await settings.RedisFlags.get_guild_flag(redis, ctx.guild, flag_offset=settings.RedisFlags.FlagEnum.MODERATION)
     return is_enabled
 
-
+#region Cog
 class ModerationCommands(commands.Cog, name="Moderation Commands"):
     """
     This cog contains commands that are used to manage the bot. These commands are only available to the bot owner.
@@ -34,6 +60,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         self.redis: aioredis.Redis = bot.redis
         self.logger: logging.Logger = bot.logger
 
+    #region Command groups
     edit_checker = discord.SlashCommandGroup(
         "edit_checker",
         "Edit Checking Commands",
@@ -45,7 +72,9 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         "General Moderation Commands",
         checks=[pc.mods_can_change_settings, enable_check]
     )
+    #endregion
 
+    #region general commands
     @moderation.command(name="send_logs", description="Sends the logs for this guild. Use with care.")
     async def send_logs(self, ctx: discord.ApplicationContext):
         await ctx.defer()
@@ -57,12 +86,6 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         async with aiofiles.open(log_path, "rb") as log:
             file = discord.File(fp=io.BytesIO(await log.read()), filename=f"{ctx.guild.id}.txt")
             await ctx.followup.send(file=file)
-
-
-    #
-    # --- General Settings Commands ---
-    #
-
 
     @edit_checker.command(name="enable", description="Enable or change settings for checking for old edits")
     async def edit_checker_enable(
@@ -148,7 +171,6 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         await ctx.followup.send("Edit checking has been enabled!")
         await pipe.execute()
 
-
     @edit_checker.command(name="change_time", description="Change minimum age of messages that will be deleted.")
     async def _change_time(
             self,
@@ -201,7 +223,10 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"MODERATION: User {ctx.author.name} disabled edit-checking in {ctx.guild.name}")
         await ctx.followup.send("Successfully disabled edit checking.")
+    #endregion
 
+    #region Ignore Commands
+    
     #
     # --- Channel Ignore Commands ---
     #
@@ -273,13 +298,12 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
         logger.info(f"MODERATION: User {ctx.author.name} removed role {role.name} from ignorelist in {ctx.guild.name}")
         await self.redis.srem("edit_check_ignore_roles", role.id)
         await ctx.followup.send(f"Successfully removed {role.name} from the ignore list.")
+    #endregion
 
-
+    #region listeners
     #
     #  --- Main Listener Function ---
     #
-
-
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         self.bot.events_hour += 1
@@ -371,6 +395,7 @@ class ModerationCommands(commands.Cog, name="Moderation Commands"):
             
                     await warn_channel.send(embed=warn_embed)
 
+    #endregion
 
 def setup(bot):
     bot.add_cog(ModerationCommands(bot))

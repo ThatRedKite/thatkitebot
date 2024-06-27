@@ -1,6 +1,30 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region imports
 import discord
 from discord.ext import commands
 
@@ -15,8 +39,9 @@ from discord.ext import commands
 from redis import asyncio as aioredis
 
 from thatkitebot.tkb_redis.settings import RedisFlags
+#endregion
 
-
+#region functions
 async def update_count(redis: aioredis.Redis, message: discord.Message):
     """
     Updates the welcome count for the given message's author.
@@ -43,8 +68,9 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
 
         if write:
             await redis.hset(usr_key, "latest_welcome", int(unix_time))
+#endregion
 
-
+# region Cog
 class WelcomeCog(commands.Cog, name="Welcome counter"):
     """
     A cog that counts the number of times a user has welcome newly joined members.

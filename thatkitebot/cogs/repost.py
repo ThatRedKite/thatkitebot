@@ -1,11 +1,33 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import asyncio
 import typing
-import re
 import logging
-
-from concurrent.futures import ProcessPoolExecutor
 
 import imagehash
 import discord
@@ -19,8 +41,9 @@ from thatkitebot.base.url import TENOR_PATTERN
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis import cache as ca
 from thatkitebot.base.util import PermissonChecks as pc
+#endregion
 
-
+#region Cog
 class RepostCog(commands.Cog, name="Repost Commands"):
     """
     Repost commands.
@@ -42,6 +65,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.loop = self.bot.loop
         self.hasher_pool = bot.process_pool
 
+    #region Methods
     async def get_tenor_image(self, url, token):
         """
         Downloads a tenor gif and returns the hash of the image.
@@ -130,7 +154,9 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             distance = image_hash_original - image_hash_to_check
 
             yield distance, hash_key
-
+    #endregion
+    
+    #region Commands
     @commands.group(aliases=["repc", "repostchannel"])
     async def repost_channel(self, ctx: commands.Context):
         """
@@ -293,7 +319,8 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                     await pipe.hset(key, "repost_count", str(0))
 
             await pipe.execute()  # execute the pipeline to commit the changes
-
+    #endregion
+#endregion
 
 def setup(bot):
     bot.add_cog(RepostCog(bot))

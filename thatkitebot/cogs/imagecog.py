@@ -1,8 +1,33 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
+
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
 
 
+
+#region Imports
 import asyncio
-import re
 from typing import Optional
 from urllib.parse import urlparse, parse_qs, urlencode
 
@@ -14,8 +39,9 @@ from thatkitebot.base.image_stuff import ImageFunction
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.url import get_avatar_url
+#endregion
 
-
+#region Cog
 class ImageStuff(commands.Cog, name="image commands"):
     """
     Image commands for the bot. Can be disabled by the bot owner or an admin.
@@ -34,7 +60,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         await util.errormsg(ctx, error)
 
     async def cog_check(self, ctx) -> bool:
-        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.FlagEnum.IMAGE.value)
+        is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.FlagEnum.IMAGE)
         can_attach = ctx.channel.permissions_for(ctx.author).attach_files
         can_embed = ctx.channel.permissions_for(ctx.author).embed_links
         return is_enabled and can_attach and can_embed
@@ -51,7 +77,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         Applies some content aware and swirling scaling to an image.
         When the image is a GIF, it takes the first frame
         """
-        print(RedisFlags.FlagEnum.IMAGE.value)
+        print(RedisFlags.FlagEnum.IMAGE)
         buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
         async with ctx.channel.typing(), self.sem:
             image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
@@ -424,7 +450,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         embed = discord.Embed(title=f"{emoji.name}", color=ec.lime_green)
         embed.set_image(url=emoji.url)
         await ctx.reply(embed=embed, mention_author=False)
-
+#endregion
 
 def setup(bot):
     bot.add_cog(ImageStuff(bot))

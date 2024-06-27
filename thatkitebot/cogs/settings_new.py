@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import enum
 import re
 
@@ -13,9 +38,11 @@ from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.util import set_up_guild_logger
+#endregion
 
 OLD_SETTING = re.compile(r"^(\d+)$")
 
+#region Cog
 class SettingsCogV2(commands.Cog, name="Settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
@@ -51,7 +78,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
         return embed
     
-
+    #region Commands
     @settings.command(name="images")
     async def enable_images(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -138,7 +165,6 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # set the settings, log everything and generate an embed
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION, further_config=True))
 
-
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")
     async def _add_mod(self, ctx: discord.ApplicationContext, role: discord.Role):
         """
@@ -159,8 +185,9 @@ class SettingsCogV2(commands.Cog, name="Settings"):
                 return
             logger.info(f"MODERATION: User {ctx.author.name} removed {role.name} as a moderation role in {ctx.guild.name}")
             await ctx.respond(f"{role.name} is no longer a moderator role")
+    #endregion
 
-
+    #region convert
     @commands.is_owner()
     @commands.dm_only()
     @commands.command()
@@ -232,8 +259,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
         self.bot.logger.info(f"SETTINGS: Cleaned up {len(pipe.command_stack)} settings.")      
         await pipe.execute()
-            
-
+    #endregion           
+#endregion
 
 def setup(bot):
     bot.add_cog(SettingsCogV2(bot))

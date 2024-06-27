@@ -1,10 +1,34 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 from io import BytesIO
 import discord
 from discord.ext import commands
 from thatkitebot.base.util import EmbedColors as ec
-import psutil
 
 from datetime import datetime, timezone
 from wand.image import Image as WandImage
@@ -14,8 +38,9 @@ from dateutil.relativedelta import relativedelta
 from thatkitebot.embeds.status import gen_embed as status_embed
 from thatkitebot.embeds.about import gen_embed as about_embed
 from thatkitebot.embeds.gdpr import gen_embed as gdpr_embed
+#endregion
 
-
+#region Cog
 class UtilityCommands(commands.Cog, name="Potentially useful commands"):
     """
     Utility commands for the bot. These commands are basically informational commands.
@@ -116,7 +141,7 @@ class UtilityCommands(commands.Cog, name="Potentially useful commands"):
 
         embed.set_image(url="attachment://id_color.jpeg")
         await ctx.send(file=file, embed=embed)
-
+#endregion
 
 def setup(bot):
     bot.add_cog(UtilityCommands(bot))

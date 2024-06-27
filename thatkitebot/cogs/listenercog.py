@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import logging
 import discord
 from datetime import datetime
@@ -13,7 +38,7 @@ from thatkitebot.base.util import errormsg
 from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException, NoDataException
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.base.exceptions import *
-
+#endregion
 
 class ListenerCog(commands.Cog):
     """
@@ -84,21 +109,14 @@ class ListenerCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        self.logger.info(f"\n{self.bot.user.name} is now ready")
-
-        # try to get and set the last online thingies
-        self.bot.last_online = int(await self.redis.get("last")) or 0
-        if self.bot.last_online > 0:
-            self.logger.info(f"{self.bot.user.name} was last started at {datetime.fromtimestamp(float(self.bot.last_online))} UTC")
-
-        await self.redis.set("last", int(datetime.now().timestamp()))
-
+        
         self.logger.info("Starting background loops…\n")
         
         self.hourly_reset.start()        
         self.cache_update.start()
         self.database_ping.start()
-
+        
+        self.logger.info(f"{self.bot.user.name} is now ready")
         await self.bot.change_presence(
             activity=discord.Activity(name="a battle against russia", type=5),
             status=discord.Status.online,
@@ -119,6 +137,9 @@ class ListenerCog(commands.Cog):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
+        test_channel = discord.channel.__cached__
+        
+        test_channel.send("Test 123")
         if not message.guild:
             return
 

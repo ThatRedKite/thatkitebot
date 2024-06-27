@@ -1,4 +1,30 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
+
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import logging
 import asyncio
 
@@ -13,13 +39,15 @@ from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.embeds.starboard import generate_embed
 from thatkitebot.base.exceptions import *
 from thatkitebot.base.util import set_up_guild_logger
+#endregion
 
-
+#region Modes
 class Modes:
     GLOBAL_THRESHOLD = 1
     SINGLE_CHANNEL_THRESHOLD = 2
+#endregion
 
-
+#region Functions
 async def set_starboard(redis: aioredis.Connection, channel_id, mode, threshold, emoji, guild_id, channel_list=None, video: bool = True, time_string: str = "") -> bool:
     redis: aioredis.Redis
     """
@@ -45,8 +73,6 @@ async def set_starboard(redis: aioredis.Connection, channel_id, mode, threshold,
     # set the disable-flag to 0
     return await flags.set_guild_flag(redis=redis, gid=guild_id, flag_offset=flags.FlagEnum.STARBOARD,value=False) == flags.FlagEnum.STARBOARD.value
 
-
-
 async def check_permissions(ctx, channel: discord.TextChannel):
     if not channel.permissions_for(ctx.me).send_messages:
         await ctx.followup.send("I don't have permission to send messages in that channel.")
@@ -58,7 +84,6 @@ async def check_permissions(ctx, channel: discord.TextChannel):
         await ctx.followup.send("I don't have permission to manage messages in that channel.")
         return False
     return True
-
 
 async def check_if_already_posted(message: discord.Message, starboard_channel: discord.TextChannel, bot_id: int):
     """
@@ -91,8 +116,9 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
             continue
 
     return None
+#endregion
 
-    
+#region Cog
 class StarBoard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -107,6 +133,7 @@ class StarBoard(commands.Cog):
         key = f"starboard_blacklist:{guild_id}"
         return await self.redis.hgetall(key)
 
+    #region command groups
     starboard: discord.SlashCommandGroup = discord.SlashCommandGroup(
         name="starboard",
         description="starboard Commands",
@@ -125,6 +152,7 @@ class StarBoard(commands.Cog):
         checks=[pc.can_change_settings, lambda ctx: ctx.guild is not None],
     )
 
+    #region enable commands
     @starboard.command(name="enable", description="Set the starboard settings for this guild. Overrides previous settings.", checks=[pc.can_change_settings])
     async def _starboard_enable(
             self,
@@ -205,8 +233,9 @@ class StarBoard(commands.Cog):
         await ctx.followup.send(
             f"Starboard in {starboard_channel.mention} will now listen in the channel {listen_channel} for the {emoji} emoji."
         )
+    #endregion
 
-
+    #region blacklist commands
     @_blacklist.command(name="add", description="Blacklists a channel from appearing on starboard")
     async def blacklist_add(
             self,
@@ -246,8 +275,9 @@ class StarBoard(commands.Cog):
         logger = set_up_guild_logger(ctx.guild.id)
         logger.info(f"STARBOARD: User {ctx.author.name} un-blacklisted {channel.name} in {ctx.guild.name}")
         await ctx.followup.send(f"Removed {channel.mention} from the starboard blacklist.")
+    #endregion
 
-
+    #region threshold commands
     @_threshold.command(name="set_global", description="Sets the global threshold, does not affect thresholds for individual channels.")
     async def _set_global(
             self,
@@ -315,7 +345,9 @@ class StarBoard(commands.Cog):
         await self.redis.hset(f"starboard_thresholds", str(channel.id), threshold)
         await ctx.followup.send(f"The threshold for {channel.mention} has been set to **{threshold}**.")
 
-
+    #endregion
+    
+    #region settings
     @starboard.command(name="disable", description="Disables all starboard functionality while keeping all settings", checks=[pc.can_change_settings])
     async def _disable(self, ctx: discord.ApplicationContext):
         await ctx.defer()
@@ -365,8 +397,9 @@ class StarBoard(commands.Cog):
         status = "enabled" if enable else "disabled"
         logger.info(f"STARBOARD: User {ctx.author.name} {status} videos in starboard {ctx.guild.name}")
         await ctx.followup.send(f"Videos are now **{status}** in starboard messages.")
-        
-        
+    #endregion    
+    
+    #region main listeners
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         self.bot.events_hour += 1
@@ -512,7 +545,7 @@ class StarBoard(commands.Cog):
 
                 case _:
                     return
-                
+                   
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx: discord.ApplicationContext, exception):
@@ -520,7 +553,7 @@ class StarBoard(commands.Cog):
                 await ctx.followup.send("Starboard has been disabled. Please re-enable it to change settings.")
         else:
             return
-
+    #endregion
 
 def setup(bot):
     bot.add_cog(StarBoard(bot))

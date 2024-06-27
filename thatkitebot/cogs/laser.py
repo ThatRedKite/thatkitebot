@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2024 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 from math import sin, atan
 from io import BytesIO
 
@@ -12,8 +37,9 @@ from wand.color import Color as WandColor
 from thatkitebot.base import util
 from thatkitebot.embeds.laser import gen_embed as safety_embed
 from thatkitebot.calculators.electronics.exceptions import TooFewArgsError
+#endregion
 
-
+#region Functions
 def wavelength_to_rgb(wavelength, gamma=0.98):
     '''This converts a given wavelength of light to an
     approximate RGB color value. The wavelength must be given
@@ -77,8 +103,9 @@ def calculate_diffraction(p):
         raise TooFewArgsError()
     res = 1 / lmm / 1000 * sin((atan(d / (2 * l))))
     return dict(res=si_prefix.si_format(res), Lmm=lmm, L=si_prefix.si_format(l), D=si_prefix.si_format(d))
+#endregion
 
-
+#region Cog
 class LaserCog(commands.Cog, name="Laser commands"):
     """
     Laser calculations and safety advice.
@@ -180,7 +207,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
             except TooFewArgsError:
                 await util.errormsg(ctx, "Not enough arguments to compute anything.")
                 return
-
+#endregion
 
 def setup(bot):
     bot.add_cog(LaserCog(bot))
