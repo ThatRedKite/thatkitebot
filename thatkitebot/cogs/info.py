@@ -520,7 +520,6 @@ class EditSectionModal(Modal):
 
         if title:
             config_file[self.section_id]["title"] = title
-            counter += 1
 
         if emoji:
             if not Utility.check_emoji(emoji):
@@ -531,7 +530,6 @@ class EditSectionModal(Modal):
                 emoji = f":{discord_emoji.to_discord(emoji, get_all=True)}:"
 
             config_file[self.section_id]["emoji"] = emoji
-            counter += 1
 
         if color:
             if not Utility.convert_hex(color):
@@ -539,10 +537,9 @@ class EditSectionModal(Modal):
                 return
             
             config_file[self.section_id]["color"] = Utility.convert_hex(color)
-            counter += 1
 
         await self.config.update(interaction.guild, config_file)
-        await interaction.response.send_message(f"{counter} properties have been changed in {old_section_title} {old_emoji}", ephemeral=True)
+        await interaction.response.send_message(f"Section {old_section_title} {old_emoji} has beed updated", ephemeral=True)
 
 ###### Utility ######
 
