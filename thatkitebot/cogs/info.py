@@ -216,7 +216,6 @@ class InfoCog(commands.Cog):
 
         await ctx.respond(view=view)
 
-# TODO edit_section edit_footer (merge it in edit_section)
 
     @info_settings.command(name="edit-section")
     async def edit_section(self, ctx: discord.ApplicationContext,
@@ -502,15 +501,19 @@ class EditSectionModal(Modal):
         title = config_file[self.section_id]["title"]
         emoji = config_file[self.section_id]["emoji"]
         color = hex(config_file[self.section_id]["color"])
+        footer = config_file[self.section_id]["footer"]
+
 
         self.add_item(InputText(label="Title", value = title, placeholder="Choose a title!", max_length=256, required=False))
         self.add_item(InputText(label="Emoji", value = emoji, placeholder="Choose an emoji! (e.g :lightbulb:)", required=False))
         self.add_item(InputText(label="Color", value = color, placeholder="Choose a color! (hex e.g. 0x123456)", required=False))
+        self.add_item(InputText(label="Footer", value = footer, placeholder="Choose a footer!", max_length=2048, required=False))
 
     async def callback(self, interaction: discord.Interaction):
         title = self.children[0].value
         emoji = self.children[1].value
         color = self.children[2].value
+        footer = self.children[3].value
 
         config_file = await self.config.get(interaction.guild)
         old_emoji = config_file[self.section_id]["emoji"]
@@ -518,8 +521,8 @@ class EditSectionModal(Modal):
 
         counter = 0
 
-        if title:
-            config_file[self.section_id]["title"] = title
+        config_file[self.section_id]["title"] = title
+        config_file[self.section_id]["footer"] = footer
 
         if emoji:
             if not Utility.check_emoji(emoji):
