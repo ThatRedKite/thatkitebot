@@ -24,4 +24,55 @@ SOFTWARE.
 """
 #endregion
 
-from . import *
+
+#region Imports
+import discord
+from discord.ext import commands
+
+from thatkitebot import ThatKiteBot
+from thatkitebot.base.exceptions import *
+#endregion
+
+#region Functions
+def some_function() -> None:
+    pass
+#endregion
+
+#region Cog
+class CogName(commands.Cog, name="Cog Name"): #replace with actual name
+    def __init__(self, bot: ThatKiteBot):
+        self.bot = bot
+        self.redis = bot.redis
+
+    #region Methods
+    async def some_method(self) -> None:
+        pass
+    #endregion
+
+
+    #region command groups
+    command_group = discord.SlashCommandGroup("example", "Change This")
+    #endregion
+
+
+    #region Commands
+    @command_group.command(name="command", description="This is an example command")
+    async def _example(self, ctx: discord.ApplicationContext):
+        pass
+    #endregion
+
+
+    #region Listeners
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        pass
+    #endregion
+
+#endregion
+
+
+#region Setup
+def setup(bot: ThatKiteBot):
+    #replace with actual name
+    bot.add_cog(CogName(bot))
+#endregion

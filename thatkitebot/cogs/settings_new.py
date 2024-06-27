@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import enum
 import re
 
@@ -13,9 +38,11 @@ from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.util import set_up_guild_logger
+#endregion
 
 OLD_SETTING = re.compile(r"^(\d+)$")
 
+#region Cog
 class SettingsCogV2(commands.Cog, name="Settings"):
     def __init__(self, bot):
         self.bot: discord.Client = bot
@@ -32,7 +59,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         logger = set_up_guild_logger(ctx.guild.id)
 
         # make sure that the flag_id is valid
-        assert flag_id in [flag.value for flag in RedisFlags.FlagEnum]
+        assert flag_id in [flag for flag in RedisFlags.FlagEnum]
 
         # set the corresponding value
         await RedisFlags.set_guild_flag(self.redis, ctx.guild, flag_id, value=enable)
@@ -51,93 +78,92 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
         return embed
     
-
+    #region Commands
     @settings.command(name="images")
-    async def enable_images(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_images(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle image commands. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE))
 
 
     @settings.command(name="nsfw")
-    async def enable_nsfw(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_nsfw(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle NSFW commands. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW))
 
 
     @settings.command(name="repost")
-    async def enable_repost(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_repost(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle Repost Commands. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST, further_config=True))
 
 
     @settings.command(name="uwu")
-    async def enable_uwu(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_uwu(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle UwU Commands. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU.value, further_config=True))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU, further_config=True))
 
 
     @settings.command(name="detrack")
-    async def enable_detrack(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_detrack(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle de-tracking commands. Can be used by everyone with "manage_guild" permissions.
         """
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK))
 
 
     @settings.command(name="welcome_leaderboard")
-    async def enable_welcome_leaderboard(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_welcome_leaderboard(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle the welcome leaderboard. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME))
 
 
     @settings.command(name="welcome_message")
-    async def enable_welcome_message(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_welcome_message(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle the welcome message. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE.value))
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE))
 
 
     @settings.command(name="moderation")
-    async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):
+    async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Toggle all Moderation features. Can be used by everyone with "manage_guild" permissions.
         """
         # defer, so that it looks like we are doing something really cool and to make sure we can send a followup later
         await ctx.defer()
         # set the settings, log everything and generate an embed
-        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION.value, further_config=True))
-
+        await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION, further_config=True))
 
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")
     async def _add_mod(self, ctx: discord.ApplicationContext, role: discord.Role):
@@ -159,8 +185,9 @@ class SettingsCogV2(commands.Cog, name="Settings"):
                 return
             logger.info(f"MODERATION: User {ctx.author.name} removed {role.name} as a moderation role in {ctx.guild.name}")
             await ctx.respond(f"{role.name} is no longer a moderator role")
+    #endregion
 
-
+    #region convert
     @commands.is_owner()
     @commands.dm_only()
     @commands.command()
@@ -232,8 +259,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
 
         self.bot.logger.info(f"SETTINGS: Cleaned up {len(pipe.command_stack)} settings.")      
         await pipe.execute()
-            
-
+    #endregion           
+#endregion
 
 def setup(bot):
     bot.add_cog(SettingsCogV2(bot))

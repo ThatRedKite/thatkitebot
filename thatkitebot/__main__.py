@@ -1,9 +1,36 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region license
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region imports
 import os
 import logging
 import json
 import sys
+import asyncio
+from discord.abc import GuildChannel, PrivateChannel
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
@@ -12,13 +39,13 @@ import aiohttp
 import psutil
 import discord
 
-from concurrent.futures import ProcessPoolExecutor
 from redis import asyncio as aioredis
 from discord.ext import bridge
 from dulwich.repo import Repo
 
 from .extensions import ENABLED_EXTENSIONS
 from .tkb_redis.cache import RedisCache
+#endregion
 
 __name__ = "ThatKiteBot"
 __version__ = "4.0.5"
@@ -35,6 +62,7 @@ intents = discord.Intents.all()
 
 # set up logging
 
+#region Logging
 logger = logging.getLogger("global")
 discord_logger = logging.getLogger("discord")
 
@@ -56,7 +84,9 @@ global_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(name)
 
 discord_logger.addHandler(discord_handler)
 logger.addHandler(global_handler)
+#endregion
 
+# region settings
 # check if the init_settings.json file exists and if not, create it
 if not Path(os.path.join(data_dir, "init_settings.json")).exists():
     print("No init_settings.json file found. Creating one now.")
@@ -88,7 +118,10 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
         print("init_settings.json is not valid json. Please fix it.")
         exit(1)
 
+#endregion
+
 # define the bot class
+# region bot class
 class ThatKiteBot(bridge.Bot, ABC):
     def __init__(self, command_prefix, dir_name, tt, help_command=None, description=None, **options):
         super().__init__(command_prefix, help_command=help_command, description=description, **options)
@@ -116,10 +149,9 @@ class ThatKiteBot(bridge.Bot, ABC):
         self.enable_voice = False  # global override for deactivating voice commands
         # sessions
         self.aiohttp_session = None  # give the aiohttp session an initial value
-        self.loop.run_until_complete(self.aiohttp_start())
         self.logger = logger
         self.process_pool = None
-        
+        self.last_online = 0
         
         # redis databases:
 
@@ -144,9 +176,12 @@ class ThatKiteBot(bridge.Bot, ABC):
             self.r_cache = RedisCache(self.redis_cache, self, auto_exec=False)
 
             self.logger.info("Redis: Connection successful")
+
         except aioredis.ConnectionError:
             self.logger.critical("Redis: connection failed")
             exit(1)
+
+        
         # bot status info
         self.cpu_usage = 0
 
@@ -155,13 +190,33 @@ class ThatKiteBot(bridge.Bot, ABC):
 
         self.command_invokes_hour = 0
         self.command_invokes_total = 0
-
-    async def aiohttp_start(self):
+        
+    # let's use this to set up some stuff that requires asyncio stuff to work
+    async def start(self, token: str, *, reconnect: bool = True) -> None:
+        # set up the aiohttp client
+        self.logger.info("Starting aiohttp client…")
         self.aiohttp_session = aiohttp.ClientSession()
 
+        # try to get and set the last online thingies
+        self.last_online = int(await self.redis.get("last")) or 0
+        if self.last_online > 0:
+            self.logger.info(f"{__name__} was last online at {datetime.fromtimestamp(float(self.last_online))} UTC")
 
+        await self.redis.set("last", int(datetime.now().timestamp()))
+
+        self.logger.info("Trying to connect to discord…")
+        
+        # call the "real" start method to actually start the bot
+        return await super().start(token, reconnect=reconnect)
+    
+    # TODO
+    async def fetch_channel(self, channel_id: int) -> GuildChannel | PrivateChannel | discord.Thread:
+        return await super().fetch_channel(channel_id)
+
+#endregion
 # create the bot instance
 
+#region init
 bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents)
 logger.info(f"Starting {__name__} version {__version__} ({bot.git_hash})")
 
@@ -172,9 +227,12 @@ extensions = [extension.split(".")[-1] for extension in ENABLED_EXTENSIONS]
 
 logger.info(f"Loaded {len(ENABLED_EXTENSIONS)} extensions: [{','.join(extensions)}]")
 
+loop = asyncio.new_event_loop()
 # try to start the bot with the token from the init_settings.json file catch any login errors
 try:
-    bot.run(discord_token)
+    loop.create_task(bot.start(discord_token))
+    loop.run_forever()
 except discord.LoginFailure:
     logger.critical("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
+#endregion

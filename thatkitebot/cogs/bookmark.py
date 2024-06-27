@@ -1,13 +1,39 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import discord
 from discord.ext import commands, pages
 from redis import asyncio as aioredis
 
 from thatkitebot.base.util import list_chunker, link_from_ids
 from thatkitebot.base.exceptions import NoBookmarksException
+#endregion
 
-
+#region Functions
 async def get_bookmarks(redis: aioredis.Redis, user: discord.User):
     # assemble the key for accessing the hash
     hash_key = f"bookmarks:{user.id}"
@@ -24,8 +50,9 @@ async def get_bookmarks(redis: aioredis.Redis, user: discord.User):
     # now we simply iterate through all the keys in the hash
     async for bookmark in redis.hscan_iter(hash_key, "*"):
         yield bookmark
+#endregion
 
-
+#region UI Classes
 class BookmarkModal(discord.ui.Modal):
     def __init__(self, redis: aioredis.Redis, message: discord.Message, ctx: discord.ApplicationContext, *args, **kwargs):
         self.redis = redis
@@ -94,8 +121,9 @@ class DeletionSelectView(discord.ui.View):
         hash_key = f"bookmarks:{interaction.user.id}"
         await self.redis.hdel(hash_key, key)
         await interaction.response.send_message("Successfully deleted the bookmark", ephemeral=True)
+#endregion
 
-
+#region Cog
 class BookmarkCog(commands.Cog, name="Bookmarks"):
     def __init__(self, bot):
         self.bot = bot
@@ -173,7 +201,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
             comments,
             ctx
         ), ephemeral=True)
-
+#endregion
 
 def setup(bot):
     bot.add_cog(BookmarkCog(bot))

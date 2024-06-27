@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import re
 from datetime import timedelta
 
@@ -11,8 +36,9 @@ from discord.ext import commands
 import thatkitebot
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis.queue import RedisQueue
+#endregion
 
-
+#region song selection
 # an interaction class for selecting the song to play with selection buttons
 class SongSelect(discord.ui.View):
     def __init__(self, ctx, songlist: list[wavelink.Track], player: wavelink.Player, enqueue: bool = True):
@@ -63,8 +89,9 @@ class SongSelect(discord.ui.View):
     @discord.ui.button(label="Stop", style=discord.ButtonStyle.red)
     async def stop(self, button: discord.ui.Button, interaction: discord.Interaction):
         await interaction.message.delete()
+#endregion
 
-
+#region Cog
 class MusicCog(commands.Cog, name="Music"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
@@ -73,13 +100,14 @@ class MusicCog(commands.Cog, name="Music"):
     music = discord.SlashCommandGroup("music", "Music commands")
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.MUSIC.value)
+        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.MUSIC)
 
+    #region Commands
     # static method for getting the right voice channel
     @staticmethod
     async def get_voice_channel(ctx: discord.ApplicationContext, check_for_bot: bool = False):
         # check if voice commands are even enabled in the guild
-        a = await RedisFlags.get_guild_flag(ctx.bot.redis, ctx.guild, RedisFlags.FlagEnum.MUSIC.value)
+        a = await RedisFlags.get_guild_flag(ctx.bot.redis, ctx.guild, RedisFlags.FlagEnum.MUSIC)
         if not a:
             await ctx.interaction.followup.send("Music commands are disabled in this server.", ephemeral=True)
             return None, None
@@ -160,8 +188,8 @@ class MusicCog(commands.Cog, name="Music"):
     async def _play(
             self,
             ctx: discord.ApplicationContext,
-            query: discord.Option(str, "The song to play. Can be a YouTube URL or a search query.", required=True),
-            enqueue: discord.Option(bool, "Whether to enqueue the song or play it immediately.", required=False) = True
+            query: discord.Option(str, "The song to play. Can be a YouTube URL or a search query.", required=True), #type: ignore
+            enqueue: discord.Option(bool, "Whether to enqueue the song or play it immediately.", required=False) = True #type: ignore
     ):
         await ctx.defer()
         # get the voice channel the bot is connected to
@@ -257,7 +285,7 @@ class MusicCog(commands.Cog, name="Music"):
         await ctx.interaction.followup.send(embed=embed)
 
     @music.command(name="volume", description="Sets the volume of the bot (0-100)")
-    async def _volume(self, ctx: discord.ApplicationContext, volume: discord.Option(int, max_value=100, min_value=0)):
+    async def _volume(self, ctx: discord.ApplicationContext, volume: discord.Option(int, max_value=100, min_value=0)): #type: ignore
         # get the voice channel the bot is connected to
         await ctx.defer()
         voice_channel, _ = await self.get_voice_channel(ctx, check_for_bot=True)
@@ -282,7 +310,9 @@ class MusicCog(commands.Cog, name="Music"):
         else:
             await ctx.voice_client.pause()
             return await ctx.interaction.followup.send("Pausing playback.")
+    #endregion
 
+    #region Listeners
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, player: wavelink.Player, track: wavelink.Track, reason):
         if reason == "FINISHED" or "STOPPED":
@@ -303,7 +333,8 @@ class MusicCog(commands.Cog, name="Music"):
     @commands.Cog.listener()
     async def on_wavelink_node_error(self, node: wavelink.Node, error: Exception):
         print(f"Node {node.identifier} encountered an error: {error}")
-
+    #endregion
+#endregion
 
 def setup(bot):
     bot.add_cog(MusicCog(bot))

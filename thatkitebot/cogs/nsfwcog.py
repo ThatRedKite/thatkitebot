@@ -1,5 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region Imports
 import asyncio
 import typing
 from random import choice, choices
@@ -11,8 +36,9 @@ from thatkitebot.base import url
 from thatkitebot.base.util import errormsg
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.tkb_redis.settings import RedisFlags
+#endregion
 
-
+#region Cog
 class NSFW(commands.Cog, name="NSFW commands"):
     """
     NSFW commands. Only usable in NSFW channels and disabled by default.
@@ -23,7 +49,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
         self.bl = [424394851170385921]  # hardcoded guild blacklist, for my own sanity
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.NSFW.value)
+        return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.NSFW)
 
     @commands.is_nsfw()  # only proceed when in an NSFW channel
     @commands.command(hidden=True, aliases=["rule34"])
@@ -105,7 +131,7 @@ class NSFW(commands.Cog, name="NSFW commands"):
                     embed = await errormsg(ctx, "__Nothing Found! Please check your tags and try again!__", embed_only=True)
                 finally:
                     await ctx.send(embed=embed)
-
+#endregion
 
 def setup(bot):
     bot.add_cog(NSFW(bot))

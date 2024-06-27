@@ -2,7 +2,7 @@ FROM python:3.12.4-bookworm AS thatkitebot
 
 # install system package dependencies
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y python3-dev gcc libfreeimage3 libwebp-dev libjpeg-turbo-progs git libffi-dev units
+RUN apt-get install -y python3-dev gcc libfreeimage3 libwebp-dev libjpeg-turbo-progs git libffi-dev units imagemagick
 
 # create venv
 RUN python3 -m venv /app/thatkitebot-venv/

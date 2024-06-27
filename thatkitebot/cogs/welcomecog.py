@@ -1,6 +1,30 @@
-#  Copyright (c) 2019-2023 ThatRedKite and contributors
+#region License
+"""
+MIT License
 
+Copyright (c) 2019-present The Kitebot Team
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+#endregion
+
+#region imports
 import discord
 from discord.ext import commands
 
@@ -15,8 +39,9 @@ from discord.ext import commands
 from redis import asyncio as aioredis
 
 from thatkitebot.tkb_redis.settings import RedisFlags
+#endregion
 
-
+#region functions
 async def update_count(redis: aioredis.Redis, message: discord.Message):
     """
     Updates the welcome count for the given message's author.
@@ -43,8 +68,9 @@ async def update_count(redis: aioredis.Redis, message: discord.Message):
 
         if write:
             await redis.hset(usr_key, "latest_welcome", int(unix_time))
+#endregion
 
-
+# region Cog
 class WelcomeCog(commands.Cog, name="Welcome counter"):
     """
     A cog that counts the number of times a user has welcome newly joined members.
@@ -55,7 +81,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         self.settings_redis: aioredis.Redis = bot.redis
 
     async def cog_check(self, ctx):
-        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.WELCOME.value)
+        return await RedisFlags.get_guild_flag(self.settings_redis, ctx.guild, RedisFlags.FlagEnum.WELCOME)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -69,7 +95,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
             return
 
         # check, if welcome features are even enabled
-        if not await RedisFlags.get_guild_flag(self.settings_redis, message.guild, RedisFlags.FlagEnum.WELCOME.value):
+        if not await RedisFlags.get_guild_flag(self.settings_redis, message.guild, RedisFlags.FlagEnum.WELCOME):
             return
 
         # make sure we are in the system channel. If not, return
@@ -97,7 +123,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
         self.bot.events_hour += 1
         self.bot.events_total += 1
         # check, if welcome features are even enabled
-        if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME.value):
+        if not await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME):
             return
 
         # get some values
@@ -118,7 +144,7 @@ class WelcomeCog(commands.Cog, name="Welcome counter"):
 
         # write the data
         await self.redis_welcomes.hset(key, mapping=datadict)
-        if await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME_MESSAGE.value):
+        if await RedisFlags.get_guild_flag(self.settings_redis, joined_member.guild, RedisFlags.FlagEnum.WELCOME_MESSAGE):
             await joined_member.guild.system_channel.send("welcome")
 
     # TODO: honestly, this should just be completely rewritten using a sorted set instead of hashes
