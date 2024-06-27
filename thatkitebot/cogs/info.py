@@ -9,7 +9,7 @@ import aiofiles
 import discord_emoji
 import discord
 from discord.ext import commands
-from discord.ui import Select, View, Button
+from discord.ui import Select, View, Button, Modal, InputText
 from discord.commands import Option, SlashCommandGroup
 
 from thatkitebot.base.util import PermissonChecks as pc
@@ -121,11 +121,11 @@ class InfoCog(commands.Cog):
 
         # check if color format is valid
         if color:
-            if Utility.check_hex(color):
-                color = int(color, base=16)
-            else:
+            if not Utility.convert_hex(color):
                 await ctx.respond("Invalid color format!", ephemeral=True)
                 return
+            color = Utility.convert_hex(color)
+
         else:
             color = int(Utility.gen_random_hex_color(), base=16)
 
@@ -217,6 +217,21 @@ class InfoCog(commands.Cog):
         await ctx.respond(view=view)
 
 # TODO edit_section edit_footer (merge it in edit_section)
+
+    @info_settings.command(name="edit-section")
+    async def edit_section(self, ctx: discord.ApplicationContext,
+                            section: Option(str, "Pick a section!", required=True, autocomplete=Config.get_sections)):
+        """Change name, emoji, footer or color of a given section"""
+        config_file = await self.config.get(ctx.guild)
+
+        section_id = await Utility.retrive_section_id(section, len(config_file))
+
+        if section_id < 0:
+            await ctx.respond("Incorrect section name!", ephemeral=True)
+            return
+
+        modal = EditSectionModal(self.config, config_file, section_id, title = "Edit Section")
+        await ctx.send_modal(modal)
 
     @info_settings.command(name="factory-reset")
     async def factory_reset(self, ctx):
@@ -389,7 +404,7 @@ class EditFieldsView(View):
 
 ###### Modals ######
 
-class FieldModal(discord.ui.Modal):
+class FieldModal(Modal):
     def __init__(self, bot, config_file, section_id, field_id, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
@@ -402,14 +417,14 @@ class FieldModal(discord.ui.Modal):
         contents = config_file[section_id]["fields"][field_id]["value"]
         inline = config_file[section_id]["fields"][field_id]["inline"]
 
-        _title = discord.ui.InputText(
+        _title = InputText(
             label="Title",
             value=name if name != "" else "Example title 💡",
             placeholder="Think of an interesting title",
             max_length=256
         )
 
-        _contents = discord.ui.InputText(
+        _contents = InputText(
             label="Contents",
             value=contents if contents != "" else "[Example hyperlink](https://github.com/ThatRedKite/thatkitebot)",
             placeholder="Here you can type the contents of this field in your embed",
@@ -417,7 +432,7 @@ class FieldModal(discord.ui.Modal):
             max_length=1024
         )
 
-        _inline = discord.ui.InputText(
+        _inline = InputText(
             label="In-line",
             value=inline if inline != "" else "true",
             placeholder="Type \"true\" or \"false\"",
@@ -447,16 +462,15 @@ class FieldModal(discord.ui.Modal):
 
         await interaction.response.send_message(
             f"Field with ID {self.field_id + 1} in section {self.config_file[self.section_id]['title']} has been changed.")
-        
 
         
-class FactoryResetModal(discord.ui.Modal):
+class FactoryResetModal(Modal):
     def __init__(self, config, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.config = config
 
-        _decision = discord.ui.InputText(
+        _decision = InputText(
             label="Are you sure? Type \"YES\" or \"NO\"",
             placeholder="It will **replace all of your sections!",
             max_length=3
@@ -479,6 +493,57 @@ class FactoryResetModal(discord.ui.Modal):
             await interaction.response.send_message(content="Nothing has changed.", view=None)
 
 
+class EditSectionModal(Modal):
+    def __init__(self, config, config_file ,section_id,*args, **kwargs) -> None:
+        self.section_id = section_id
+        self.config = config
+        super().__init__(*args, **kwargs)
+
+        title = config_file[self.section_id]["title"]
+        emoji = config_file[self.section_id]["emoji"]
+        color = hex(config_file[self.section_id]["color"])
+
+        self.add_item(InputText(label="Title", value = title, placeholder="Choose a title!", max_length=256, required=False))
+        self.add_item(InputText(label="Emoji", value = emoji, placeholder="Choose an emoji! (e.g :lightbulb:)", required=False))
+        self.add_item(InputText(label="Color", value = color, placeholder="Choose a color! (hex e.g. 0x123456)", required=False))
+
+    async def callback(self, interaction: discord.Interaction):
+        title = self.children[0].value
+        emoji = self.children[1].value
+        color = self.children[2].value
+
+        config_file = await self.config.get(interaction.guild)
+        old_emoji = config_file[self.section_id]["emoji"]
+        old_section_title = config_file[self.section_id]["title"]
+
+        counter = 0
+
+        if title:
+            config_file[self.section_id]["title"] = title
+            counter += 1
+
+        if emoji:
+            if not Utility.check_emoji(emoji):
+                await interaction.response.send_message("Invalid emoji!", ephemeral=True)
+                return
+
+            if discord_emoji.to_discord(emoji):
+                emoji = f":{discord_emoji.to_discord(emoji, get_all=True)}:"
+
+            config_file[self.section_id]["emoji"] = emoji
+            counter += 1
+
+        if color:
+            if not Utility.convert_hex(color):
+                await interaction.response.send_message("Invalid color format!", ephemeral=True)
+                return
+            
+            config_file[self.section_id]["color"] = Utility.convert_hex(color)
+            counter += 1
+
+        await self.config.update(interaction.guild, config_file)
+        await interaction.response.send_message(f"{counter} properties have been changed in {old_section_title} {old_emoji}", ephemeral=True)
+
 ###### Utility ######
 
 class Utility:
@@ -494,23 +559,27 @@ class Utility:
     # check if given string is valid discord emoji
     @staticmethod
     def check_emoji(emoji):
-        emoji_regex = r"<\S+:\d+>"
-        if len(emoji) == 1:
+        # Check if it's a standard emoji
+        if len(emoji) == 1 and discord_emoji.to_discord(emoji, get_all=True):
             return True
-        elif re.match(emoji_regex, emoji):
+        # Check if it's a custom Discord emoji (format: <name:id>)
+        elif re.match(r"<:\w+:\d+>", emoji):
+            return True
+        # Check if it's a text emoji (format: :name:)
+        elif discord_emoji.to_uni(emoji):
             return True
         else:
             return False
 
     @staticmethod
-    def check_hex(s):
+    def convert_hex(s):
         if s.startswith('#'):
             s = s[1:]
         try:
-            int(s, 16)
-            return True
+            val = int(s, 16)
+            return val
         except ValueError:
-            return False
+            return None
     
     @staticmethod
     async def retrive_section_id(section_name, config_len):
