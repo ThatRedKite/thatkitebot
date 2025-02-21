@@ -64,28 +64,6 @@ class SettingsCog(commands.Cog, name="legacy settings"):
         This command is deprecated, please use the `/settings` slash command group.
         You can use 
         """)
-        # channel = ctx.channel
-        # author = ctx.message.author
-        # yes_choices = ["y", "yes", "ja", "j"]
-        #
-        # def check(m):
-        #     if m.channel == channel and m.author is author:
-        #         return m.content.lower() in yes_choices
-        #
-        # if not Parsing.preprocessor(name) in self.possible_settings:
-        #     await util.errormsg(
-        #         ctx,
-        #         f"This seems to be an invalid setting! Execute {ctx.prefix}settings help to see all availible settings")
-        #     return
-        # await ctx.send(f"Add the setting `{Parsing.preprocessor(name)}` with the value `{preprocessor(arg)}` to the settings? (y/n)")
-        # msg = await self.bot.wait_for("message", timeout=10, check=check)
-        # if msg.content in yes_choices:
-        #     await self.redis.hset(ctx.guild.id, preprocessor(name), preprocessor(arg))
-        #     await ctx.send("Okay, done.", delete_after=5.0)
-        # else:
-        #     await ctx.send("Cancelled.", delete_after=5.0)
-
-    #@settings.command(name="add_mod", hidden=True)
 #endregion
 
 def setup(bot):

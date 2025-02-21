@@ -142,7 +142,7 @@ async def get_image_urls(message: discord.Message, video: bool = False, gifv: bo
 
     return embed_urls
 
-def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: bool = False) -> (str | None, str | None):
+def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: bool = False) -> (str | None, str | None): # type: ignore
     """
     clone of :get_image_urls but with different output format: [(url, embed_type), ...]
     """
@@ -243,7 +243,7 @@ class ImageFunction:
     async def make_blob_close(self, name: str = "image", gif=False):
         return await self.image_worker(self._make_blob_close, name=f"{name}_{self.__hash__()}", does_return=True, gif=gif)
 
-    def _make_blob_close(self) -> (bytes, int):
+    def _make_blob_close(self) -> (bytes, int):  #type: ignore
         self.image.format = "png"
         b = self.image.make_blob()
         self.image.destroy()
@@ -252,7 +252,7 @@ class ImageFunction:
     async def make_blob(self, name: str = "image"):
         return await self.image_worker(self._make_blob, name=f"{name}_{self.__hash__()}", does_return=True)
 
-    def _make_blob(self) -> (bytes, int):
+    def _make_blob(self) -> (bytes, int): #type: ignore
         self.image.format = "png"
         b = self.image.make_blob()
         return b, self.fn

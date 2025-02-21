@@ -132,16 +132,20 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         try:
             lm = LM317(d=args_parsed)
             await ctx.send(embed=lm.gen_embed())
+
         except InputOutOfRangeError:
             await errormsg(ctx, "Input voltage out of range. Please use values that won't fry the LM317.")
             return
+        
         except InputDifferenceError:
             await errormsg(ctx,
                                 "Difference between input and output voltage is outside of datasheet recommended values.")
             return
+        
         except TooFewArgsError:
             await errormsg(ctx, "Not enough arguments to compute anything.")
             return
+        
         except ImpossibleValueError:
             await errormsg(ctx, "Get real. <:troll:910540961958989934>")
             return

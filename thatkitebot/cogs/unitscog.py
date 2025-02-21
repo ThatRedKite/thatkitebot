@@ -217,33 +217,12 @@ class UnitsCommands(commands.Cog, name="Units Commands"):
         
         await ctx.defer()
 
-        #print("got:")
-        #print(expression)
-        #print(target_unit)
-
         ascii_expression = await unicode_to_ascii_exponents(expression)
         ascii_target_unit = await unicode_to_ascii_exponents(target_unit)
-
-        #print("converted:")
-        #print(ascii_expression)
-        #print(ascii_target_unit)
-
         ascii_expression = await units_expander(ascii_expression)
         ascii_target_unit = await units_expander(ascii_target_unit)
 
-        #print("expanded:")
-        #print(ascii_expression)
-        #print(ascii_target_unit)
-
-
         value, unit, unit_def, err = await units_converter(ascii_expression, ascii_target_unit)
-
-        #print("post converted:")
-        #print(value)
-        #print(unit)
-        #print(unit_def)
-        #print(err)
-        
         if err:
             embed = await gen_error_embed(ascii_expression, err)
         else:

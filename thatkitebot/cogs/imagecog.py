@@ -426,8 +426,10 @@ class ImageStuff(commands.Cog, name="image commands"):
             if user.accent_color:
                 embed.color = user.accent_color
                 embed.set_footer(text="The profile accent color is: " + str(user.accent_color))
-            else:
+            elif user.color:
                 embed.color = user.color
+                embed.set_footer(text="The user color is: " + str(user.color))
+
         await ctx.reply(embed=embed, mention_author=False)
 
     @commands.cooldown(3, 10, commands.BucketType.guild)
