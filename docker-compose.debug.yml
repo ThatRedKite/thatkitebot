@@ -27,10 +27,10 @@ services:
     container_name: thatkitebot_redis
     volumes:
       - ./data/redis:/data
-    image: "redis:alpine"
-    entrypoint: redis-server --appendonly yes
+    image: "valkey/valkey:alpine"
+    entrypoint: valkey-server --appendonly yes --hz 50
 
   redis_cache:
     container_name: thatkitebot_redis_cache
-    image: "redis:alpine"
-    entrypoint: redis-server --save "" --appendonly no
+    image: "valkey/valkey:alpine"
+    entrypoint: valkey-server --save "" --appendonly no --hz 50
