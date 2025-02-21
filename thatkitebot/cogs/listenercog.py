@@ -137,9 +137,7 @@ class ListenerCog(commands.Cog):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        test_channel = discord.channel.__cached__
         
-        test_channel.send("Test 123")
         if not message.guild:
             return
 
