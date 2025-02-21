@@ -32,6 +32,7 @@ import discord
 from redis import asyncio as aioredis
 from discord.ext import commands
 
+import thatkitebot
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import Parsing
 from thatkitebot.base.util import parse_timestring, check_message_age
@@ -121,7 +122,7 @@ async def check_if_already_posted(message: discord.Message, starboard_channel: d
 #region Cog
 class StarBoard(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
         self.star_redis: aioredis.Redis = bot.redis_starboard
         self.logger: logging.Logger = bot.logger
@@ -399,6 +400,8 @@ class StarBoard(commands.Cog):
         await ctx.followup.send(f"Videos are now **{status}** in starboard messages.")
     #endregion    
     
+
+
     #region main listeners
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -415,20 +418,22 @@ class StarBoard(commands.Cog):
             # check if starboad is disabled
             if await flags.get_guild_flag(redis=self.redis, guild=payload.guild_id, flag_offset=flags.FlagEnum.STARBOARD):
                 return
-
-            channel = await self.bot.fetch_channel(payload.channel_id)
+            
+            # return if we don't have any starboard settings for this server
+            if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
+                return
 
             # check if the channel is blacklisted
-            if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.id)):
+            if await self.redis.sismember(f"starboard_blacklist:{payload.guild_id}", str(payload.channel_id)):
                 return
             
+            # let's request the channel object from the
+            channel = await self.bot.fetch_channel(payload.channel_id)
+
             # check if it is a thread belonging to a blacklisted channel
             if type(channel) is discord.Thread and await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.parent_id)):
                 return
 
-
-            if not await self.redis.exists(f"starboard_settings:{payload.guild_id}"):
-                return
 
             # load the starboard settings
             try:
@@ -554,6 +559,7 @@ class StarBoard(commands.Cog):
         else:
             return
     #endregion
+
 
 def setup(bot):
     bot.add_cog(StarBoard(bot))

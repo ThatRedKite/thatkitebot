@@ -26,6 +26,7 @@ SOFTWARE.
 
 #region Imports
 import logging
+
 import discord
 from datetime import datetime
 
@@ -35,7 +36,7 @@ from discord.ext import commands, tasks
 
 import thatkitebot
 from thatkitebot.base.util import errormsg
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException, NoDataException
+from thatkitebot.tkb_redis.cache import RedisCacheAsync, CacheInvalidMessageException, NoDataException
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.base.exceptions import *
 #endregion
@@ -52,7 +53,7 @@ class ListenerCog(commands.Cog):
         self.repost_redis: aioredis.Redis = bot.redis_repost
 
         self.logger: logging.Logger = bot.logger
-        self.cache: RedisCache = bot.r_cache
+        self.cache: RedisCacheAsync = bot.r_cache
 
     # global error handlers
     @commands.Cog.listener()
@@ -70,6 +71,9 @@ class ListenerCog(commands.Cog):
                 await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+
+        if self.bot.debug_mode:
+            raise error
             
     
     @commands.Cog.listener()
@@ -101,11 +105,13 @@ class ListenerCog(commands.Cog):
 
         except ConnectionError as exc:
             self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(exc)}")
-
+    
+    # execs the cache pipeline every 10 seconds
     @tasks.loop(seconds=10)
     async def cache_update(self):
-        if len(self.cache.pipeline.command_stack) > 0:
-            await self.cache.exec()
+        # commit pending writes
+        async with self.bot.cache_lock:
+                await self.cache.exec()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -133,19 +139,19 @@ class ListenerCog(commands.Cog):
     async def on_slash_command_error(self, ctx, ex):
         raise ex
 
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        test_channel = discord.channel.__cached__
-        
-        test_channel.send("Test 123")
+
         if not message.guild:
             return
 
         try:
-            await self.cache.add_message(message)
-            
+            async with self.bot.cache_lock:
+                await self.cache.add_message(message)
+
         except CacheInvalidMessageException:
             if self.bot.debug_mode:
                 self.logger.debug("CACHE: Could not add message to cache, reason: Invalid Message")
@@ -160,29 +166,15 @@ class ListenerCog(commands.Cog):
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
+        #TODO: Implement this
         try:
-            key, data = await self.cache.get_message(
-                message_id=payload.message_id,
-                guild_id=payload.guild_id,
-                author_id=payload.user_id,
-                channel_id=payload.channel_id
-            )
+            cached_message = await self.bot.r_cache.get_message(message_id=payload.message_id, author_id=payload.user_id, guild_id=payload.guild_id, channel_id=payload.channel_id)
         except CacheInvalidMessageException:
-            return
+            pass
         
         except NoDataException:
             self.logger.error(f"Failed to add message {payload.message_id} to cache")
-        
-        # update the reactions
-        data["reactions"].append((payload.emoji.id, payload.member.id))
 
-        # update the message
-        await self.cache.update_message(
-            author_id=payload.user_id,
-            data_new=data,
-            key=key
-        )
-    
     
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild):

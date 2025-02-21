@@ -41,7 +41,7 @@ from uwuipy import uwuipy
 from thatkitebot.base import url, util
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.exceptions import NotEnoughMessagesException
-from thatkitebot.tkb_redis.cache import RedisCache, CacheInvalidMessageException
+from thatkitebot.tkb_redis.cache import RedisCacheAsync, CacheInvalidMessageException
 #endregion
 
 #region Cog
@@ -54,7 +54,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         self._last_member = None
         self.dirname = bot.dir_name
         self.redis = bot.redis_cache
-        self.cache: RedisCache = bot.r_cache
+        self.cache: RedisCacheAsync = bot.r_cache
 
         self.history_semaphore = asyncio.Semaphore(2)
 
@@ -81,6 +81,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
         it will use the channel the command was issued in.)
         """
+        # FIXME
         if not user:
             user = ctx.message.author  # default to message author
 
@@ -268,7 +269,8 @@ class FunStuff(commands.Cog, name="fun commands"):
         # fetch the message from the reference
         else:
             seed = ctx.message.reference.message_id
-            message = await ctx.fetch_message(seed)
+            # FIXME
+            message = await ctx.fetch_message
             msg = message.content
 
         # if the message content is empty, return

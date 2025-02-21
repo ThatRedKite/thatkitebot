@@ -218,7 +218,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             # todo see if tenor stuff works
             try:
                 # try to get the message from the cache to get the attachment urls
-                cache = ca.RedisCache(self.cache_redis, self.bot, auto_exec=True)
+                cache = ca.RedisCacheAsync(self.cache_redis, self.bot, auto_exec=True)
                 ids, message_json = await cache.get_message(message_id, ctx.guild.id)
                 urls = [url for url in message_json["urls"]]
 

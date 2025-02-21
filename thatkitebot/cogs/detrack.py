@@ -37,7 +37,7 @@ import discord_emoji as de
 
 import thatkitebot
 from thatkitebot.tkb_redis.settings import RedisFlags
-from thatkitebot.tkb_redis.cache import RedisCache
+from thatkitebot.tkb_redis.cache import RedisCacheAsync
 from thatkitebot.base.util import errormsg
 #endregion
 
@@ -211,7 +211,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             return
 
         try:
-            cache = RedisCache(self.bot.redis_cache, self.bot)
+            cache = RedisCacheAsync(self.bot.redis_cache, self.bot)
             author_id = await cache.get_author_id(message.reference.message_id)
             if author_id is None:
                 author_id = (await self.bot.get_channel(payload.channel_id).fetch_message(message.reference.message_id)).author.id

@@ -27,14 +27,20 @@ SOFTWARE.
 class CacheException(Exception):
     pass
 
-
 class CacheInvalidMessageException(Exception):
     pass
-
 
 class NoDataException(Exception):
     pass
 
-
 class InvalidGuildException(Exception):
+    pass
+
+class CacheMissException(Exception):
+    pass
+
+class CompressionException(Exception):
+    pass    
+
+class SerializeException(Exception):
     pass
