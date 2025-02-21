@@ -198,7 +198,7 @@ class ThatKiteBot(bridge.Bot, ABC):
         self.aiohttp_session = aiohttp.ClientSession()
 
         # try to get and set the last online thingies
-        self.last_online = int(await self.redis.get("last")) or 0
+        self.last_online = int(await self.redis.get("last") or 0)
         if self.last_online > 0:
             self.logger.info(f"{__name__} was last online at {datetime.fromtimestamp(float(self.last_online))} UTC")
 
