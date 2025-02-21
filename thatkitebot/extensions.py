@@ -2,7 +2,6 @@ ENABLED_EXTENSIONS = [
     "thatkitebot.cogs.listenercog",
     "thatkitebot.cogs.funstuffcog",
     "thatkitebot.cogs.imagecog",
-    "thatkitebot.cogs.nsfwcog",
     "thatkitebot.cogs.uwucog",
     "thatkitebot.cogs.utilities",
     "thatkitebot.cogs.settings",
