@@ -8,7 +8,7 @@ If you are on a different distribution than Debian, please reference the aforeme
 
 ### System requirements
 
-It is recommended for the best experience that your host device has at least 4GB of RAM and is running Linux. It can be run on an absolute minimum of 2GB of RAM, though it may run out during longer runs. As for a CPU, bigger is better, though primarily the image commands are the only thing that should stress it. A Raspberry Pi 4 or 5 should be more than adequate in terms of computational power.
+It is recommended for the best experience that your host device has at least 4GB of RAM and is running Linux. It can be run on an absolute minimum of 2GB of RAM, though it may run out during longer runs. As for a CPU, bigger is better, though primarily the image commands are the only thing that should stress it. ~~A Raspberry Pi 4 or 5 should be more than adequate in terms of computational power.~~ ARM64 is currently not a supported architecture as it has known conflicts with the PCB-related cogs.
 
 ## 1.1 Preinstallation
 Verify that you do not have the unnofficial Docker packages from Debian's default repositories installed.
