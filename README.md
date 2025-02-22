@@ -91,7 +91,7 @@ After that is done hit `ctrl + x`, `y` and `enter`. The settings will be saved.
 ## 2.4 Starting the bot 
 Start the bot from a stopped state (like we have right now).
 ```sh
-sudo docker-compose up -d thatkitebot
+docker compose up -d thatkitebot
 ```
 This will start the bot in the background. Error messages and status messages can be read with `docker logs thatkitebot-thatkitebot-1`. If you do not wish to start the bot in the background, you can omit the `-d` and any messages will be shown in your terminal.
 
@@ -101,14 +101,14 @@ This will start the bot in the background. Error messages and status messages ca
 To update, you will need to sync your local copy of the bot with the `git` repo and rebuild the container. This is required to get any potential missing libraries.
 ```sh
 git pull
-docker-compose up --build -d thatkitebot
+docker compose up --build -d thatkitebot
 ```
 
 To check the status of the container do `sudo docker container ls`. You should see 2 containers: `redis:alpine` and `thatkitebot_thatkitebot`. That will mean everything is running. Assuming everything is functioning correctly, congratulations, you should now have a functional bot and should see that the bot is online. To double check, you should respond to `+help` in your server (or alternatively replace the `+` with the prefix you set above).
 ## 3.2 Stopping
 To stop the bot, run
 ```
-sudo docker-compose stop
+docker compose stop
 ```
 
 Made with ❤️
