@@ -66,7 +66,7 @@ git clone https://github.com/ThatRedKite/thatkitebot.git
 This will tell docker to grab all of the necessary dependencies and build the image, then run it. This step may take a while. Once it is completed, hit `ctrl+c` and you will be ready for the next step.
 ```sh
 cd thatkitebot
-sudo docker-compose up --build
+sudo docker compose up --build
 ```
 
 ## 2.3 Set API keys
