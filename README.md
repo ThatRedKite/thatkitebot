@@ -63,7 +63,7 @@ git clone https://github.com/ThatRedKite/thatkitebot.git
 ```
 
 ## 2.2 Building the image
-This will tell docker to grab all of the necessary dependencies and build the image, then run it. This step may take a while. Once it is completed, hit `ctrl+c` and you will be ready for the next step.
+This will tell docker to grab all of the necessary dependencies and build the image, then run it. This step may take a while. Once it is completed, hit `ctrl+c` and you will be ready for the next step. This *will* cancel the operation, so you need to make sure it has terminated correctly. You'll know it's ready by it telling you the bot failed to launch due to a token error.
 ```sh
 cd thatkitebot
 sudo docker compose up --build
