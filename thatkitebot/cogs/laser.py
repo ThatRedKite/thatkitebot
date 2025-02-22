@@ -114,14 +114,14 @@ class LaserCog(commands.Cog, name="Laser commands"):
         self.bot: commands.Bot = bot
 
     @commands.cooldown(5, 10, commands.BucketType.channel)
-    @commands.command(aliases=["autism"])
+    @commands.command(aliases=["autism","gay"])
     async def spectrum(self, ctx):
         """
         Returns a picture of visible light spectrum.
         """
         embed = discord.Embed(title="Visible Light Spectrum")
         embed.set_image(
-            url="https://media.discordapp.net/attachments/910895468001767484/913348594269036584/unknown.png")
+            url="https://ghostoverflow.gay/84946d39135f359663d692bb866d929c3c9d2cccf18d06606eccd2e34e768bbb.png")
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.channel)
