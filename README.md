@@ -44,7 +44,7 @@ sudo docker run hello-world
 ```
 
 ## 1.4 Check your docker compose verison
-Before running, make sure that your version of compose is at least 2.X.
+Before running, make sure that your version of compose is at least 2.X. Note that `docker compose` is a more recent build than `docker-compose`, so if something breaks it may be worth attempting the older syntax.
 ```sh
 docker compose version
 ```
