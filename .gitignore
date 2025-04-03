@@ -12,6 +12,7 @@ logs
 *.out
 #settings file
 *settings.json
+data/info/*.json
 data/redis
 data/*.yml
 # test files
@@ -19,8 +20,9 @@ test*.*
 # IDEs
 .idea
 .vscode
-src/pcb_mod/build
-as
+src/*/build
+src/*/dist
+src/*/*.egg-info/
 # python stuff
 __pycache__
 venv

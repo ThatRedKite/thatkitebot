@@ -1,4 +1,4 @@
-FROM python:3.12.4-bookworm AS thatkitebot
+FROM python:3.12.9-bookworm AS thatkitebot
 
 # install system package dependencies
 RUN apt-get update && apt-get upgrade -y
@@ -13,6 +13,12 @@ RUN /app/thatkitebot-venv/bin/pip3 install setuptools debugpy
 WORKDIR /tmp/
 RUN git clone https://github.com/ThatRedKite/si-prefix.git 
 WORKDIR /tmp/si-prefix
+RUN /app/thatkitebot-venv/bin/python setup.py build
+RUN /app/thatkitebot-venv/bin/python setup.py install
+
+#build the pcb calculator module
+COPY ./src/pcb_mod/ /tmp/pcb_mod/
+WORKDIR /tmp/pcb_mod/
 RUN /app/thatkitebot-venv/bin/python setup.py build
 RUN /app/thatkitebot-venv/bin/python setup.py install
 

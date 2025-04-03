@@ -4,6 +4,9 @@
 venv/
 LICENSE
 README.md
-src/
 __pycache__
 .github/
+src/build
+src/dist
+src/*.egg-info
+README.md
