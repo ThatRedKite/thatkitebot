@@ -93,7 +93,7 @@ async def download_last_image(
     # first, get a suitable message
     if ctx.message.reference:
         # fetch the message from the reference
-        message = await ctx.fetch_message(ctx.message.reference.message_id)
+        message = await ctx.bot.r_cache.get_message(ctx.message.reference.message_id, ctx.message.reference.guild_id)
         url = [url for url in get_embed_urls(message)].get(0)
     else:
         async for msg in ctx.channel.history(limit=search_len):

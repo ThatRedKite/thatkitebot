@@ -59,7 +59,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         self.history_semaphore = asyncio.Semaphore(2)
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         # only listen for commands associated with this cog
         if ctx.cog is not self:
             return
@@ -69,13 +69,13 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.command()
     @commands.check(pc.can_send_image)
-    async def inspirobot(self, ctx):
+    async def inspirobot(self, ctx) -> None:
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
 
     @commands.cooldown(5, 60, commands.BucketType.channel)
     @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx: commands.Context, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]):
+    async def _markov(self, ctx: commands.Context, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]) -> None:
         """
         This command generates a bunch of nonsense text by feeding your messages to a markov chain.
         Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
@@ -97,7 +97,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                     # we have a channel but not enough messages, so we iterate over the user history in this channel
                     async for message in channel.history(limit=5000).filter(lambda m: m.author is user):
                         try:
-                            await self.cache.add_message(message)  # add the message to the cache
+                            await self.cache.add_message_object(message)  # add the message to the cache
                         except CacheInvalidMessageException:
                             pass
                         message_list.append(str(message.clean_content))  # add the message to the message_list
@@ -135,7 +135,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
     @commands.command(name="1984")
-    async def _1984(self, ctx):
+    async def _1984(self, ctx) -> None:
         """
         Literally 1984
         """
@@ -143,7 +143,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="eval", aliases=["evaluate", "opinion"])
-    async def _eval(self, ctx, *, args=None):
+    async def _eval(self, ctx, *, args=None) -> None:
         resp_list = [
             "Get real. <:troll:910540961958989934>", "Nice", "Based", "Cringe",
             "<:schmuck:900445607888551947>", "Ok, and?", "yeah...", "perhaps",
@@ -176,7 +176,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="8ball")
-    async def _8ball(self, ctx, *, args=None):
+    async def _8ball(self, ctx, *, args=None) -> None:
         resp_list = [
             "It is certain.",
             "It is decidedly so.",
@@ -201,30 +201,10 @@ class FunStuff(commands.Cog, name="fun commands"):
         ]
         await ctx.send(choice(resp_list))  # Not seeded random due to there being non-committal answers
 
-    # RIP thispersondoesnotexist.com
-
-    # @commands.cooldown(1, 10, commands.BucketType.user)
-    # @commands.check(pc.can_send_image)
-    # @commands.command(name="fakecat")
-    # async def _tcdne(self, ctx):
-    #     """Send an image from thiscatdoesnotexist.com"""
-    #     file, embed = await url.tcdne(self.bot.aiohttp_session)
-    #     async with ctx.typing():
-    #         await ctx.send(file=file, embed=embed)
-
-    # @commands.cooldown(1, 10, commands.BucketType.user)
-    # @commands.check(pc.can_send_image)
-    # @commands.command(name="fakeart")
-    # async def _tadne(self, ctx):
-    #     """Send an image from thisartworkdoesnotexist.com"""
-    #     file, embed = await url.tadne(self.bot.aiohttp_session)
-    #     async with ctx.typing():
-    #         await ctx.send(file=file, embed=embed)
-
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
     @commands.command(name="fakewaifu")
-    async def _twdne(self, ctx):
+    async def _twdne(self, ctx) -> None:
         """Send an image from thiswaifudoesnotexist.net"""
         file, embed = await url.twdne(self.bot.aiohttp_session)
         async with ctx.typing():
@@ -233,22 +213,16 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
     @commands.command(name="fakefur", hidden=True)
-    async def _tfdne(self, ctx):
+    async def _tfdne(self, ctx) -> None:
         """Send an image from thisfursonadoesnotexist.com <:amsmiles:910537357613228072>"""
         file, embed = await url.tfdne(self.bot.aiohttp_session)
         async with ctx.typing():
             await ctx.send(file=file, embed=embed)
 
-    # rest in peace,
-    # thisvesseldoesnotexist.com,
-    # thispersondoesnotexist.com,
-    # thiscatdoesnotexist.com
-    # and thisartworkdoesnotexist.com
-
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
     @commands.command(name="xkcd", aliases=["comic", "xkcdcomic"])
-    async def _xkcd(self, ctx, *, args=None):
+    async def _xkcd(self, ctx, *, args=None) -> None:
         """Send a random or specific xkcd comic"""
         embed = await url._xkcd(args)
         if embed is None:
@@ -258,7 +232,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(name="uwuify", aliases=["uwu"])
-    async def _uwuify(self, ctx: commands.Context, *, msg: str = None):
+    async def _uwuify(self, ctx: commands.Context, *, msg: str = None) -> None:
         """
         UwUify your text (now even more cursed)
         """
@@ -268,9 +242,10 @@ class FunStuff(commands.Cog, name="fun commands"):
 
         # fetch the message from the reference
         else:
-            seed = ctx.message.reference.message_id
+            ref = ctx.message.reference
+            seed = ref.message_id
             # FIXME
-            message = await ctx.fetch_message
+            message = ctx.bot.get_message(seed)
             msg = message.content
 
         # if the message content is empty, return
@@ -303,7 +278,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                 await ctx.send(msg)
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, exception):
+    async def on_command_error(self, ctx, exception) -> None:
         if not isinstance(exception, (commands.CommandError, commands.CommandInvokeError)):
             return
 
@@ -314,5 +289,5 @@ class FunStuff(commands.Cog, name="fun commands"):
             return
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(FunStuff(bot))

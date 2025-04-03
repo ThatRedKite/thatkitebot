@@ -30,25 +30,25 @@ import logging
 import json
 import sys
 import asyncio
+
 from discord.abc import GuildChannel, PrivateChannel
 from abc import ABC
 from datetime import datetime
 from pathlib import Path
 
 import aiohttp
+import discord.gateway
 import discord.state
 import psutil
 import discord
 
-from redis.lock import Lock
-from redis import Redis as SyncRedis
 from redis import asyncio as aioredis
-from discord.ext import bridge, commands
+from discord.ext import commands
 from dulwich.repo import Repo
+from thatkitebot.types.state import PartiallyCachedState
 
 from .extensions import ENABLED_EXTENSIONS
-from .tkb_redis.cache import RedisCacheAsync, CacheInvalidMessageException
-from .base.channels import _threaded_channel_factory
+from .tkb_redis.cache import RedisCacheAsync, RedisCacheSync
 #endregion
 
 __name__ = "ThatKiteBot"
@@ -125,92 +125,31 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
 
 #endregion
 
-class CustomState(discord.state.ConnectionState):
-    def __init__(self, *, dispatch, handlers, hooks, http, loop, **options):
-        self.r_cache: RedisCacheAsync
-        self.max_messages = 1
-        super().__init__(dispatch=dispatch, handlers=handlers, hooks=hooks, http=http, loop=loop, **options)
-    
-    def parse_message_create(self, data):
-        channel, _ = self._get_guild_channel(data)
-        # channel would be the correct type here
-        
-        message = discord.Message(channel=channel, data=data, state=self)  # type: ignore
-
-        self.dispatch("message", message)
-        if self._messages is not None:
-            self._messages.append(message)
+#region state class
+#endregion
 
 
-        # we ensure that the channel is either a TextChannel, VoiceChannel, StageChannel, or Thread
-        if channel and channel.__class__ in (
-            discord.TextChannel,
-            discord.VoiceChannel,
-            discord.StageChannel,
-            discord.Thread,
-        ):
-            channel.last_message_id = message.id  # type: ignore
-
-    def _add_guild(self, guild):
-        task = self.loop.create_task(self.r_cache.add_guild_object(guild,sync_channels=True, sync_members=True))
-        return super()._add_guild(guild)
-
-    def _get_message(self, msg_id):
-        return super()._get_message(msg_id)
-    
-    def create_message(self, *, channel, data):
-        return super().create_message(channel=channel, data=data)
-    
-
-# define the bot class
 # region bot class
 class ThatKiteBot(commands.Bot, ABC):
+    
+    def _get_state(self, **options: discord.Any) -> PartiallyCachedState:
+        return PartiallyCachedState(
+            dispatch=self.dispatch,
+            handlers=self._handlers,
+            hooks=self._hooks,
+            http=self.http,
+            loop=self.loop,
+            cache=self.sync_cache,
+            **options,
+    )
+    
     def __init__(self, command_prefix, dir_name, tt, help_command=None, description=None, **options):
-        super().__init__(command_prefix, help_command=help_command, description=description, **options)
-        # ---static values---
-        self._connection = self._get_state(**options)
-
-        self.prefix = command_prefix
-        # paths
-        self.dir_name = dir_name
-        self.data_dir = "/app/data/"
-        self.temp_dir = "/tmp/"
-
-        # info
-        self.version = __version__
-        self.start_time = datetime.now()
-        self.pid = os.getpid()
-        self.process = psutil.Process(os.getpid())
-        r = Repo('.')
-        self.git_hash = r.head().decode("utf-8")
-        r.close()
-
-        # ---dynamic values---
-
-        # settings
-        self.debug_mode = int(os.getenv("KITEBOT_DEBUG")) == 1
-        self.tenor_token = tt
-        self.enable_voice = False  # global override for deactivating voice commands
-        # sessions
-        self.aiohttp_session = None  # give the aiohttp session an initial value
         self.logger = logger
-        self.process_pool = None
-        self.last_online = 0
-        
-        # redis databases:
+        self._connection = None
 
-
-        # 0: initial settings, not accessed while the bot is running
-        # 1: guild settings
-        # 2: reposts
-        # 3: welcome leaderboards
-        # 4: bookmarks
-        # 5: starboard
-
-
-        
         self.logger.info("Redis: Trying to connect")
         try:
+            # db 0 is free at the moment as it formerly contained the auth stuff
             self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
             self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
             self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
@@ -221,18 +160,48 @@ class ThatKiteBot(commands.Bot, ABC):
             self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
             self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
 
-            self.r_cache = RedisCacheAsync(self, self._get_state(), True)
-            self._connection.r_cache = self.r_cache
+            self.r_cache = RedisCacheAsync(self, auto_exec=False)
+            self.sync_cache = RedisCacheSync(self, auto_exec=False)
 
-            # bunch of locks
-            self.cache_lock = asyncio.Lock()
             self.settings_lock = asyncio.Lock()
+            self.cache_lock = self.r_cache.lock
 
             self.logger.info("Redis: Connection successful")
 
         except aioredis.ConnectionError:
-            self.logger.critical("Redis: connection failed")
+            self.logger.critical("Redis: connection failed. Exiting.")
             exit(1)
+
+        # do all the original init stuff
+        super().__init__(command_prefix, help_command=help_command, description=description, **options)
+
+        # paths
+        self.dir_name = dir_name
+        self.data_dir = "/app/data/"
+        self.temp_dir = "/tmp/"
+
+        # info
+        self.version = __version__
+        self.start_time = datetime.now()
+        self.pid = os.getpid()
+        self.process = psutil.Process(os.getpid())
+
+        r = Repo('.')
+        self.git_hash = r.head().decode("utf-8")
+        r.close()
+
+        del r
+
+        # settings
+        self.debug_mode = int(os.getenv("KITEBOT_DEBUG")) == 1
+        self.tenor_token = tt
+        self.enable_voice = False  # global override for deactivating voice commands
+        
+        # sessions
+        self.aiohttp_session = None  # give the aiohttp session an initial value
+        self.process_pool = None
+        self.last_online = 0
+        
         # bot status info
         self.cpu_usage = 0
 
@@ -243,82 +212,109 @@ class ThatKiteBot(commands.Bot, ABC):
         self.command_invokes_total = 0
         
 
-    # TODO
-    async def fetch_channel(
-            self, channel_id: int, /
-        ) -> GuildChannel | PrivateChannel | discord.Thread:
-            return await self.r_cache.get_channel_object(channel_id)
+    async def get_or_fetch_channel(self, channel_id: int) -> GuildChannel | PrivateChannel | discord.Thread:
+        if (channel := self.get_channel(channel_id)) is not None:
+            return channel
+        
+        if (channel := await super().fetch_channel(channel_id)) is not None:
+            return channel
+        
+        return None
     
-    async def get_message(self, id: int) -> discord.Message | None:
-        async with self.cache_lock:
-            return await self.r_cache.get_message(message_id=id)
 
-    async def fetch_user(self, user_id: int) -> discord.User:
-        async with self.cache_lock:
-            return await self.r_cache.get_user_object(user_id)
-    
-    async def get_user(self, id: int) -> discord.User | None:
-        async with self.cache_lock:
-            return await self.r_cache.get_user_object(id)
+    async def get_or_fetch_message(self, message_id: int, channel_id: int=None) -> discord.Message:
+        if (message := self.get_message(message_id)) is not None:
+            return message
         
-    async def get_guild(self, id: int) -> discord.Guild | None:
-        async with self.cache_lock:
-            return await self.r_cache.get_guild_object(id)
-    
-    async def fetch_guild(self, guild_id: int, /, *, with_counts=True) -> discord.Guild:
-        async with self.cache_lock:
-            return await self.r_cache.get_guild_object(guild_id,with_counts)
+        if channel_id and (channel := await self.get_or_fetch_channel(channel_id)) is not None:
+            if (message := await channel.fetch_message(message_id)) is not None:
+                return message
         
-    def _get_state(self, **options: discord.Any) -> CustomState:
-        return CustomState(
-            dispatch=self.dispatch,
-            handlers=self._handlers,
-            hooks=self._hooks,
-            http=self.http,
-            loop=self.loop,
-            **options,
-        )
+        return None
+
+    async def fetch_channel(self, channel_id: int, /) -> GuildChannel | PrivateChannel | discord.Thread:
+        return await self.get_or_fetch_channel(channel_id)
     
+#    async def add_message(self, message: discord.Message):
+#        async with self.cache_lock:
+#            await self.r_cache.add_message_object(message)
+
+#    async def add_reaction(self, payload: discord.RawReactionActionEvent):
+#        async with self.cache_lock:
+#            pass
+        
+#    async def get_message(self, message_id: int, guild_id = None, channel_id=None, author_id=None) -> discord.Message | None:
+#        async with self.cache_lock:
+#            return await self.r_cache.get_message_object(message_id,guild_id,channel_id, author_id, fetch=True)
+
+#    async def fetch_user(self, user_id: int) -> discord.User:
+#        async with self.cache_lock:
+#            return await self.r_cache.get_user_object(user_id)
+    
+#    async def add_user(self, user: discord.User):
+#        async with self.cache_lock:
+#            await self.r_cache.add_user(user)
+
+    async def mass_delete_raw(self, payload: discord.RawBulkMessageDeleteEvent):
+        async with self.cache_lock:
+            await self.r_cache.mass_expire_messages(payload.message_ids, payload.guild_id, payload.channel_id)
+
+    async def delete_message_raw(self, payload: discord.RawMessageDeleteEvent):
+        async with self.cache_lock:
+            await self.r_cache.expire_message_now(payload.message_id, payload.guild_id, payload.channel_id)
+
+#    async def get_user(self, id: int) -> discord.User | None:
+#        async with self.cache_lock:
+#            return await self.r_cache.get_user_object(id)
+#        
+#    async def get_guild(self, id: int) -> discord.Guild | None:
+#        async with self.cache_lock:
+#            return await self.r_cache.get_guild_object(id)
+#    
+#    async def fetch_guild(self, guild_id: int, /, *, with_counts=True) -> discord.Guild:
+#        async with self.cache_lock:
+#            return await self.r_cache.get_guild_object(guild_id,with_counts)
+        
+           
     # let's use this to set up some stuff that requires asyncio stuff to work
     async def start(self, token: str, *, reconnect: bool = True) -> None:
         # set up the aiohttp client
         self.logger.info("Starting aiohttp client…")
-        self.aiohttp_session = aiohttp.ClientSession()
-
-        self.logger.info("Initializing cache…")
-        # fill the user cache
-        # acquire the lock
+        headers = {"User-Agent": f"ThatKiteBot/{__version__}"}
+        self.aiohttp_session = aiohttp.ClientSession(headers=headers)
 
         # try to get and set the last online thingies
-        self.last_online = int(await self.redis.get("last")) or 0
+        self.last_online = int(await self.redis.get("last") or 0)
         if self.last_online > 0:
             self.logger.info(f"{__name__} was last online at {datetime.fromtimestamp(float(self.last_online))} UTC")
 
         await self.redis.set("last", int(datetime.now().timestamp()))
-
         # load the cogs aka extensions
         self.load_extensions(*ENABLED_EXTENSIONS, store=False)
         self.logger.info(f"Loaded {len(ENABLED_EXTENSIONS)} extensions: [{','.join(EXTENSIONS)}]")
 
-        self.logger.info("Trying to connect to discord…")
+        self.logger.info("Logging into Discord…")
+        await self.login(token)
 
-        return await super().start(token=token, reconnect=reconnect)
+        self.logger.info("Trying to connect to Discord…")
+        await self.connect(reconnect=reconnect)
     
 
 #endregion
-# create the bot instance
+
 
 #region init
 
-bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents, max_messages=0, member_cache_flags=discord.MemberCacheFlags.none())
+bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents, max_messages=None)
 logger.info(f"Starting {__name__} version {__version__} ({bot.git_hash})")
 
 
-# try to start the bot with the token from the init_settings.json file catch any login errors
+# try to start the bot with the token from the init_settings.json file and catch any login errors
 try:
     bot.run(discord_token)
 
 except discord.LoginFailure:
     logger.critical("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
     exit(1)
+
 #endregion

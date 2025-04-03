@@ -18,7 +18,7 @@ from thatkitebot.embeds.info import *
 
 
 # generate random 24 bit number
-def gen_random_hex_color():
+def gen_random_hex_color() -> str:
     def get_int():
         return random.randint(0, 255)
 
@@ -26,7 +26,7 @@ def gen_random_hex_color():
 
 
 # check if given string is valid discord emoji
-def check_emoji(emoji):
+def check_emoji(emoji) -> bool:
     emoji_regex = r"<\S+:\d+>"
     if len(emoji) == 1:
         return True
@@ -36,7 +36,7 @@ def check_emoji(emoji):
         return False
 
 
-def check_hex(hex):
+def check_hex(hex) -> bool:
     hex_regex = r"^0x[0-9a-fA-F]+$"
     if re.match(hex_regex, hex):
         return True
@@ -83,7 +83,7 @@ class FieldModal(discord.ui.Modal):
         self.add_item(_contents)
         self.add_item(_inline)
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction) -> None:
 
         self.config[self.section_id]["fields"][self.field_id]["name"] = self.children[0].value  # set title of the field
         self.config[self.section_id]["fields"][self.field_id]["value"] = self.children[
@@ -131,17 +131,17 @@ class InfoCog(commands.Cog, name="Info"):
         ###### "Utility" functions ######
 
     # section list for autocompletion
-    async def get_sections(self, ctx: discord.AutocompleteContext):
+    async def get_sections(self, ctx: discord.AutocompleteContext) -> str:
         return [f"{id + 1}. {section['title']}" for id, section in
                 enumerate(await self.get_config(ctx.interaction.guild))
                 if f"{id + 1}. {section['title']}".lower().startswith(ctx.value.lower())]
 
     # field edit options list for autocompletion 
-    async def get_options(self, ctx: discord.AutocompleteContext):
+    async def get_options(self, ctx: discord.AutocompleteContext) -> list[str]:
         return [section for section in ["add", "edit", "remove"] if section.lower().startswith(ctx.value.lower())]
 
     # get config file
-    async def get_config(self, guild):
+    async def get_config(self, guild) -> dict:
         try:
             async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "r") as f:
                 return json.loads("".join([line async for line in f]))
@@ -151,12 +151,12 @@ class InfoCog(commands.Cog, name="Info"):
             return await self.get_config(guild=guild)
 
     # get default config file
-    async def get_default_config(self):
+    async def get_default_config(self) -> dict:
         async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/info.json"), "r") as f:
             return json.loads("".join([line async for line in f]))
 
     # update config file
-    async def update_config(self, guild, data: dict):
+    async def update_config(self, guild, data: dict) -> None:
         async with aiofiles.open(os.path.join(self.bot.data_dir, f"info/{guild.id}.json"), "w") as f:
             await f.write(json.dumps(data))
 
@@ -174,7 +174,7 @@ class InfoCog(commands.Cog, name="Info"):
         return Select(options=option_list)
 
     # check if given section name has valid id and returns it if so     
-    async def check_section_id(self, section, guild):
+    async def check_section_id(self, section, guild) -> int:
         config = await self.get_config(guild)
         try:
             id = int(section.split(".")[0]) - 1
@@ -236,10 +236,12 @@ class InfoCog(commands.Cog, name="Info"):
     )
 
     @info_settings.command(name="add-section")
-    async def new_section(self, ctx: discord.ApplicationContext,
-                          name: Option(str, "Choose a name!", required=True, max_lenght=256),#type:ignore
-                          emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True),#type:ignore
-                          color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):#type:ignore
+    async def new_section(
+        self, ctx: discord.ApplicationContext,
+        name: Option(str, "Choose a name!", required=True, max_lenght=256),#type:ignore
+        emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=True),#type:ignore
+        color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None #type:ignore
+        ) -> None:
         """
         Create new section in /info command
         """
@@ -284,7 +286,7 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond(f"Section {name} {emoji} has been created, now you can add a new field or edit existing one.")
 
     @info_settings.command(name="remove-section")
-    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections)):#type:ignore
+    async def remove_section(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections)) -> None:#type:ignore
         """Remove section in /info command"""
         config = await self.get_config(ctx.guild)
 
@@ -302,9 +304,11 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond(f"Section {name} {emoji} has been removed.")
 
     @info_settings.command(name="edit-field")
-    async def edit_field(self, ctx: discord.ApplicationContext,
-                         section: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
-                         option: Option(str, "Choose option.", required=True, autocomplete=get_options)): # type: ignore
+    async def edit_field(
+        self, ctx: discord.ApplicationContext,
+        section: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
+        option: Option(str, "Choose option.", required=True, autocomplete=get_options)
+    ) -> None: # type: ignore
         """Add, edit or remove a field in section"""
 
         config = await self.get_config(ctx.guild)
@@ -363,11 +367,13 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond(view=dropdown_view)
 
     @info_settings.command(name="edit-section")
-    async def edit_section(self, ctx: discord.ApplicationContext,
-                           section: Option(str, "Choose a section", required=True, autocomplete=get_sections), # type: ignore
-                           title: Option(str, "Choose a title!", max_lenght=256, required=False) = None,#type:ignore
-                           emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=False) = None,#type:ignore
-                           color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None):#type:ignore
+    async def edit_section(
+        self, ctx: discord.ApplicationContext,
+        section: Option(str, "Choose a section", required=True, autocomplete=get_sections), # type: ignore
+        title: Option(str, "Choose a title!", max_lenght=256, required=False) = None,#type:ignore
+        emoji: Option(str, "Choose an emoji! (e.g :lightbulb:)", required=False) = None,#type:ignore
+        color: Option(str, "Choose a color! (hex e.g. 0x123456)", required=False) = None #type:ignore
+        ) -> None:
         """Change name, emoji or color of given section"""
 
         config = await self.get_config(ctx.guild)
@@ -413,8 +419,13 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond(f"{counter} properties has been changed in {_title} {_emoji}")
 
     @info_settings.command(name="edit-footer")
-    async def edit_footer(self, ctx, name: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
-                          footer: Option(str, required=True, max_lenght=2048)): # type: ignore
+    async def edit_footer(
+        self,
+        ctx,
+        name: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
+        footer: Option(str, required=True, max_lenght=2048) # type: ignore
+    ) -> None: # type: ignore
+
         """Edit section footer in /info command"""
         config = await self.get_config(ctx.guild)
 
@@ -431,7 +442,7 @@ class InfoCog(commands.Cog, name="Info"):
         await ctx.respond("Footer has been changed.")
 
     @info_settings.command(name="factory-reset")
-    async def factory_reset(self, ctx):
+    async def factory_reset(self, ctx) -> None:
         view = View()
 
         buttons = [
@@ -454,24 +465,29 @@ class InfoCog(commands.Cog, name="Info"):
 
     ###### Callbacks ######   
 
-    async def info_dropdown_callback(self, interaction: discord.Interaction):
+    async def info_dropdown_callback(self, interaction: discord.Interaction) -> None:
         id = await self.check_section_id(interaction.data["values"][0], interaction.guild)
         self.current_embed = id
-        await interaction.response.edit_message(embed=await get_embed(id, await self.get_config(interaction.guild)),
-                                                view=self.main_view, content=None)
+        await interaction.response.edit_message(
+            embed=await get_embed(id, await self.get_config(interaction.guild)),
+            view=self.main_view,
+            content=None,
+        )
 
-    async def edit_field_dropdown_callback(self, interaction: discord.Interaction):
+    async def edit_field_dropdown_callback(self, interaction: discord.Interaction) -> None:
         # get id and field id
         id = int(interaction.data["values"][0].split(".")[0]) - 1
         field_id = int(interaction.data["values"][0].split(".")[1]) - 1
 
-        modal = FieldModal(title=f"Field editor :pencil:",
-                           config=await self.get_config(interaction.guild), section_id=id, field_id=field_id,
-                           bot=self.bot)
+        modal = FieldModal(
+            title=f"Field editor :pencil:",
+            config=await self.get_config(interaction.guild), section_id=id, field_id=field_id,
+            bot=self.bot
+        )
 
         await interaction.response.send_modal(modal)
 
-    async def remove_field_dropdown_callback(self, interaction: discord.Interaction):
+    async def remove_field_dropdown_callback(self, interaction: discord.Interaction) -> None:
         # get id and field id
         id = int(interaction.data["values"][0].split(".")[0]) - 1
         field_id = int(interaction.data["values"][0].split(".")[1]) - 1
@@ -484,9 +500,11 @@ class InfoCog(commands.Cog, name="Info"):
 
         await self.update_config(interaction.guild, config)
         await interaction.response.edit_message(
-            content=f"Field no. {field_id} has been removed from section {name} {emoji}.", view=None)
+            content=f"Field no. {field_id} has been removed from section {name} {emoji}.",
+            view=None
+        )
 
-    async def button_callback(self, interaction: discord.Interaction):
+    async def button_callback(self, interaction: discord.Interaction) -> None:
         config = await self.get_config(interaction.guild)
         max_id = len(config) - 1
 
@@ -499,10 +517,13 @@ class InfoCog(commands.Cog, name="Info"):
             if self.current_embed < 0:
                 self.current_embed = max_id
 
-        await interaction.response.edit_message(embed=await get_embed(self.current_embed, config), view=self.main_view,
-                                                content=None)
+        await interaction.response.edit_message(
+            embed=await get_embed(self.current_embed, config),
+            view=self.main_view,
+            content=None
+        )
 
-    async def reset_callback(self, interaction: discord.Interaction):
+    async def reset_callback(self, interaction: discord.Interaction) -> None:
         """Factory reset all the sections in /info """
 
         if interaction.custom_id == "no":
@@ -518,7 +539,7 @@ class InfoCog(commands.Cog, name="Info"):
 
     # this initializes default /info content for the guild the bot joins
     @commands.Cog.listener(name="on_guild_join")
-    async def load_defaults(self, guild):
+    async def load_defaults(self, guild) -> None:
         # check if there already is a config for the guild present
         if not Path(os.path.join(self.bot.data_dir, "info", f"{guild.id}.json")).exists():
             # load default config
@@ -528,5 +549,5 @@ class InfoCog(commands.Cog, name="Info"):
             await self.update_config(guild, default_config)
 
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(InfoCog(bot))

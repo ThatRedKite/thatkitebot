@@ -43,7 +43,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
     def __init__(self, bot):
         self.bot: commands.Bot = bot
 
-    def get_aliases(self, ctx):
+    def get_aliases(self, ctx) -> str:
         command = ctx.command
         if isinstance(ctx, discord.commands.ApplicationContext):
             prefix = "/"
@@ -53,7 +53,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         return ", ".join(alist)
 
     @commands.command(name="conversion", aliases=["mm2mil", "mil2mm", "conv"])
-    async def conversion(self, ctx, *, args=None):
+    async def conversion(self, ctx, *, args=None) -> None:
         """
         Convert between mils and millimeters, or oz/ft² to mils and millimeters
         """
@@ -64,7 +64,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         await ctx.send(embed=conv.gen_embed())
 
     @commands.command(name="pcbcalculator", aliases=["pcbtrace", "trace", "pcb", "tracewidth", "tracecurrent"])
-    async def pcbtrace(self, ctx, *, args=""):
+    async def pcbtrace(self, ctx, *, args="") -> None:
         """
         Calculate the PCB trace width or the maximum current it can handle using the IPC2221 standard.
         """
@@ -83,7 +83,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             return
 
     @commands.command()
-    async def divider(self, ctx, *, args=None):
+    async def divider(self, ctx, *, args=None) -> None:
         """
         Calculate values of an unloaded voltage divider. Run the command for more details.
         Thank you dimin for the idea and the "art"
@@ -95,7 +95,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
         await ctx.send(embed=div.gen_embed())
 
     @commands.command(name="cap_energy", aliases=["joule", "energy", "ce", "charge"])
-    async def capacitor_energy(self, ctx, *, args=None):
+    async def capacitor_energy(self, ctx, *, args=None) -> None:
         """
         Calculate the capacitor energy and charge in joules and coulomb using voltage and capacitance. Run the command for more details.
         """
@@ -123,7 +123,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             await ctx.send(embed=embed)
 
     @commands.command(name="lm317", aliases=["317cv", "cv317", "LM317", "lm317cv"])
-    async def lm317(self, ctx, *, args=""):
+    async def lm317(self, ctx, *, args="") -> None:
         """
         Calculate resistor values for an LM317 in CV and CC mode. Run the command for more details.
         """
@@ -151,7 +151,7 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             return
 
     @commands.command(name="rc", aliases=["rcfilter", "filter", "lowpass"])
-    async def rc_filter(self, ctx, *, args=""):
+    async def rc_filter(self, ctx, *, args="") -> None:
         """
         Calculate different aspects of an RC filter. Run the command for more details.
         """
@@ -171,5 +171,5 @@ class ElectroCog(commands.Cog, name="Electronics commands"):
             return
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(ElectroCog(bot))

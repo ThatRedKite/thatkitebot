@@ -88,7 +88,6 @@ class PCB_calc:
     def calculate(self, overrideArgs=False):
         # if there are no args raise too few args error
         if self.args == {} and not overrideArgs:
-            print(self.args)
             raise TooFewArgsError()
 
         if (self.temp and (10 > self.temp > 100)) or (self.thicc and 0.5 < self.thicc > 3):

@@ -26,18 +26,20 @@ SOFTWARE.
 
 #region Imports
 from io import BytesIO
+
 import discord
 from discord.ext import commands
-from thatkitebot.base.util import EmbedColors as ec
 
 from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 from wand.image import Image as WandImage
 from wand.color import Color as WandColor
-from dateutil.relativedelta import relativedelta
 
+from thatkitebot import __main__ as tkb
 from thatkitebot.embeds.status import gen_embed as status_embed
 from thatkitebot.embeds.about import gen_embed as about_embed
 from thatkitebot.embeds.gdpr import gen_embed as gdpr_embed
+from thatkitebot.base.util import EmbedColors as ec
 #endregion
 
 #region Cog
@@ -45,7 +47,7 @@ class UtilityCommands(commands.Cog, name="Potentially useful commands"):
     """
     Utility commands for the bot. These commands are basically informational commands.
     """
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: tkb.ThatKiteBot):
         self.redis = bot.redis
         self.bot = bot
 

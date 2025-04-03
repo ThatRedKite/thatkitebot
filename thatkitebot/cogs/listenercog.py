@@ -91,12 +91,12 @@ class ListenerCog(commands.Cog):
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
 
     @tasks.loop(hours=1.0)
-    async def hourly_reset(self):
+    async def hourly_reset(self) -> None:
         self.bot.command_invokes_hour = 0
         self.bot.events_hour = 0
 
     @tasks.loop(minutes=1)
-    async def database_ping(self):
+    async def database_ping(self) -> None:
         try:
             await self.redis.ping()
             await self.redis_cache.ping()
@@ -106,78 +106,76 @@ class ListenerCog(commands.Cog):
         except ConnectionError as exc:
             self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(exc)}")
     
-    # execs the cache pipeline every 10 seconds
-    @tasks.loop(seconds=10)
-    async def cache_update(self):
+    # execs the cache pipeline every 60 seconds
+    @tasks.loop(seconds=60)
+    async def cache_update(self) -> None:
         # commit pending writes
         async with self.bot.cache_lock:
                 await self.cache.exec()
 
     @commands.Cog.listener()
-    async def on_ready(self):
-        
-        self.logger.info("Starting background loops…\n")
-        
-        self.hourly_reset.start()        
-        self.cache_update.start()
-        self.database_ping.start()
-        
+    async def on_connect(self) -> None:
+        await self.bot.sync_commands()
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+
         self.logger.info(f"{self.bot.user.name} is now ready")
         await self.bot.change_presence(
-            activity=discord.Activity(name="a battle against russia", type=5),
+            activity=discord.Activity(name="suffering", type=5),
             status=discord.Status.online,
         )
 
     @commands.Cog.listener()
-    async def on_command_completion(self, ctx):
+    async def on_command_completion(self, ctx) -> None:
         self.bot.command_invokes_hour += 1
         self.bot.command_invokes_total += 1
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
     @commands.Cog.listener()
-    async def on_slash_command_error(self, ctx, ex):
+    async def on_slash_command_error(self, ctx, ex) -> None:
         raise ex
 
-
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
-        if not message.guild:
-            return
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+        # async with self.bot.cache_lock:
+        #     await self.cache.update_message_raw(payload)
 
-        try:
-            async with self.bot.cache_lock:
-                await self.cache.add_message(message)
-
-        except CacheInvalidMessageException:
-            if self.bot.debug_mode:
-                self.logger.debug("CACHE: Could not add message to cache, reason: Invalid Message")
-
-        except NoDataException:
-            if self.bot.debug_mode:
-                self.logger.debug("CACHE: Could not add message to cache, reason: No Data")
+    @commands.Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent) -> None:
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+       #await self.bot.r_cache.mass_expire_messages(payload)
 
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    async def on_member_update(self, _, after: discord.Member) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-
-        #TODO: Implement this
-        try:
-            cached_message = await self.bot.r_cache.get_message(message_id=payload.message_id, author_id=payload.user_id, guild_id=payload.guild_id, channel_id=payload.channel_id)
-        except CacheInvalidMessageException:
-            pass
-        
-        except NoDataException:
-            self.logger.error(f"Failed to add message {payload.message_id} to cache")
-
+        # await self.bot.add_user(after._user)
+        pass
     
     @commands.Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+        #await self.bot.delete_message_raw(payload)
+    
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
@@ -208,6 +206,6 @@ class ListenerCog(commands.Cog):
             return
 
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(ListenerCog(bot))
 

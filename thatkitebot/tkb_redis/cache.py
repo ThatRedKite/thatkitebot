@@ -26,33 +26,39 @@ SOFTWARE.
 
 #region imports
 import asyncio
+from collections.abc import MutableMapping
 from datetime import timedelta
 from typing import Optional, Union
+from threading import Lock
 
 import discord.state
-import orjson
-import brotli
 import discord
+from discord import MessageType
 from redis import asyncio as aioredis
+import redis as syncredis
 
 from thatkitebot.base.channels import get_channel
+
 from .exceptions import *
+from .util import compress_data, decompress_data
+from .serialization import channel_to_dict, guild_to_dict, user_to_dict, message_to_dict
 #endregion
 
+class LUT_Keys(discord.Enum):
+    AUTHOR = "id_to_author"
+    CHANNEL = "id_to_channel"
+    GUILD = "id_to_guild"
+    CHANNEL_TO_GUILD = "channel_to_guild"
 
-#region main class
+
+#region async class
 class RedisCacheAsync:
-    def __init__(
-            self,
-            bot: discord.Bot,
-            state: discord.state.ConnectionState,
-            auto_exec=False
-            ):
+    def __init__(self,bot: discord.Bot,auto_exec=False):
         
-        self.state = state
         self.bot = bot
-
         self.auto_exec = auto_exec
+
+        self.autoexpire: timedelta = timedelta(weeks=2)
         
         self.lut            =   aioredis.Redis(host="redis", db=15, decode_responses=False)
         self.guild_cache    =   aioredis.Redis(host="redis_cache", db=1, decode_responses=False)
@@ -61,160 +67,47 @@ class RedisCacheAsync:
         self.message_cache  =   aioredis.Redis(host="redis_cache", db=4, decode_responses=False)
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
-        self.message_pipeline   =   self.message_cache.pipeline(transaction=True)
+        self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
         self.channel_pipeline   =   self.channel_cache.pipeline(transaction=True)
         self.guild_pipeline     =   self.guild_cache.pipeline(transaction=True)
         self.user_pipeline      =   self.user_cache.pipeline(transaction=True)
 
-    @staticmethod
-    def _serialize_embeds(message: discord.Message) -> list[Optional[discord.Embed]]:
-        if message.embeds:
-                return [embed.to_dict() for embed in message.embeds]
-        else:
-            return []
-    
-    @staticmethod
-    def _compress(data_dict: dict) -> bytes:
-        try:
-            data_serialized = orjson.dumps(data_dict)
-            return brotli.compress(data_serialized, quality=11)
-        except:
-            raise CompressionException
-        
-    @staticmethod
-    def _decompress(data_bytes) -> dict:
-        try:
-            data_decompressed = brotli.decompress(data_bytes)
-            return orjson.loads(data_decompressed)
-        except:
-            raise CompressionException
-        
-    @staticmethod
-    def _sanity_check():
-        return True
-    
-    @staticmethod
-    def guild_to_dict(guild: discord.Guild) -> dict:
-        guild_data = dict(
-            id=guild.id,
-            name=guild.name,
-            icon=guild._icon,
-            splash=guild._splash,
-            discovery_splash=guild._discovery_splash,
-            owner_id=guild.owner_id,
-            afk_channel_id=guild.afk_channel.id if guild.afk_channel else None,
-            afk_timeout=guild.afk_timeout,
-            verification_level=guild.verification_level.value,
-            default_message_notifications=guild.default_notifications.value,
-            explicit_content_filter=guild.explicit_content_filter.value,
-            roles=guild._roles,
-            emojis=guild.emojis,
-            features=guild.features,
-            mfa_level=int(guild.mfa_level) if guild.mfa_level else None,
-            application_id=guild.owner.id if guild.owner and guild.owner.bot else None,
-            system_channel_id=guild._system_channel_id,
-            system_channel_flags=guild._system_channel_flags,
-            rules_channel_id=guild._rules_channel_id,
-            max_presences=guild.max_presences,
-            max_members=guild.max_members,
-            vanity_url_code=None,
-            description=guild.description,
-            banner=guild._banner,
-            premium_tier=guild.premium_tier,
-            premium_subscription_count=guild.premium_subscription_count,
-            preferred_locale=guild.preferred_locale,
-            public_updates_channel_id=guild._public_updates_channel_id,
-            max_video_channel_users=guild.max_video_channel_users,
-            approximate_member_count=guild.approximate_member_count,
-            approximate_presence_count=guild.approximate_presence_count,
-            nsfw_level=guild.nsfw_level.value,
-            stickers=guild.stickers,
-            premium_progress_bar_enabled=guild.premium_progress_bar_enabled,
-            safety_alerts_channel_id=None,
-            incidents_data=None
-        )
+        self.lock = asyncio.Lock()
 
-        return guild_data
+
+    @property
+    def _pipelines(self):
+        return [self.id_pipeline, self.message_pipeline, self.channel_pipeline, self.guild_pipeline, self.user_pipeline]
     
-    @staticmethod
-    def user_to_dict(user: discord.User) -> dict:
-        user_dict = dict(
-            id=user.id,
-            username=user.name,
-            discriminator=user.discriminator,
-            global_name=user.global_name,
-            avatar=user.avatar.key if user.avatar else None,
-            bot=user.bot,
-            system=user.system,
-            banner=user.banner.key if user.banner else None,
-            accent_color=int(user.accent_color) if user.accent_color else None,
-            )
-        return user_dict 
-
+    @property
+    def _connections(self):
+        return [self.lut, self.guild_cache, self.channel_cache, self.guild_cache, self.user_cache]
     
-    def message_to_dict(self, message: discord.Message) -> dict:
-        dict_message = dict(
-            content=message.content,
-            clean_content=message.clean_content,
-            reference=message.reference.to_message_reference_dict() if message.reference else None,
-            tts=message.tts,
-            mention_everyone=message.mention_everyone,
-            attachments=message.attachments,
-            embeds=self._serialize_embeds(message),
-            edited_timestamp=int(message.edited_at.timestamp) if message.edited_at else None,
-            mentions=message.raw_mentions,
-            mention_roles=message.raw_role_mentions,
-            pinned=message.pinned,
-            type=message.type.value,
-            reactions=message.reactions
-        )
-        return dict_message
 
-    def channel_to_dict(self, channel: discord.abc.GuildChannel) -> dict:
-        channel_dict = dict(
-            id=channel.id,
-            type=channel.type.value,
-            guild_id=channel.guild.id if channel.guild else None,
-            position=channel.position,
-            name=channel.name,
-            topic=channel.topic,
-            nsfw=channel.nsfw,
-            last_message_id=channel.last_message_id,
-            bitrate=channel.bitrate if channel.bitrate else None,
-            user_limit=channel.user_limit if channel.user_limit else None,
-            recipients=[self.user_to_dict(user) for user in channel.recipients] if channel.recipients else None,
-            icon=channel.icon.key if channel.icon else None,
-            owner_id=channel.owner_id,
-            application_id=None, # FIXME
-            managed=None, # FIXME
-            parent_id=channel.parent_id if channel.parent_id else None,
-            video_quality_mode=channel.video_quality_mode.value,
-            message_count=channel.message_count if channel.message_count else None,
-            member_count=channel.member_count if channel.member_count else None,
-            flags=channel.flags.value,
-            total_message_sent=channel.total_message_sent if channel.total_message_sent else None
-        )
+    def _clear_all_pipelines(self):
+        for pipeline in self._pipelines:
+            pipeline.command_stack.clear()
 
-        return channel_dict
+    async def exec(self):
+        for pipeline in self._pipelines:
+            await pipeline.execute()
 
     async def compressed_write_hash(self, pipeline, name: str, key: str, dict_data:dict):
-        return await pipeline.hset(name, key, self._compress(dict_data))
+        return await pipeline.hset(name, key, compress_data(dict_data))
     
     async def compressed_read_hash(self, redis: aioredis.Redis, name: str, key: str) -> dict:
         if data_compressed := await redis.hget(name, key):
-            return self._decompress(data_compressed)
-        return None
+            return decompress_data(data_compressed)
     
     async def compressed_write_key(self, pipeline, key: str, dict_data:dict):
-        return await pipeline.set(key, self._compress(dict_data))
+        return await pipeline.set(key, compress_data(dict_data))
     
     async def compressed_read_key(self, redis: aioredis.Redis, key: str) -> dict:
         if data_compressed := await redis.get(key):
-            return self._decompress(data_compressed)
-        return None
+            return decompress_data(data_compressed)
     
     async def add_user(self, user: discord.User):
-        await self.compressed_write_key(self.user_cache, str(user.id), self.user_to_dict(user))
+        await self.compressed_write_key(self.user_cache, str(user.id), user_to_dict(user))
         
     async def clear_users(self):
         await self.user_cache.delete("users")
@@ -244,37 +137,60 @@ class RedisCacheAsync:
         else:
             data = await self.state.http.get_user(user_id)
             await self.compressed_write_key(self.channel_cache, str(user_id), data)
-            return self.state.create_user(data=data)
-    
-    async def add_message(self, message: discord.Message):
-        entry_name = f"{message.guild.id}:{message.author.id}:{message.channel.id}:{message.id}"
+            return data
 
-        await self.compressed_write_key(self.message_pipeline, entry_name, self.message_to_dict(message))
-        await self.message_pipeline.expire(entry_name, timedelta(weeks=2))
+    async def update_message_raw(self, payload: discord.RawMessageUpdateEvent):
+        await self.add_message_dict(payload.data)
 
-        # set up LUT
-        await self.id_pipeline.hset("id_to_author", mapping={str(message.id): str(message.author.id)})
-        await self.id_pipeline.hset("id_to_channel", mapping={str(message.id): str(message.channel.id)})
-        await self.id_pipeline.hset("id_to_guild", mapping={str(message.id): str(message.guild.id)})
-        await self.id_pipeline.hset("channel_to_guild", mapping={str(message.channel.id): str(message.guild.id)})
-        
+    async def add_message_object(self, message: discord.Message):
+        await self.add_message_dict(message_to_dict(message))
+
+    async def add_message_dict(self, message_data: dict):
+        message_id = message_data.get("id")
+        author_id = message_data.get("author").get("id")
+        guild_id = message_data.get("guild_id", 0)
+        channel_id = message_data.get("channel_id", 0)
+
+        assert None not in (message_id, guild_id, channel_id, author_id)
+
+        entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+        await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
+        await self.message_pipeline.expire(entry_name, self.autoexpire)
+                                           
+        await self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
+        await self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
+        await self.id_pipeline.hset(LUT_Keys.GUILD.value, mapping={str(message_id): str(guild_id)})
+        await self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, mapping={str(channel_id): str(guild_id)})
+
     async def get_author_id(self, message_id: Union[int, str]):
         # exectue the write pipeline to commit any pending changes before reading
         # ID pipeline
         await self.id_pipeline.execute()
 
-        raw = await self.lut.hget("id_to_author", str(message_id))
+        raw = await self.lut.hget(LUT_Keys.AUTHOR.value, str(message_id))
         if raw is not None:
             return int(raw.decode("ASCII"))
         else:
             return None
+
+    async def _get_ids(self, message_id, guild_id, channel_id, author_id) -> tuple[int]:
+        if not guild_id:
+            guild_id = await self.get_guild_id(message_id)
+
+        if not author_id:
+            author_id = await self.get_author_id(message_id)
+
+        if not channel_id:
+            channel_id = await self.get_channel_id(message_id)
+
+        return (guild_id, author_id, channel_id)
 
     async def get_channel_id(self, message_id: Union[int, str]):
         # exectue the write pipeline to commit any pending changes before reading
         # ID pipeline
         await self.id_pipeline.execute()
 
-        raw = await self.lut.hget("id_to_channel", str(message_id))
+        raw = await self.lut.hget(LUT_Keys.CHANNEL.value, str(message_id))
         if raw is not None:
             return int(raw.decode("ASCII"))
         else:
@@ -285,7 +201,7 @@ class RedisCacheAsync:
         # uses ID pipeline
         await self.id_pipeline.execute()
 
-        raw = await self.lut.hget("id_to_guild", str(message_id))
+        raw = await self.lut.hget(LUT_Keys.GUILD.value, str(message_id))
         if raw is not None:
             return int(raw.decode("ASCII"))
         else:
@@ -296,7 +212,7 @@ class RedisCacheAsync:
         # uses ID pipeline
 
         await self.id_pipeline.execute()
-        raw = await self.lut.hget("channel_to_guild", str(channel_id))
+        raw = await self.lut.hget(LUT_Keys.CHANNEL_TO_GUILD.value, str(channel_id))
         if raw is not None:
             return int(raw.decode("ASCII"))
         else:
@@ -324,7 +240,7 @@ class RedisCacheAsync:
         channel = await self.get_channel_object(channel_id)
         async for key, raw_data in self.message_cache.scan_iter(str(guild_id), scan_pattern):
             if counter < limit:
-                message_data = self._decompress(raw_data)
+                message_data = decompress_data(raw_data)
                 ids: str = key.decode("ASCII")
                 ids = ids.split(":")
                 author = await self.get_user_dict(ids[0])
@@ -333,82 +249,97 @@ class RedisCacheAsync:
 
             counter += 1
 
-    async def get_message(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None) -> Optional[discord.Message]:
-        # exectue the write pipeline to commit any pending changes before reading 
-        # ID pipeline, Message pipeline, Channel Pipeline, User Pipeline
-
+    async def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
         await self.id_pipeline.execute()
         await self.message_pipeline.execute()
         await self.channel_pipeline.execute()
         await self.user_pipeline.execute()
 
-        try:
-            if not guild_id:
-                guild_id = await self.get_guild_id(message_id)
-
-            if not author_id:
-                author_id = await self.get_author_id(message_id)
-
-            if not channel_id:
-                channel_id = await self.get_channel_id(message_id)
+        guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
                 
-        except AttributeError:
-            raise CacheInvalidMessageException
-
-        assert guild_id and author_id and channel_id
-
-
-        # if we got the message data from the cache, cool
-        if (message_data := await self.compressed_read_key(self.message_cache, f"{guild_id}:{author_id}:{channel_id}:{message_id}")) is not None:
-            author = await self.get_user_dict(author_id)
-            channel = await self.get_channel_dict(channel_id)
-            message_data.update({"id": message_id, "author": author})
-            return discord.Message(state=self.state, channel=channel, data=message_data)
+        if guild_id and author_id and channel_id and message_id:
+            # if we got the message data from the cache, cool
+            if (message_data := await self.compressed_read_key(self.message_cache, f"{guild_id}:{author_id}:{channel_id}:{message_id}")) is not None:
+                author = await self.get_user_dict(author_id)
+                message_data.update({"id": message_id, "author": author})
+                return message_data
         
-        else:
+        if message_id and channel_id and fetch:
             # if we didn't, we need to try to get it from the API
-            message_data = await self.state.http.get_message(message_id)
+            message_data = await self.state.http.get_message(channel_id, message_id)
             # add it to the cache pipeline
-            new_message = discord.Message(state=self.state, channel=channel, data=message_data)
-            await self.add_message(new_message)
-            await self.exec()
+            await self.add_message_dict(message_data)
+            return message_data
 
+        return None
+
+    async def get_message_object(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[discord.Message]:
+        # exectue the write pipeline to commit any pending changes before reading 
+        # ID pipeline, Message pipeline, Channel Pipeline, User Pipeline
         
-    # TODO: channel cache stuff
-    async def add_channel(self, channel: discord.abc.GuildChannel):
-        channel_data = self.channel_to_dict(channel)
+        if message_data := await self.get_message_dict(message_id, guild_id, channel_id, author_id, fetch):
+            if channel := await self.get_channel_object(channel_id, guild_id, fetch):
+                return self.state.create_message(channel=channel, data=message_data)
+
+        return None
+    
+    async def expire_message_now(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None):
+        guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
+
+        if guild_id and author_id and channel_id:
+            entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+
+            # expire message in 
+            await self.message_cache.expire(entry_name, timedelta(seconds=15), lt=True)
+
+            # clean up the LUT
+            await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
+            await self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
+            await self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+
+            await self.message_pipeline.execute()
+            await self.id_pipeline.execute()
+
+    async def mass_expire_messages(self, message_ids: list[int], guild_id: int, channel_id: int):
+        names = []
+
+        for message_id in message_ids:
+            if author_id := await self.get_author_id(message_id):
+                names.append(f"{guild_id}:{author_id}:{channel_id}:{message_id}")
+                await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
+                await self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
+                await self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+
+            else:
+                continue
+
+        await self.message_pipeline.delete(*names)
+        await self.message_pipeline.execute()
+        await self.id_pipeline.execute()
+
+    async def add_channel_object(self, channel: discord.abc.GuildChannel):
+        channel_data = channel_to_dict(channel)
 
         # Channel Pipeline & ID Pipeline
         await self.compressed_write_key(self.channel_pipeline, str(channel.id), channel_data)
+
+        # update the look up table
         await self.id_pipeline.hset("channel_to_guild", str(channel.id), channel_data["guild"]["id"])
 
-    async def get_channel_object(self, channel_id: int, guild_id: Optional[int] = None, fetch=True):
+    async def get_channel_object(self, channel_id: int, guild_id: int, fetch=True):
         # exectue the write pipeline to commit any pending changes before reading 
 
         # ID Pipeline, Channel Pipeline, Guild Pipeline
         await self.channel_pipeline.execute()
         await self.id_pipeline.execute()
         await self.guild_pipeline.execute()
+        
+        if channel_data := await self.get_channel_dict(channel_id, fetch):
+            if guild := await self.get_guild_object(guild_id, fetch):
+                return get_channel(self.bot, channel_data, guild)
 
-        if not guild_id:
-            # try to get the guild id from the lookup table
-            if (guild_id := await self.get_guild_id_from_channel_id(channel_id)) is not None:
-                if channel_data := await self.channel_cache.get(str(channel_id)):
-                    guild = await self.get_guild_object(guild_id)
+        return None
 
-                    return get_channel(self.bot, channel_data, guild)
-                else:
-                    return None
-
-            elif (channel_data := await self.state.http.get_channel(channel_id)) is not None and fetch is True:
-                    guild = await self.add_guild_by_id(guild_id)
-                    await self.compressed_write_key(self.channel_cache, str(channel_id), channel_data)
-                    return get_channel(self.bot,channel_data, guild)
-                    # update the guild we have in the cache
-
-            else:
-                return None
-                
     async def get_channel_dict(self, channel_id: int, fetch=True) -> dict:
         # exectue the write pipeline to commit any pending changes before reading 
         # Channel Pipeline
@@ -417,7 +348,12 @@ class RedisCacheAsync:
             return channel_data
         
         if fetch:
-            return await self.state.http.get_channel(channel_id)
+            # add it to the cache
+            channel_data = await self.state.http.get_channel(channel_id)
+            # add it to the cache
+            await self.compressed_write_key(self.channel_pipeline, str(channel_id), channel_data)
+            await self.id_pipeline.hset("channel_to_guild", str(channel_id), str(channel_data.get("guild_id", 0)))
+            return channel_data
 
     async def add_guild_by_id(self, guild_id: int, sync_channels=False) -> discord.Guild:
         # get the guild data from the API
@@ -431,19 +367,17 @@ class RedisCacheAsync:
         return discord.Guild(data=guild_data, state=self.state)
     
     async def add_guild_object(self, guild: discord.Guild, sync_channels=False, sync_members=False):
-        # TODO: add missing values
 
         # Guild Pipeline
-        await self.compressed_write_key(self.guild_pipeline, str(guild.id), self.guild_to_dict(guild))
+        await self.compressed_write_key(self.guild_pipeline, str(guild.id), guild_to_dict(guild))
         
         if sync_channels:
             for channel in guild.channels:
-                await self.add_channel(channel)
+                await self.add_channel_object(channel)
                 
         if sync_members:
             for member in guild.members:
                 await self.add_user(member._user)
-
 
     async def get_guild_dict(self, guild_id: int, with_counts=False, fetch=True) -> dict:
         # exectue the write pipeline to commit any pending changes before reading 
@@ -460,22 +394,19 @@ class RedisCacheAsync:
                 return guild_data
                 
             except:
-                raise CacheMissException
+                return None
             
-        raise CacheMissException
+        return None
 
     async def get_guild_object(self, guild_id: int, with_counts=False, fetch=True):
         guild_data = await self.get_guild_dict(guild_id, with_counts, fetch)
         return discord.Guild(data=guild_data,state=self.state)
+    
+    async def add_reaction(self, payload: discord.RawReactionActionEvent):
+        # get cached message from the cache
+        if cached_message := await self.get_message_dict(payload.message_id, payload.guild_id, payload.channel_id):
+            old_reactions = cached_message.get("reactions", [])
         
-            
-    async def exec(self):
-        await self.guild_pipeline.execute()
-        await self.id_pipeline.execute()
-        await self.channel_pipeline.execute()
-        await self.message_pipeline.execute()
-        await self.user_pipeline.execute()
-
     def get_pipeline_stats(self):
         return dict(
             id_pipeline=len(self.id_pipeline.command_stack),
@@ -485,4 +416,317 @@ class RedisCacheAsync:
             guild_pipeline=len(self.guild_pipeline.command_stack),
         )
 
+#endregion
+
+class RedisCacheSyncPartial:
+    def __init__(self, bot, auto_exec=False):
+        self.bot = bot
+        self.auto_exec = auto_exec
+        self.autoexpire: timedelta = timedelta(weeks=2)
+        
+        self.lut            =   syncredis.Redis(host="redis", db=15, decode_responses=False)
+        self.message_cache  =   syncredis.Redis(host="redis_cache", db=4, decode_responses=False)
+
+        self.id_pipeline        =   self.lut.pipeline(transaction=True)
+        self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
+
+        self.lock = Lock()
+
+    @property
+    def _pipelines(self):
+        return [self.id_pipeline, self.message_pipeline]
+
+    def exec(self):
+        for pipeline in self._pipelines():
+            pipeline.execute()
+
+    def update_message(self, data_new: dict) -> None:
+        message_id = int(data_new.get("id"))
+        author_id = int(data_new.get("author").get("id"))
+        guild_id = int(data_new.get("guild_id", 0))
+        channel_id = int(data_new.get("channel_id", 0))
+
+        guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
+        name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+
+        data_old = self.compressed_read_key(self.message_cache, name)
+        data_old.update(data_new)
+        self.compressed_write_key(self.message_pipeline, name, data_old)
+
+    def compressed_write_hash(self, pipeline, name: str, key: str, dict_data:dict):
+        return pipeline.hset(name, key, compress_data(dict_data))
+    
+    def compressed_read_hash(self, redis: aioredis.Redis, name: str, key: str) -> dict:
+        if data_compressed := redis.hget(name, key):
+            return decompress_data(data_compressed)
+    
+    def compressed_write_key(self, pipeline, key: str, dict_data:dict):
+        return pipeline.set(key, compress_data(dict_data))
+    
+    def compressed_read_key(self, redis: aioredis.Redis, key: str) -> dict:
+        if data_compressed := redis.get(key):
+            return decompress_data(data_compressed)
+
+        return None
+
+    def expire_message_now(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None):
+        guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
+
+        if guild_id and author_id and channel_id:
+            entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+
+            # expire message in 
+            self.message_cache.expire(entry_name, timedelta(seconds=15), lt=True)
+
+            # clean up the LUT
+            self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
+            self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
+            self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+
+            self.message_pipeline.execute()
+            self.id_pipeline.execute()
+    
+    def _get_ids(self, message_id, guild_id, channel_id, author_id) -> tuple[int]:
+        if not guild_id:
+            guild_id = self.get_guild_id(message_id)
+
+        if not author_id:
+            author_id = self.get_author_id(message_id)
+
+        if not channel_id:
+            channel_id = self.get_channel_id(message_id)
+
+        return (guild_id, author_id, channel_id)
+
+    def get_author_id(self, message_id: Union[int, str]):
+        # exectue the write pipeline to commit any pending changes before reading
+        # ID pipeline
+        self.id_pipeline.execute()
+
+        raw = self.lut.hget(LUT_Keys.AUTHOR.value, str(message_id))
+        if raw is not None:
+            return int(raw.decode("ASCII"))
+        else:
+            return None
+
+    def get_channel_id(self, message_id: Union[int, str]):
+        # exectue the write pipeline to commit any pending changes before reading
+        # ID pipeline
+        self.id_pipeline.execute()
+
+        raw = self.lut.hget(LUT_Keys.CHANNEL.value, str(message_id))
+        if raw is not None:
+            return int(raw.decode("ASCII"))
+        else:
+            return None
+
+    def get_guild_id(self, message_id: Union[int, str]):
+        # exectue the write pipeline to commit any pending changes before reading 
+        # uses ID pipeline
+        self.id_pipeline.execute()
+
+        raw = self.lut.hget(LUT_Keys.GUILD.value, str(message_id))
+        if raw is not None:
+            return int(raw.decode("ASCII"))
+        else:
+            return None
+
+    def get_guild_id_from_channel_id(self, channel_id):
+        # exectue the write pipeline to commit any pending changes before reading 
+        # uses ID pipeline
+
+        self.id_pipeline.execute()
+        raw = self.lut.hget(LUT_Keys.CHANNEL_TO_GUILD.value, str(channel_id))
+        if raw is not None:
+            return int(raw.decode("ASCII"))
+        else:
+            return None
+
+    def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
+        self.id_pipeline.execute()
+        self.message_pipeline.execute()
+
+        guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
+                
+        if guild_id and author_id and channel_id and message_id:
+            # if we got the message data from the cache, cool
+            if (message_data := self.compressed_read_key(self.message_cache, f"{guild_id}:{author_id}:{channel_id}:{message_id}")) is not None:
+                message_data.update({"channel_id": int(channel_id)})
+                return message_data
+
+        return None
+    
+    def add_message_dict(self, message_data: dict):
+        if message_data["type"] not in (0, 19, 20, 21, 23):
+            return
+        
+        message_id = int(message_data.get("id"))
+        author_id = int(message_data.get("author").get("id"))
+        guild_id = int(message_data.get("guild_id", 0))
+        channel_id = int(message_data.get("channel_id", 0))
+
+        assert None not in (message_id, guild_id, channel_id, author_id)
+
+        entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+        
+        # fix the missing channel_id in message references
+        # if we have a forwarded message, don't even bother trying to get the ids, 
+        if (ref_data := message_data.get("message_reference")) is not None:
+            ref_data.update({"channel_id":str(self.get_channel_id(ref_data["message_id"])) or str(channel_id)})
+            # try to remove referenced message to avoid storing messages twice
+            try:
+                message_data.pop("referenced_message")
+            except KeyError:
+                pass
+
+        self.compressed_write_key(self.message_pipeline, entry_name, message_data)
+    
+        self.message_pipeline.expire(entry_name, self.autoexpire)
+                                           
+        self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
+        self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
+        self.id_pipeline.hset(LUT_Keys.GUILD.value, mapping={str(message_id): str(guild_id)})
+        self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, mapping={str(channel_id): str(guild_id)})
+
+    def add_message_object(self, message: discord.Message):
+        self.add_message_dict(message_to_dict(message))
+        del message
+    
+#region sync class
+class RedisCacheSync(RedisCacheSyncPartial):
+    def __init__(self, bot, auto_exec=False):
+        self.state: discord.state.ConnectionState = bot._connection
+        self.bot = bot
+
+        self.auto_exec = auto_exec
+
+        self.autoexpire: timedelta = timedelta(weeks=2)
+        
+        self.lut            =   syncredis.Redis(host="redis", db=15, decode_responses=False)
+        self.guild_cache    =   syncredis.Redis(host="redis_cache", db=1, decode_responses=False)
+        self.channel_cache  =   syncredis.Redis(host="redis_cache", db=2, decode_responses=False)
+        self.user_cache     =   syncredis.Redis(host="redis_cache", db=3, decode_responses=False)
+        self.message_cache  =   syncredis.Redis(host="redis_cache", db=4, decode_responses=False)
+
+        self.id_pipeline        =   self.lut.pipeline(transaction=True)
+        self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
+        self.channel_pipeline   =   self.channel_cache.pipeline(transaction=True)
+        self.guild_pipeline     =   self.guild_cache.pipeline(transaction=True)
+        self.user_pipeline      =   self.user_cache.pipeline(transaction=True)
+
+        self.lock = Lock()
+    
+    @property
+    def _pipelines(self):
+        return [self.id_pipeline, self.message_pipeline, self.user_pipeline, self.guild_pipeline, self.channel_pipeline]
+
+    def add_user(self, user: discord.User):
+        self.compressed_write_key(self.user_cache, str(user.id), user_to_dict(user))       
+
+    def get_user_object(self, user_id: int):
+        # exectue the write pipeline to commit any pending changes before reading 
+        # User Pipeline
+        self.user_pipeline.execute()
+
+        if data := self.compressed_read_key(self.user_cache, str(user_id)):
+            # reconstruct the color thingy
+            return discord.User(state=self.state, data=data)
+        
+        return None
+
+    def get_user_dict(self, user_id: int):
+        # exectue the write pipeline to commit any pending changes before reading 
+        # User Pipeline 
+        self.user_pipeline.execute()
+
+        if data := self.compressed_read_key(self.channel_cache, str(user_id)):
+            return data
+        
+        return None
+
+    def add_channel_object(self, channel: discord.abc.GuildChannel):
+        channel_data = channel_to_dict(channel)
+
+        # Channel Pipeline & ID Pipeline
+        self.compressed_write_key(self.channel_pipeline, str(channel.id), channel_data)
+
+        # update the look up table
+        self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, str(channel.id), channel_data["guild"]["id"])
+
+    def get_channel_object(self, channel_id: int, guild_id: Optional[int]):
+        # exectue the write pipeline to commit any pending changes before reading 
+
+        # ID Pipeline, Channel Pipeline, Guild Pipeline
+
+        self.channel_pipeline.execute()
+        self.id_pipeline.execute()
+        self.guild_pipeline.execute()
+        
+        if (channel_data := self.get_channel_dict(channel_id)):
+            if guild := self.get_guild_object(guild_id):
+                return get_channel(self.bot, channel_data, guild)
+    
+        return None
+    
+    def get_channel_dict(self, channel_id: int) -> dict:
+        # exectue the write pipeline to commit any pending changes before reading 
+        # Channel Pipeline
+        self.channel_pipeline.execute()
+
+        if channel_data := self.compressed_read_key(self.channel_cache, str(channel_id)):
+            return channel_data
+        
+    def get_guild_dict(self, guild_id: int, with_counts=False) -> dict:
+        # exectue the write pipeline to commit any pending changes before reading 
+        # Guild Pipeline
+        self.guild_pipeline.execute()
+
+        if data := self.compressed_read_key(self.guild_cache, str(guild_id)):
+            return data
+        
+        return None
+
+    def get_guild_object(self, guild_id: int, with_counts=False, fetch=True):
+        guild_data = self.get_guild_dict(guild_id)
+        return discord.Guild(data=guild_data,state=self.state)
+    
+    def add_guild_object(self, guild: discord.Guild, sync_channels=False, sync_members=False):
+
+        # Guild Pipeline
+        self.compressed_write_key(self.guild_pipeline, str(guild.id), guild_to_dict(guild))
+        
+        if sync_channels:
+            for channel in guild.channels:
+                self.add_channel_object(channel)
+                
+        if sync_members:
+            for member in guild.members:
+                self.add_user(member._user)
+
+    def get_guild_dict(self, guild_id: int) -> dict:
+        # exectue the write pipeline to commit any pending changes before reading 
+        # Guild Pipeline
+        self.guild_pipeline.execute()
+
+        if data := self.compressed_read_key(self.guild_cache, str(guild_id)):
+            return data
+        
+        return None
+    
+    def mass_expire_messages(self, message_ids: list[int], guild_id: int, channel_id: int):
+        names = []
+
+        for message_id in message_ids:
+            if author_id := self.get_author_id(message_id):
+                names.append(f"{guild_id}:{author_id}:{channel_id}:{message_id}")
+                self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
+                self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
+                self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+
+            else:
+                continue
+
+        self.message_pipeline.delete(*names)
+        self.message_pipeline.execute()
+        self.id_pipeline.execute()
 #endregion

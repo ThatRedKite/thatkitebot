@@ -53,7 +53,7 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
             r1: discord.Option(str, "Value for R1", required=False, default=None),#type:ignore
             fcut: discord.Option(str, "cutoff frequency:", required=False, default=None),#type:ignore
             draw_plot: discord.Option(bool, "Display plot", required=False, default=False)#type:ignore
-    ):
+    ) -> None:
         """
         Calculate different aspects of an RC filter.
         Run the command for more details.
@@ -96,7 +96,7 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
             r2: discord.Option(str, "Value for R2", required=False, default=None),#type:ignore
             vin: discord.Option(str, "Input voltage", required=False, default=None),#type:ignore
             vout: discord.Option(str, "Output Voltage", required=False, default=False)#type:ignore
-    ):
+    ) -> None:
         """
         Calculate values of an unloaded voltage divider. Run the command for more details.
         Thank you dimin for the idea and the "art"
@@ -119,7 +119,7 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
             vin: discord.Option(str, "Input Voltage", required=False, default=None),#type:ignore
             vout: discord.Option(str, "Output Voltage", required=False, default=None),#type:ignore
             iout: discord.Option(str, "Output Current", required=False, default=None)#type:ignore
-    ):
+    ) -> None:
         """
         Calculate resistor values for an LM317 in CV and CC mode. Run the command for more details.
         """
@@ -153,5 +153,5 @@ class ElectroSlashCog(Cog, name="Electronics slash commands"):
             return
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(ElectroSlashCog(bot))

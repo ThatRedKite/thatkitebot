@@ -24,27 +24,23 @@ SOFTWARE.
 """
 #endregion
 
-#region imports
-from discord import Embed, Color, ClientException
-from thatkitebot.base.util import EmbedColors as ec
-from thatkitebot.base.util import link_from_ids
-#endregion
+import orjson
+import brotli
+from .exceptions import CompressionException
 
-#region main code
-def gen_edit_warning(payload) -> Embed:
-    warn_embed = Embed(
-        title="Edit Warning",
-        description=f"Message older than threshold has been edited: [Go to Message]({link_from_ids(payload.guild_id, payload.channel_id, payload.message_id)})",
-        color=ec.traffic_red
-    )
 
-    # try to add a field with the new contents, don't if it fails
+def compress_data(data_dict: dict, quality=11) -> bytes:
     try:
-        warn_embed.add_field(name="New Message", value=f"""{payload.data['content']}""")
-    except KeyError:
-        pass
-    except ClientException:
-        pass
+        data_serialized = orjson.dumps(data_dict)
+        return brotli.compress(data_serialized, quality=quality)
+    except:
+        raise CompressionException
+    
 
-    return warn_embed
-#endregion
+def decompress_data(data_bytes) -> dict:
+    try:
+        data_decompressed = brotli.decompress(data_bytes)
+        return orjson.loads(data_decompressed)
+    except:
+        raise CompressionException
+    

@@ -27,7 +27,7 @@ SOFTWARE.
 from discord import Embed
 
 #region main code
-def gen_embed(self):
+def gen_embed(self) -> Embed:
     embed = Embed(
         title="Lasers of all powers can pose a serious risk to your eyes.",
         description=(

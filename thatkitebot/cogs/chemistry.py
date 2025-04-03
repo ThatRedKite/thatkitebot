@@ -45,7 +45,7 @@ class ChemCog(commands.Cog, name="Chemistry commands"):
         self.can_be_disabled = True
 
     @commands.command(name="molar_mass", aliases=["mm"])
-    async def molar_mass(self, ctx, *, formula):
+    async def molar_mass(self, ctx, *, formula) -> None:
         """
         Calculates the molar mass of a chemical formula.
         """
@@ -75,5 +75,5 @@ class ChemCog(commands.Cog, name="Chemistry commands"):
             await util.errormsg(ctx, "This does not appear to be a valid Chemical. Please check your input.")
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(ChemCog(bot))

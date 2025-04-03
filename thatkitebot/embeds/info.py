@@ -3,7 +3,7 @@
 from discord import Embed, Color
 
 # prepares embed by given section id
-async def get_embed(id, config):
+async def get_embed(id, config) -> Embed:
     section_config = config[id] 
 
     embed = Embed(title = f'{section_config["title"]} {section_config["emoji"]}', color = Color(int(section_config["color"])))

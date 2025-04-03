@@ -40,6 +40,7 @@ from redis import asyncio as aioredis
 #endregion
 
 LE_REGEX = re.compile(r"(?i)([0-9]{1,3})([s,h,d,w,m,y])")
+
 class EmbedColors:
     blood_orange = 0xe25303
     lime_green = 0x00b51a
@@ -71,7 +72,7 @@ def parse_timestring(time_string:str):
             case "y":
                 total_delta += int(datetime.timedelta(days=(int(matched[1]) * 365)).total_seconds())
             case _:
-                raise ValueError
+                continue
     return total_delta
 
 
@@ -159,6 +160,10 @@ class Parsing:
 
 
 class PermissonChecks:
+    @staticmethod
+    def in_guild(ctx: discord.ApplicationContext) -> bool:
+        return ctx.guild is not None
+
     @staticmethod
     async def can_change_settings(ctx: commands.Context | discord.ApplicationContext | BridgeContext | BridgeApplicationContext):
         """

@@ -88,12 +88,12 @@ def get_channel(bot, channel_data: dict, guild: discord.Guild):
     match ch_type:
         # the factory will be a DMChannel or GroupChannel here
         case ChannelType.group | ChannelType.private:
-            return factory(me=bot.user, data=channel_data, state=bot._get_state())
+            return factory(me=bot.user, data=channel_data, state=bot._connection)
 
         case _:
             # the factory can't be a DMChannel or GroupChannel here
             # GuildChannels expect a Guild, we may be passing an Object
-            return factory(guild=guild, state=bot._get_state(), data=channel_data)
+            return factory(guild=guild, state=bot._connection, data=channel_data)
 
         
 

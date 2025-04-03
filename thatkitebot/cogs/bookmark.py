@@ -54,10 +54,10 @@ async def get_bookmarks(redis: aioredis.Redis, user: discord.User):
 
 #region UI Classes
 class BookmarkModal(discord.ui.Modal):
-    def __init__(self, redis: aioredis.Redis, message: discord.Message, ctx: discord.ApplicationContext, *args, **kwargs):
+    def __init__(self, redis: aioredis.Redis, message: discord.Message, interaction: discord.Interaction, *args, **kwargs):
         self.redis = redis
         self.message = message
-        self.ctx = ctx
+        self.interaction = interaction
         # python class black magic
         super().__init__(*args, **kwargs)
         # add the Comment text box
@@ -67,9 +67,9 @@ class BookmarkModal(discord.ui.Modal):
             max_length=50
         ))
 
-    async def callback(self, interaction: discord.Interaction):
-        hash_key = f"bookmarks:{self.ctx.interaction.user.id}"
-        entry_key = f"{self.ctx.interaction.guild_id}:{self.ctx.interaction.channel_id}:{self.message.id}"
+    async def callback(self, interaction: discord.Interaction) -> None:
+        hash_key = f"bookmarks:{interaction.user.id}"
+        entry_key = f"{self.interaction.guild_id}:{self.interaction.channel_id}:{self.message.id}"
         comment = self.children[0].value.lstrip().rstrip()
         await self.redis.hset(hash_key, entry_key, comment)
 
@@ -89,7 +89,7 @@ class ConfirmDeleteModal(discord.ui.Modal):
             required=False
         ))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction) -> None:
         hash_key = f"bookmarks:{interaction.user.id}"
         await self.redis.delete(hash_key)
         await interaction.response.send_message("Your bookmarks have been cleared", ephemeral=True)
@@ -114,7 +114,7 @@ class DeletionSelectView(discord.ui.View):
 
         self.add_item(self.select)
 
-    async def select_callback(self, interaction: discord.Interaction):
+    async def select_callback(self, interaction: discord.Interaction) -> None:
         selected = self.select.values[0]
         index = self.comments.index(selected)
         key = self.keys[index]
@@ -132,18 +132,18 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
     bm = discord.SlashCommandGroup("bookmarks", "Bookmarks")
 
     @discord.message_command(name="Bookmark Message", description="Description")
-    async def _add(self, ctx: discord.ApplicationContext, msg: discord.Message):
+    async def _add(self, ctx: discord.ApplicationContext, msg: discord.Message) -> None:
         """Bookmarks a message for you."""
-        modal = BookmarkModal(self.redis, msg, ctx, title="Bookmark Comment")
+        modal = BookmarkModal(self.redis, msg, ctx.interaction, title="Bookmark Comment")
         await ctx.send_modal(modal)
 
     @bm.command(name="clear", description="Deletes all bookmarks")
-    async def _clear(self, ctx: discord.ApplicationContext):
+    async def _clear(self, ctx: discord.ApplicationContext) -> None:
         modal = ConfirmDeleteModal(self.redis, title="Do you really want to delete all bookmarks?")
         await ctx.send_modal(modal)
 
     @bm.command(name="list", description="Description")
-    async def _list(self, ctx: discord.ApplicationContext):
+    async def _list(self, ctx: discord.ApplicationContext) -> None:
         # initialize two empty lists for fields and the pages
         fields = []
         page_list = []
@@ -181,7 +181,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
         await paginator.respond(ctx.interaction, ephemeral=True)
 
     @bm.command(name="delete", description="Deletes a bookmark")
-    async def _delete(self, ctx):
+    async def _delete(self, ctx) -> None:
         await ctx.defer()
         try:
             # initialize two empty lists intended to store the comments and the keys
@@ -203,5 +203,5 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
         ), ephemeral=True)
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(BookmarkCog(bot))

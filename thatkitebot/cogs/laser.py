@@ -40,7 +40,7 @@ from thatkitebot.calculators.electronics.exceptions import TooFewArgsError
 #endregion
 
 #region Functions
-def wavelength_to_rgb(wavelength, gamma=0.98):
+def wavelength_to_rgb(wavelength, gamma=0.98) -> tuple[int]:
     '''This converts a given wavelength of light to an
     approximate RGB color value. The wavelength must be given
     in nanometers in the range from 380 nm through 750 nm
@@ -88,7 +88,7 @@ def wavelength_to_rgb(wavelength, gamma=0.98):
     return int(R), int(G), int(B)
 
 
-def calculate_diffraction(p):
+def calculate_diffraction(p) -> dict:
     if "lmm" in p:
         lmm = si_prefix.si_parse(p["lmm"])
     else:
@@ -114,19 +114,20 @@ class LaserCog(commands.Cog, name="Laser commands"):
         self.bot: commands.Bot = bot
 
     @commands.cooldown(5, 10, commands.BucketType.channel)
-    @commands.command(aliases=["autism","gay"])
-    async def spectrum(self, ctx):
+    @commands.command(aliases=["autism", "gay"])
+    async def spectrum(self, ctx) -> None:
         """
         Returns a picture of visible light spectrum.
         """
         embed = discord.Embed(title="Visible Light Spectrum")
+        
         embed.set_image(
             url="https://ghostoverflow.gay/84946d39135f359663d692bb866d929c3c9d2cccf18d06606eccd2e34e768bbb.png")
         await ctx.send(embed=embed)
 
     @commands.cooldown(1, 5, commands.BucketType.channel)
     @commands.group()
-    async def laser(self, ctx):
+    async def laser(self, ctx) -> None:
         """
         General command for laser related things.
         """
@@ -134,14 +135,14 @@ class LaserCog(commands.Cog, name="Laser commands"):
             await self.goggles(ctx)
 
     @laser.command(aliases=["glasses", "safety", "help"])
-    async def goggles(self, ctx):
+    async def goggles(self, ctx) -> None:
         """
         Returns laser safety information.
         """
         await ctx.send(embed=safety_embed(self))
 
     @laser.command()
-    async def color(self, ctx, color: str):
+    async def color(self, ctx, color: str) -> None:
         """
         Returns an approximation of light color given a wavelength.
         """
@@ -164,7 +165,7 @@ class LaserCog(commands.Cog, name="Laser commands"):
         await ctx.send(file=file, embed=embed)
 
     @laser.command(aliases=["diff"])
-    async def diffraction(self, ctx, *, args=None):
+    async def diffraction(self, ctx, *, args=None) -> None:
         """
         Calculates the wavelength of a laser using a diffraction grating. Run command for more information.
         """
@@ -209,5 +210,5 @@ class LaserCog(commands.Cog, name="Laser commands"):
                 return
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(LaserCog(bot))

@@ -46,18 +46,18 @@ class BetterHelpCommand(commands.HelpCommand):
     Custom help command for the bot.
     """
 
-    async def send_embed(self, embed: discord.Embed):
+    async def send_embed(self, embed: discord.Embed) -> None:
         embed.color = discord.Colour.random()
         await self.get_destination().send(embed=embed)
 
-    async def send_embeds_paginated(self, embeds: list[discord.Embed]):
+    async def send_embeds_paginated(self, embeds: list[discord.Embed]) -> None:
         paginator = pages.Paginator(pages=embeds, show_disabled=False, loop_pages=True)
         await paginator.send(self.context, self.context.channel)
 
-    def blank_line(self, embed):
+    def blank_line(self, embed) -> None:
         embed.add_field(name=ZWSP, value=ZWSP, inline=False)
 
-    def signature(self, command: commands.Command):
+    def signature(self, command: commands.Command) -> str:
         out = [command.qualified_name]
         params = command.clean_params or {}
         for name, param in params.items():
@@ -77,7 +77,7 @@ class BetterHelpCommand(commands.HelpCommand):
                 out.append(f'<{name}>')
         return ' '.join(out)
 
-    async def send_bot_help(self, mapping):
+    async def send_bot_help(self, mapping) -> None:
         embed_pages = []    # list to store the pages in
 
         cogs = [(cog, await self.filter_commands(mapping[cog])) for cog in mapping.keys()]  # get all cogs
@@ -133,7 +133,7 @@ class BetterHelpCommand(commands.HelpCommand):
 
         await self.send_embeds_paginated(embed_pages)
 
-    async def send_cog_help(self, cog: commands.Cog):
+    async def send_cog_help(self, cog: commands.Cog) -> None:
         e = discord.Embed(title=cog.qualified_name)
         e.add_field(name='Cog', value=cog.qualified_name, inline=True)
         e.add_field(name='`in_code`', value=f'`{cog.__class__.__name__}`', inline=True)
@@ -142,7 +142,7 @@ class BetterHelpCommand(commands.HelpCommand):
             e.add_field(name=cmd, value=(cmd.help or '[no help]'), inline=False)
         await self.send_embed(e)
 
-    async def send_group_help(self, group: commands.Group):
+    async def send_group_help(self, group: commands.Group) -> None:
         e = discord.Embed(title=group.qualified_name)
         e.add_field(name='Command Group', value=group.qualified_name, inline=True)
         e.add_field(name='Help', value=(group.help or '[no help]'), inline=False)
@@ -152,7 +152,7 @@ class BetterHelpCommand(commands.HelpCommand):
             e.add_field(name=self.signature(command), value=(command.help or '[no help]'), inline=False)
         await self.send_embed(e)
 
-    async def send_command_help(self, command: commands.Command):
+    async def send_command_help(self, command: commands.Command) -> None:
         e = discord.Embed(title=(command.qualified_name or command.name))
         e.add_field(name='Name', value=(command.qualified_name or command.name), inline=False)
         e.add_field(name='Signature', value=(self.signature(command)), inline=False)
@@ -171,5 +171,5 @@ class HelpCog(commands.Cog):
         self.bot.help_command = help_command
 #endregion
 
-def setup(bot):
+def setup(bot) -> None:
     bot.add_cog(HelpCog(bot))

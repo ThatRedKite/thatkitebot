@@ -27,7 +27,9 @@ SOFTWARE.
 #region Imports
 import os
 import re
+from typing import Optional
 from urllib.parse import urlparse
+from urllib.parse import ParseResult
 
 import toml
 import discord
@@ -46,7 +48,7 @@ from thatkitebot.base.util import errormsg
 
 class DetrackView(discord.ui.View):
     @discord.ui.button(label="Close", style=discord.ButtonStyle.red, emoji=de.discord_to_unicode("wastebasket"))
-    async def close_button_callback(self, button, interaction: discord.Interaction):
+    async def close_button_callback(self, button, interaction: discord.Interaction) -> None:
          pass
 
 #region Cog
@@ -80,10 +82,10 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             self.reassembled_regexes.update(new_values)
 
     @staticmethod
-    def get_detrack_aliases():
+    def get_detrack_aliases() -> list[str]:
         return ["detrack", "det"]   # this is here to make sure we don't detrack our own messages (the first alias is the command name)
 
-    def construct_re(self, data, return_pattern = True):
+    def construct_re(self, data: str, return_pattern = True) -> str:
         # replace parts that are in the LUT
         for key in self.LUT:
             data = data.replace(key, self.LUT[key])
@@ -93,7 +95,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         else:
             return data
 
-    def _remove_tracking(self, url, domain):
+    def _remove_tracking(self, url: ParseResult, domain: str) -> ParseResult:
         netloc_pattern: re.Pattern = self.reassembled_regexes[domain]["netloc"]
         if netloc_pattern.match(self.construct_re(url.netloc, return_pattern=False)):
             # if netloc_dl is set, remove the netloc regex matches
@@ -112,9 +114,10 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
             fragment_pattern: re.Pattern = self.reassembled_regexes[domain]["query"]
             url = url._replace(fragment=fragment_pattern.sub("", url.fragment))
+
         return url
 
-    async def raw_detrack_link(self, input_string: str):
+    async def raw_detrack_link(self, input_string: str) -> Optional[str]:
         """
         Detracks the link provided. Returns None if the link is not valid.
         """
@@ -136,7 +139,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: discord.Message) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
         # Check if the user is a bot 
@@ -145,7 +148,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         # check if the message starts with our detrack command
         for alias in self.get_detrack_aliases():
-            if message.content.startswith(f"{self.bot.prefix}{alias}"):
+            if message.content.startswith(f"{self.bot.command_prefix}{alias}"):
                 return        
 
         # do not detrack in DMs
@@ -236,7 +239,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         if len(message) == 0:
             # check if this is a reply
             if ctx.message.reference is not None:
-                message = (await ctx.fetch_message(ctx.message.reference.message_id)).content
+                message = (await self.bot.get_message(ctx.message.reference.message_id)).content
             else:
                 await errormsg(ctx, "No message provided.")
                 return

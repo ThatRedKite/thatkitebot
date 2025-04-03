@@ -66,7 +66,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.hasher_pool = bot.process_pool
 
     #region Methods
-    async def get_tenor_image(self, url, token):
+    async def get_tenor_image(self, url:str, token:str) -> str:
         """
         Downloads a tenor gif and returns the hash of the image.
         """
@@ -85,13 +85,13 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         async with self.aiohttp.get(url) as r2:
              return await hasher(self.loop, await r2.read(), self.hasher_pool)
 
-    async def channel_is_enabled(self, channel):
+    async def channel_is_enabled(self, channel) -> bool:
         """
         Checks if the channel is enabled for repost detection.
         """
         return await self.settings_redis.sismember("REPOST_CHANNELS", channel.id)
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx) -> bool:
         return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.REPOST)
 
     # this is kinda dumb but i guess it works :)
@@ -219,7 +219,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             try:
                 # try to get the message from the cache to get the attachment urls
                 cache = ca.RedisCacheAsync(self.cache_redis, self.bot, auto_exec=True)
-                ids, message_json = await cache.get_message(message_id, ctx.guild.id)
+                ids, message_json = await cache.get_message_object(message_id, ctx.guild.id)
                 urls = [url for url in message_json["urls"]]
 
             except ca.CacheInvalidMessageException:
@@ -302,7 +302,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
 
                 if not repost:
                     async for distance, hash_key in self.check_distance(image_hash):
-                        #print(distance)
                         # if the distance is less than 20, it's a repost
                         if distance <= 20:
                             jump_url = await self.repost_redis.hget(hash_key, "jump_url")

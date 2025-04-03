@@ -28,6 +28,7 @@ SOFTWARE.
 import discord
 from discord.ext import commands
 
+import thatkitebot
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.tkb_redis.settings import RedisFlags
 #endregion
@@ -38,7 +39,7 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
     This cog contains commands that are used to manage the bot. These commands are only available to the bot owner.
     """
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: thatkitebot.ThatKiteBot = bot
         self.logger = bot.logger
 
     @commands.is_owner()
@@ -94,11 +95,9 @@ class SudoCommands(commands.Cog, name="Bot Owner Commands"):
         await self.bot.sync_commands(method="bulk", force=True)
 
     @commands.is_owner()
-    @commands.command(name="test", hidden=True)
-    async def _test(self, ctx):
-        # raise NotImplemented
-
-        print(RedisFlags.FlagEnum.IMAGE)
+    @commands.command(name="force_cache")
+    async def _force_cache(self, ctx: commands.Context):
+        await self.bot.add_message(ctx.message.reference.cached_message)
 
 #endregion
 def setup(bot):

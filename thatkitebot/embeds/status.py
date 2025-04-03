@@ -34,7 +34,7 @@ from discord import Embed
 from thatkitebot.base.util import EmbedColors as ec
 #endregion
 
-async def gen_embed(bot, redis):
+async def gen_embed(bot, redis) -> Embed:
     process = psutil.Process(bot.pid)
     mem = process.memory_info()[0]
     redis_memory = (await redis.info())["used_memory"] + (await redis.info())["used_memory"]
