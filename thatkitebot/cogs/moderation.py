@@ -38,7 +38,6 @@ from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import check_message_age, parse_timestring, set_up_guild_logger
 from thatkitebot.embeds import moderation as mod_embeds
 from thatkitebot.tkb_redis import settings
-import thatkitebot.tkb_redis.util
 from thatkitebot.types.message import Message
 #endregion
 
