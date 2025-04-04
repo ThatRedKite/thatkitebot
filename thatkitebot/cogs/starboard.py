@@ -45,7 +45,7 @@ import thatkitebot.embeds.starboard
 from thatkitebot.embeds.starboard import generate_embed
 from thatkitebot.base.exceptions import *
 from thatkitebot.base.util import set_up_guild_logger
-from thatkitebot.cogs.bookmark import BookmarkModal
+from thatkitebot.cogs.bookmark import Bookmark
 
 #endregion
 
@@ -61,10 +61,17 @@ class StarboardView(discord.ui.View):
         self.redis = redis
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Test", style=discord.ButtonStyle.primary, custom_id=f"bookmark-button")
-    async def button(self, button, interaction: discord.Interaction):
-        modal = BookmarkModal(self.redis, interaction.message, interaction, title="Bookmark Comment")
-        await interaction.response.send_modal(modal)
+    @discord.ui.button(label="Bookmark Post", style=discord.ButtonStyle.secondary, custom_id=f"starboard-bookmark-button", emoji="🔖")
+    async def button(self, button: discord.Button, interaction: discord.Interaction):
+        bm = Bookmark.from_message(self.redis, interaction.user.id, interaction.message, f"Starboard Message by {interaction.message.author.name}")
+        await bm.save()
+        del bm
+
+        try:
+            await interaction.respond(f"Added {interaction.message.jump_url} to your bookmarks", ephemeral=True)
+        except:
+            return
+            
 
 class StarboardSettings:
     def __init__(self, redis: aioredis.Redis, bot, guild_id: int):
@@ -158,10 +165,11 @@ class StarboardCog(commands.Cog):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
         self.star_redis: aioredis.Redis = bot.redis_starboard
+        self.bookmark_redis = bot.redis_bookmarks
         self.logger: logging.Logger = bot.logger
 
         self.starboard_lock = asyncio.Lock()
-        self.bot.add_view(StarboardView(self.redis))
+        self.bot.add_view(StarboardView(self.bookmark_redis))
         reload(thatkitebot.embeds.starboard)
 
 
@@ -687,9 +695,9 @@ class StarboardCog(commands.Cog):
         msg = await self.bot.get_or_fetch_message(ctx.message.reference.message_id, ctx.message.reference.channel_id) if ctx.message.reference else ctx.message
         embed, pfp_file, video_file = await generate_embed(msg, randint(1, 1000), "⭐", True, self.bot.aiohttp_session)
         if video_file:
-            await ctx.send(embed=embed,files=[pfp_file, video_file], view=StarboardView(self.redis))
+            await ctx.send(embed=embed,files=[pfp_file, video_file], view=StarboardView(self.bookmark_redis))
         else:
-            await ctx.send(embed=embed,files=[pfp_file], view=StarboardView(self.redis))
+            await ctx.send(embed=embed,files=[pfp_file], view=StarboardView(self.bookmark_redis))
     
     #endregion
 
