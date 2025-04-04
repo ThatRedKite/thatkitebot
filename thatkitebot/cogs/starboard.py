@@ -88,25 +88,23 @@ class StarboardSettings:
         self.video_enabled: bool = True
         self.ignore_threads: bool = False
     
-
-    async def from_redis(self):
-        key = f"starboard_settings:{self.guild_id}"
-        if not await self.redis.exists(key):
+    @classmethod
+    async def from_redis(cls, redis:aioredis.Redis,bot, guild_id:int):
+        if not await redis.exists(f"starboard_settings:{guild_id}"):
             raise KeyError("No Starboard settings found, starboard is likely uninitialized")
         
-        return await self.from_data(await self.redis.hgetall(key))
+        data = await redis.hgetall(f"starboard_settings:{guild_id}")
+        new = cls(redis, bot, guild_id)
 
-    
-    async def from_data(self, data: dict):
-        self.mode = int(data["mode"])
-        self.emoji = data["star_emoji"]
-        self.threshold = int(data["threshold"])
-        self.channel: discord.TextChannel = await self.bot.get_or_fetch_channel(data["channel_id"])
-        self.channels = data["channels"].split(";")
-        self.ignore_threads = data.get("threads", False)
-        self.video_enabled = data.get("video", True)
+        new.mode = int(data["mode"])
+        new.emoji = data["star_emoji"]
+        new.threshold = int(data["threshold"])
+        new.channel = await bot.get_or_fetch_channel(data["channel_id"])
+        new.channels = data["channels"].split(";")
+        new.ignore_threads = data.get("threads", False)
+        new.video_enabled = data.get("video", True)
 
-        return self
+        return new
 
     async def save(self):
         a ={
@@ -436,10 +434,9 @@ class StarboardCog(commands.Cog):
             await ctx.followup.send("Error: Starboard is disabled.")
             return
         
-        settings = StarboardSettings(self.redis, self.bot, ctx.guild_id)
-        settings.from_redis()
-
+        settings: StarboardSettings = await StarboardSettings.from_redis(self.redis, self.bot, ctx.guild_id)
         settings.threshold = threshold
+
         await settings.save()
         
         logger = set_up_guild_logger(ctx.guild_id)
@@ -565,8 +562,7 @@ class StarboardCog(commands.Cog):
 
             # load the starboard settings
             try:
-                settings = StarboardSettings(self.redis, self.bot, payload.guild_id)
-                settings = await settings.from_redis()
+                settings = await StarboardSettings.from_redis(self.redis, self.bot, payload.guild_id)
                 reaction_emoji = str(payload.emoji)
 
             # The starboard is not initialized on this guild, return
