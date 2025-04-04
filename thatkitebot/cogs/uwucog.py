@@ -162,7 +162,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
-            return ctx.interaction.response.send_message("This command is disabled on this server.")
+            return await ctx.interaction.response.send_message("This command is disabled on this server.")
 
         if not await self._change_uwu_status(ctx, channel, intensity):
             await ctx.interaction.response.send_message(f"{channel.mention} has been uwuified. Run for your lives!", ephemeral=silent)
