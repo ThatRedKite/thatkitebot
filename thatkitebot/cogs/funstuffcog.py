@@ -245,7 +245,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             ref = ctx.message.reference
             seed = ref.message_id
             # FIXME
-            message = ctx.bot.get_message(seed)
+            message = await self.bot.get_or_fetch_message(ref.message_id, ref.channel_id)
             msg = message.content
 
         # if the message content is empty, return

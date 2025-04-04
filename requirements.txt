@@ -14,7 +14,7 @@ hiredis
 matplotlib
 xkcd
 imagehash
-uwuipy==0.1.7
+uwuipy==0.1.10
 py-cord[speed]==2.6.1
 aiodns
 toml
