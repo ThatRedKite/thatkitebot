@@ -26,8 +26,10 @@ SOFTWARE.
 
 #region Imports
 import discord
+from datetime import datetime
 from discord.ext import commands, pages
 from redis import asyncio as aioredis
+
 
 from thatkitebot.base.util import list_chunker, link_from_ids
 from thatkitebot.base.exceptions import NoBookmarksException
@@ -46,11 +48,35 @@ async def get_bookmarks(redis: aioredis.Redis, user: discord.User):
     # in that case we also have to return too
     if await redis.hlen(hash_key) == 0:
         raise NoBookmarksException
-
+    
     # now we simply iterate through all the keys in the hash
     async for bookmark in redis.hscan_iter(hash_key, "*"):
         yield bookmark
 #endregion
+
+class Bookmark:
+    def __init__(self, redis:aioredis.Redis, user_id: int, guild_id: int, channel_id: int, message_id: int, comment: str):
+        self.redis = redis
+        self.user_id = user_id
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        self.message_id = message_id
+        self.comment = comment[:49] + "…" if len(comment) > 50 else comment
+        self.comment = f"[<t:{int(datetime.now().timestamp())}:d>] " + comment
+        
+        self.name = f"bookmarks:{user_id}"
+        self.key = f"{self.guild_id}:{self.channel_id}:{self.message_id}"
+
+    @classmethod
+    def from_message(cls, redis: aioredis.Redis, user_id: int ,message:discord.Message, comment: str):
+        new_bookmark = cls(redis, user_id, message.guild.id, message.channel.id, message.id, comment)
+        return new_bookmark
+    
+    async def save(self) -> None:
+        await self.redis.hset(self.name, self.key, self.comment)
+
+    async def delete(self) -> bool:
+        return bool(await self.redis.hdel(self.name, self.key))
 
 #region UI Classes
 class BookmarkModal(discord.ui.Modal):
@@ -58,8 +84,8 @@ class BookmarkModal(discord.ui.Modal):
         self.redis = redis
         self.message = message
         self.interaction = interaction
-        # python class black magic
         super().__init__(*args, **kwargs)
+
         # add the Comment text box
         self.add_item(discord.ui.InputText(
             label="Add a Comment for the bookmark",
@@ -68,11 +94,8 @@ class BookmarkModal(discord.ui.Modal):
         ))
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        hash_key = f"bookmarks:{interaction.user.id}"
-        entry_key = f"{self.interaction.guild_id}:{self.interaction.channel_id}:{self.message.id}"
-        comment = self.children[0].value.lstrip().rstrip()
-        await self.redis.hset(hash_key, entry_key, comment)
-
+        bm = Bookmark.from_message(self.redis, interaction.user.id, self.message, self.children[0].value.lstrip().rstrip())
+        await bm.save()
         # await add_bookmark(self.redis, interaction, self.message, )
         await interaction.response.send_message("I added the message to your bookmarks", ephemeral=True)
 
@@ -123,6 +146,8 @@ class DeletionSelectView(discord.ui.View):
         await interaction.response.send_message("Successfully deleted the bookmark", ephemeral=True)
 #endregion
 
+
+
 #region Cog
 class BookmarkCog(commands.Cog, name="Bookmarks"):
     def __init__(self, bot):
@@ -156,12 +181,13 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
                 link = link_from_ids(guild_id=id_list[0], channel_id=id_list[1], message_id=id_list[2])
 
                 # add a field containing the note and the link to the embed
-                fields.append((f"'{comment}'", f"[link]({link})"))
+                fields.append((f"'{comment}'", link))
 
         except NoBookmarksException:
             # stop with a message if the user has no bookmarks
-            return await ctx.response.send_message("You don't have any bookmarks!", ephemeral=True)
+            return await ctx.send_response("You don't have any bookmarks!", ephemeral=True)
 
+        fields.reverse()
         # split the list of fields into lists with a max size of 5
         for fields in list_chunker(fields, 5):
             # generate an embed
@@ -193,7 +219,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
                 comments.append(comment)
 
         except NoBookmarksException:
-            return await ctx.followup.send("You don't have any bookmarks!", ephemeral=True)
+            return await ctx.send_response("You don't have any bookmarks!", ephemeral=True)
 
         await ctx.followup.send("Pick the bookmark you want to delete:", view=DeletionSelectView(
             self.redis,
