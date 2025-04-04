@@ -37,8 +37,6 @@ from datetime import datetime
 from pathlib import Path
 
 import aiohttp
-import discord.gateway
-import discord.state
 import psutil
 import discord
 
