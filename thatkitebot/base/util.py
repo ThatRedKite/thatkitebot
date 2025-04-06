@@ -32,12 +32,19 @@ import logging
 import datetime
 
 import discord
+from discord import ChannelType
 from discord.ext import commands
 from discord.ext.bridge import BridgeContext
 from discord.ext.bridge import BridgeApplicationContext
 
 from redis import asyncio as aioredis
 #endregion
+
+class ChannelTypeLists:
+    DEFAULT_CHANNEL_TYPES = [ChannelType.text, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news, ChannelType.news_thread]
+    THREADS = [ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread]
+    ALL_TEXT_SERVER = [*DEFAULT_CHANNEL_TYPES, ChannelType.forum]
+
 
 LE_REGEX = re.compile(r"(?i)([0-9]{1,3})([s,h,d,w,m,y])")
 
@@ -186,15 +193,7 @@ class PermissonChecks:
         if is_admin or is_owner:
             return True
         else:
-            key = f"mod_roles:{ctx.guild.id}"
-            redis: aioredis.Redis = ctx.bot.redis
-            is_mod = False
-            if ctx.bot.redis:
-                pipe = redis.pipeline()
-                for role in ctx.author.roles:
-                    await pipe.sismember(key, str(role.id))
-                is_mod = any(await pipe.execute())
-            return is_mod
+            return any(await ctx.bot.redis.smismember(f"mod_roles:{ctx.guild.id}", [role.id for role in ctx.author.roles]))
 
     @staticmethod
     def can_send_image(ctx: commands.Context | discord.ApplicationContext | BridgeContext | BridgeApplicationContext):
