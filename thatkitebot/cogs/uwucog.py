@@ -143,7 +143,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     uwu = discord.SlashCommandGroup(
         "uwu",
         "UwUify Commands",
-        checks=[pc.mods_can_change_settings, lambda ctx: ctx.guild is not None]
+        checks=[pc.mods_can_change_settings, pc.in_guild]
     )
 
     @uwu.command(name="channel",description="Make a channel automatically UwU every message",checks=[pc.mods_can_change_settings])
@@ -210,7 +210,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         if not await self._uwu_enabled(ctx):
             return await ctx.interaction.response.send_message("This command is **disabled** on this server.")
         
-        await self.redis.hset("uwui", "g", intensity)
+        await self.redis.hset(f"uwui:{ctx.guild_id}", f"g:", intensity)
         logger.info(f"UWU: {ctx.author.name} set global intensity to {intensity} in '{ctx.guild.name}'")
         return await ctx.interaction.response.send_message(f"Set the global intensity to **{intensity}**")
     #endregion
