@@ -110,7 +110,7 @@ def user_to_dict(user: discord.User) -> dict:
 
 def member_to_dict(member: discord.Member) -> dict:
     return dict(
-        roles = list(member._roles),
+        roles = list(member._roles) if member._roles else [],
         premium_since = member.premium_since.isoformat() if member.premium_since else None,
         pending = member.pending,
         nick = member.nick,

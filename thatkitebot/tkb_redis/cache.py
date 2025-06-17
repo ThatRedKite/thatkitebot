@@ -26,14 +26,12 @@ SOFTWARE.
 
 #region imports
 import asyncio
-from collections.abc import MutableMapping
 from datetime import timedelta
 from typing import Optional, Union
 from threading import Lock
 
 import discord.state
 import discord
-from discord import MessageType
 from redis import asyncio as aioredis
 import redis as syncredis
 
@@ -42,6 +40,8 @@ from thatkitebot.base.channels import get_channel
 from .exceptions import *
 from .util import compress_data, decompress_data
 from .serialization import channel_to_dict, guild_to_dict, user_to_dict, message_to_dict
+
+from thatkitebot.types.message import Message
 #endregion
 
 class LUT_Keys(discord.Enum):
@@ -142,9 +142,6 @@ class RedisCacheAsync:
     async def update_message_raw(self, payload: discord.RawMessageUpdateEvent):
         await self.add_message_dict(payload.data)
 
-    async def add_message_object(self, message: discord.Message):
-        await self.add_message_dict(message_to_dict(message))
-
     async def add_message_dict(self, message_data: dict):
         message_id = message_data.get("id")
         author_id = message_data.get("author").get("id")
@@ -218,71 +215,34 @@ class RedisCacheAsync:
         else:
             return None
 
-    async def channel_history_iter(self, channel_id, user_id: Optional[int] = None, guild_id: Optional[int] = None, limit=30):
+    async def channel_history_iter(self, channel, user_id: int = None, limit: int = 100):
         
         # exectue the write pipeline to commit any pending changes before reading 
         # ID pipeline, Message pipeline, Channel Pipeline, User Pipeline
 
+        self.bot.sync_cache.exec()
         await self.id_pipeline.execute()
         await self.message_pipeline.execute()
         await self.channel_pipeline.execute()
         await self.user_pipeline.execute()
 
-        if not guild_id:
-            guild_id = await self.get_guild_id_from_channel_id(channel_id)
-                
         if user_id:
-            scan_pattern = f"{guild_id}:{user_id}:{channel_id}:*"
+            scan_pattern = f"{channel.guild.id}:{user_id}:{channel.id}:*"
         else:
-            scan_pattern = f"{guild_id}:*:{channel_id}:*"
+            scan_pattern = f"{channel.guild.id}:*:{channel.id}:*"
 
         counter = 0
-        channel = await self.get_channel_object(channel_id)
-        async for key, raw_data in self.message_cache.scan_iter(str(guild_id), scan_pattern):
-            if counter < limit:
-                message_data = decompress_data(raw_data)
+        async for key in self.message_cache.scan_iter(scan_pattern):
+            if limit is None or counter < limit:
                 ids: str = key.decode("ASCII")
-                ids = ids.split(":")
-                author = await self.get_user_dict(ids[0])
-                message_data.update({"id": ids[2], "author": author})
-                yield discord.Message(state=self.state, data=message_data, channel=channel)
-
+                gid, uid, cid, mid = ids.split(":")
+                message_data = await self.get_message_dict(mid, gid, cid, uid, fetch=False)
+                yield self.bot._connection.create_message(channel=channel, data=message_data)
+                
+            else:
+                break
             counter += 1
 
-    async def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
-        await self.id_pipeline.execute()
-        await self.message_pipeline.execute()
-        await self.channel_pipeline.execute()
-        await self.user_pipeline.execute()
-
-        guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
-                
-        if guild_id and author_id and channel_id and message_id:
-            # if we got the message data from the cache, cool
-            if (message_data := await self.compressed_read_key(self.message_cache, f"{guild_id}:{author_id}:{channel_id}:{message_id}")) is not None:
-                author = await self.get_user_dict(author_id)
-                message_data.update({"id": message_id, "author": author})
-                return message_data
-        
-        if message_id and channel_id and fetch:
-            # if we didn't, we need to try to get it from the API
-            message_data = await self.state.http.get_message(channel_id, message_id)
-            # add it to the cache pipeline
-            await self.add_message_dict(message_data)
-            return message_data
-
-        return None
-
-    async def get_message_object(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[discord.Message]:
-        # exectue the write pipeline to commit any pending changes before reading 
-        # ID pipeline, Message pipeline, Channel Pipeline, User Pipeline
-        
-        if message_data := await self.get_message_dict(message_id, guild_id, channel_id, author_id, fetch):
-            if channel := await self.get_channel_object(channel_id, guild_id, fetch):
-                return self.state.create_message(channel=channel, data=message_data)
-
-        return None
-    
     async def expire_message_now(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None):
         guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
 
@@ -316,6 +276,56 @@ class RedisCacheAsync:
         await self.message_pipeline.delete(*names)
         await self.message_pipeline.execute()
         await self.id_pipeline.execute()
+
+    async def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
+        await self.id_pipeline.execute()
+        await self.message_pipeline.execute()
+
+        guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
+                
+        if guild_id and author_id and channel_id and message_id:
+            # if we got the message data from the cache, cool
+            if (message_data := await self.compressed_read_key(self.message_cache, f"{guild_id}:{author_id}:{channel_id}:{message_id}")) is not None:
+                message_data.update({"channel_id": int(channel_id)})
+                return message_data
+
+        return None
+    
+    async def add_message_dict(self, message_data: dict, ignore_type: bool = False) -> None:
+        if message_data["type"] not in (0, 19, 20, 21, 23) and not ignore_type:
+            return
+        
+        message_id = int(message_data.get("id"))
+        author_id = int(message_data.get("author").get("id"))
+        guild_id = int(message_data.get("guild_id", 0))
+        channel_id = int(message_data.get("channel_id", 0))
+
+        assert None not in (message_id, guild_id, channel_id, author_id)
+
+        entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+        
+        # fix the missing channel_id in message references
+        # if we have a forwarded message, don't even bother trying to get the ids, 
+        if (ref_data := message_data.get("message_reference")) is not None:
+            ref_data.update({"channel_id":str(self.get_channel_id(ref_data["message_id"])) or str(channel_id)})
+            # try to remove referenced message to avoid storing messages twice
+            try:
+                message_data.pop("referenced_message")
+            except KeyError:
+                pass
+
+        await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
+    
+        await self.message_pipeline.expire(entry_name, self.autoexpire)
+        
+        await self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
+        await self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
+        await self.id_pipeline.hset(LUT_Keys.GUILD.value, mapping={str(message_id): str(guild_id)})
+        await self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, mapping={str(channel_id): str(guild_id)})
+
+    async def add_message_object(self, message: Message):
+        await self.add_message_dict(message_to_dict(message))
+        del message
 
     async def add_channel_object(self, channel: discord.abc.GuildChannel):
         channel_data = channel_to_dict(channel)
@@ -398,15 +408,6 @@ class RedisCacheAsync:
             
         return None
 
-    async def get_guild_object(self, guild_id: int, with_counts=False, fetch=True):
-        guild_data = await self.get_guild_dict(guild_id, with_counts, fetch)
-        return discord.Guild(data=guild_data,state=self.state)
-    
-    async def add_reaction(self, payload: discord.RawReactionActionEvent):
-        # get cached message from the cache
-        if cached_message := await self.get_message_dict(payload.message_id, payload.guild_id, payload.channel_id):
-            old_reactions = cached_message.get("reactions", [])
-        
     def get_pipeline_stats(self):
         return dict(
             id_pipeline=len(self.id_pipeline.command_stack),
@@ -437,7 +438,7 @@ class RedisCacheSyncPartial:
         return [self.id_pipeline, self.message_pipeline]
 
     def exec(self):
-        for pipeline in self._pipelines():
+        for pipeline in self._pipelines:
             pipeline.execute()
 
     def update_message(self, data_new: dict) -> None:
@@ -556,8 +557,8 @@ class RedisCacheSyncPartial:
 
         return None
     
-    def add_message_dict(self, message_data: dict):
-        if message_data["type"] not in (0, 19, 20, 21, 23):
+    def add_message_dict(self, message_data: dict, ignore_type: bool = False):
+        if message_data["type"] not in (0, 19, 20, 21, 23) and not ignore_type:
             return
         
         message_id = int(message_data.get("id"))
@@ -588,7 +589,7 @@ class RedisCacheSyncPartial:
         self.id_pipeline.hset(LUT_Keys.GUILD.value, mapping={str(message_id): str(guild_id)})
         self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, mapping={str(channel_id): str(guild_id)})
 
-    def add_message_object(self, message: discord.Message):
+    def add_message_object(self, message: Message):
         self.add_message_dict(message_to_dict(message))
         del message
     
