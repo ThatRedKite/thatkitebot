@@ -10,6 +10,7 @@ logs
 *.pyc
 *.log
 *.out
+*.bin
 #settings file
 *settings.json
 data/info/*.json
