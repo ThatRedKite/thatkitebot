@@ -686,7 +686,7 @@ class StarboardCog(commands.Cog):
             return
     
     @commands.is_owner()
-    @commands.command()
+    @commands.command(hidden=True)
     async def embed_test(self, ctx: commands.Context):
         msg = await self.bot.get_or_fetch_message(ctx.message.reference.message_id, ctx.message.reference.channel_id) if ctx.message.reference else ctx.message
         embed, pfp_file, video_file = await generate_embed(msg, randint(1, 1000), "⭐", True, self.bot.aiohttp_session)
