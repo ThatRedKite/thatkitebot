@@ -22,4 +22,5 @@ ENABLED_EXTENSIONS = [
     "thatkitebot.cogs.laser",
     "thatkitebot.cogs.electronics",
     "thatkitebot.cogs.funstuffcog",
+    "thatkitebot.cogs.debug"
 ]
