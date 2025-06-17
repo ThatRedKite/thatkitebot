@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policymap [
+  <!ELEMENT policymap (policy)*>
+  <!ATTLIST policymap xmlns CDATA #FIXED ''>
+  <!ELEMENT policy EMPTY>
+  <!ATTLIST policy xmlns CDATA #FIXED '' domain NMTOKEN #REQUIRED
+    name NMTOKEN #IMPLIED pattern CDATA #IMPLIED rights NMTOKEN #IMPLIED
+    stealth NMTOKEN #IMPLIED value CDATA #IMPLIED>
+]>
+
+<policymap>
+  <policy domain="resource" name="memory" value="512MiB"/>
+  <policy domain="resource" name="map" value="512MiB"/>
+  <policy domain="resource" name="width" value="6KP"/>
+  <policy domain="resource" name="height" value="6KP"/>
+  <policy domain="resource" name="area" value="10MP"/>
+  <policy domain="resource" name="disk" value="2GiB"/>
+  <policy domain="resource" name="file" value="0"/>
+  <policy domain="delegate" rights="none" pattern="{URL,HTTPS,HTTP}" />
+
+  <!-- disable formats nobody uses on Discord -->
+  <policy domain="coder" rights="none" pattern="{PS,PS2,PS3,PSD,EPS,PDF,XPS,TEXT,TIFF,HTML,SVG,DNG,TTF,RAW,ICON,BMP}" />
+</policymap>

@@ -10,6 +10,7 @@ services:
       - ./trains/:/app/data/trains/
       - ./.git/:/app/.git
       - ./logs/:/var/log/thatkitebot/
+      - ./config/policy.xml:/etc/ImageMagick-6/policy.xml
     restart:  "no"
     environment:
       - PYTHONUNBUFFERED=1
