@@ -37,9 +37,12 @@ import aiohttp
 
 from discord.ext import commands
 from PIL import Image as PILImage
+import wand.exceptions
 from wand.image import Image as WandImage
 from wand.color import Color
 from wand.font import Font
+import wand.image
+import wand.resource
 
 from .exceptions import *
 
@@ -206,39 +209,51 @@ class ImageFunction:
         buffer.seek(0)
         self.loop = loop
         self.process_pool = process_pool
-
-        self.image = WandImage(file=buffer)
-
-        if self.image.height >= 6000 or self.image.height >= 6000:
-            self.image.destroy()
+        
+        try:
+            self.image = WandImage(file=buffer)
+        except wand.exceptions.CacheError:
             raise ImageTooLargeException
-
+        finally:
+            buffer.close()
+        
         self.fn = fn
 
     async def image_worker(self, func, name="_", gif: bool = False, does_return=False):
+        embed = discord.Embed()
 
         if not does_return:
             # for some reason it never runs the function if you use an actual executor
             # so this is a temporary workaround
             try:
-                await asyncio.wait_for(self.loop.run_in_executor(executor=self.process_pool, func=func), timeout=30.0)
-            except asyncio.TimeoutError:
-                self.image.destroy()
-                return
+                await asyncio.wait_for(self.loop.run_in_executor(executor=self.process_pool, func=func), timeout=15.0)
+            except Exception as e:
+                embed.set_footer(text="There has been a fatal error processing this image. No effects have been applied.")
+
+                return embed, None
+
         else:
             try:
-                b2, fn = await asyncio.wait_for(self.loop.run_in_executor(self.process_pool, func), timeout=30.0)
-            except asyncio.TimeoutError:
+                b2, fn = await asyncio.wait_for(self.loop.run_in_executor(self.process_pool, func), timeout=15.0)
+                # generate the embed and file object
+                embed.title = "Processed image"
+                extension = 'png' if not gif else 'gif'
+                embed.set_image(url=f"attachment://{name}.{extension}")
+                with BytesIO(b2) as buf:
+                    file = discord.File(buf, filename=f"{name}.{extension}")
+                return embed, file
+            
+            except Exception as e: 
                 self.image.destroy()
-                return
 
-            # generate the embed and file object
-            embed = discord.Embed(title="Processed image")
-            extension = 'png' if not gif else 'gif'
-            embed.set_image(url=f"attachment://{name}.{extension}")
-            with BytesIO(b2) as buf:
-                file = discord.File(buf, filename=f"{name}.{extension}")
-            return embed, file
+                embed.title = "Fatal Error"
+                embed.description = "There has been a fatal error processing this image"
+                embed.color = discord.Color.red()
+                return embed, None
+            
+            finally:
+                self.image.destroy()
+
 
     async def make_blob_close(self, name: str = "image", gif=False):
         return await self.image_worker(self._make_blob_close, name=f"{name}_{self.__hash__()}", does_return=True, gif=gif)
@@ -272,7 +287,7 @@ class ImageFunction:
         self.image.sample(width=int(self.image.width * 2), height=int(self.image.height * 2))
 
     async def swirlmagik(self, angle: float):
-        await self.image_worker(functools.partial(self._swirlmagik, angle))
+        await self.image_worker(functools.partial(self._swirlmagik, float(angle)))
 
     def _swirlmagik(self, angle):
         self.image.swirl(angle)
@@ -280,7 +295,7 @@ class ImageFunction:
         self.image.swirl(-angle)
 
     async def swirl(self, angle: float):
-        await self.image_worker(functools.partial(self._swirl, angle))
+        await self.image_worker(functools.partial(self._swirl, float(angle)))
 
     def _swirl(self, angle: int = -60):
         self.image.swirl(degree=angle)
@@ -292,7 +307,7 @@ class ImageFunction:
         self.image.negate()
 
     async def implode(self, factor):
-        await self.image_worker(functools.partial(self._implode, factor))
+        await self.image_worker(functools.partial(self._implode, float(factor)))
 
     def _implode(self, factor):
         self.image.implode(factor)
@@ -305,7 +320,7 @@ class ImageFunction:
         self.image.background_color = Color('white')
 
     async def explode(self, factor):
-        await self.image_worker(functools.partial(self._implode, -factor))
+        await self.image_worker(functools.partial(self._implode, -float(factor)))
 
     async def reduce(self):
         await self.image_worker(self._reduce)
@@ -362,7 +377,7 @@ class ImageFunction:
         await self.image_worker(self._wide)
 
     def _wide(self):
-        self.image.resize(width=int(self.image.width * 3.3), height=int(self.image.height / 1.8))
+        self.image.resize(width=int(self.image.width * 3.2), height=int(self.image.height / 1.7))
         self.image.crop(left=int(self.image.width / 4), top=1, right=(self.image.width - (int(self.image.width / 4))),
                         bottom=self.image.height)
 
@@ -372,15 +387,15 @@ class ImageFunction:
     def _deepfry(self):
         self.image.sharpen(30,16)
         self.image.colorize(color="#f9fc12", alpha="rgb(10%, 10%, 10%)")
-        self.image.modulate(saturation=500.00)
-        self.image.noise('gaussian', attenuate=0.076)
+        self.image.modulate(saturation=600.00)
+        self.image.noise('gaussian', attenuate=0.072)
         self.image.sharpen(7,16)
-        
+        self.image.compression_quality = 0
 
-    async def rotate(self, angle: int = 90):
-        await self.image_worker(functools.partial(self._rotate, angle))
+    async def rotate(self, angle:float = 90):
+        await self.image_worker(functools.partial(self._rotate, float(angle)))
 
-    def _rotate(self, angle: int = 90):
+    def _rotate(self, angle:float = 90):
         self.image.rotate(degree=angle)
 
     async def black_white(self):
@@ -390,10 +405,10 @@ class ImageFunction:
         self.image.transform_colorspace('gray')
 
     async def sepia(self, threshold: float = 0.8):
-        await self.image_worker(functools.partial(self._sepia, threshold))
+        await self.image_worker(functools.partial(self._sepia, float(threshold)))
 
     def _sepia(self, threshold: float = 0.8):
-        self.image.sepia_tone(threshold)
+        self.image.sepia_tone(float(threshold))
 
     async def polaroid(self):
         await self.image_worker(self._polaroid)
@@ -402,21 +417,21 @@ class ImageFunction:
         self.image.polaroid()
 
     async def charcoal(self, radius: float = 1.5, sigma: float = 0.5):
-        await self.image_worker(functools.partial(self._charcoal, radius, sigma))
+        await self.image_worker(functools.partial(self._charcoal, float(radius), float(sigma)))
 
     def _charcoal(self, radius: float = 1.5, sigma: float = 0.5):
-        self.image.charcoal(radius, sigma)
+        self.image.charcoal(float(radius),float(sigma))
 
     async def make_vignette(self, sigma: int = 3, x: int = 10, y: int = 10):
-        await self.image_worker(functools.partial(self._make_vignette, sigma, x, y))
+        await self.image_worker(functools.partial(self._make_vignette, float(sigma), float(x), float(y)))
 
     def _make_vignette(self, sigma: int = 3, x: int = 10, y: int = 10):
-        self.image.vignette(sigma, x, y)
+        self.image.vignette(float(sigma), float(x), float(y))
 
-    async def bubble(self):
-        await self.image_worker(self._bubble)
+    async def bubble(self, flip=False):
+        await self.image_worker(self._bubble, flip)
 
-    def _bubble(self):
+    def _bubble(self, flip=False):
         # grab the template files stored in the data directory
         negative = '/app/data/static-resources/bubble_negative.png'
         outline = '/app/data/static-resources/bubble_outline.png'
@@ -432,11 +447,15 @@ class ImageFunction:
                 # and yes kite, the elif won't work here as we rely on it to make sure both sides are within specs
                 if self.image.width > 1024:
                     self.image.resize(width=1024, height=int(1024 / aspect_ratio))
+
                 if self.image.height > 1024:
                     self.image.resize(width=int(1024 * aspect_ratio), height=1024)
             # resize the images accordingly
             neg.resize(width=self.image.width, height=self.image.height)
             out.resize(width=self.image.width, height=self.image.height)
+            if flip:
+                neg.flop()
+                neg.flop()
             # compose the input image onto the negative
             neg.composite_channel(channel='default_channels', image=self.image, operator='src_in')
             # compose the outline image onto the composed negative
@@ -445,11 +464,9 @@ class ImageFunction:
             self.image = neg.clone()
             neg.destroy()
             out.destroy()
-            del neg
-            del out
 
     async def scale(self, factor: float = 0.5):
-        await self.image_worker(functools.partial(self._scale, factor))
+        await self.image_worker(functools.partial(self._scale, float(factor)))
 
     def _scale(self, factor: float = 0.5):
         # input protection
@@ -458,45 +475,45 @@ class ImageFunction:
         self.image.resize(width=int(self.image.width * factor), height=int(self.image.height * factor))
 
     async def blur(self, radius: int = 0, sigma: int = 3):
-        await self.image_worker(functools.partial(self._blur, radius, sigma))
+        await self.image_worker(functools.partial(self._blur, float(radius), float(sigma)))
 
     def _blur(self, radius: int = 0, sigma: int = 3):
         self.image.blur(radius, sigma)
 
     async def adaptive_blur(self, radius: int = 8, sigma: int = 4):
-        await self.image_worker(functools.partial(self._adaptive_blur, radius, sigma))
+        await self.image_worker(functools.partial(self._adaptive_blur, float(radius), float(sigma)))
 
     def _adaptive_blur(self, radius: int = 8, sigma: int = 4):
         self.image.adaptive_blur(radius, sigma)
 
     async def motion_blur(self, radius: int = 8, sigma: int = 4, angle: int = -45):
-        await self.image_worker(functools.partial(self._motion_blur, radius, sigma, angle))
+        await self.image_worker(functools.partial(self._motion_blur, float(radius), float(sigma), float(angle)))
 
     def _motion_blur(self, radius: int = 8, sigma: int = 4, angle: int = -45):
         self.image.motion_blur(radius, sigma, angle)
 
     async def edge(self, radius: int = 1):
-        await self.image_worker(functools.partial(self._edge, radius))
+        await self.image_worker(functools.partial(self._edge, float(radius)))
 
     def _edge(self, radius: int = 1):
         self.image.transform_colorspace('gray')
         self.image.edge(radius)
 
     async def emboss(self, radius: float = 3.0, sigma: float = 1.75):
-        await self.image_worker(functools.partial(self._emboss, radius, sigma))
+        await self.image_worker(functools.partial(self._emboss, float(radius), float(sigma)))
 
     def _emboss(self, radius: float = 3.0, sigma: float = 1.75):
         self.image.transform_colorspace('gray')
         self.image.emboss(radius, sigma)
 
     async def kuwahara(self, radius: int = 1, sigma: float = 1.5):
-        await self.image_worker(functools.partial(self._kuwahara, radius, sigma))
+        await self.image_worker(functools.partial(self._kuwahara, float(radius), float(sigma)))
 
     def _kuwahara(self, radius: int = 1, sigma: float = 1.5):
         self.image.kuwahara(radius, sigma)
 
     async def shade(self, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
-        await self.image_worker(functools.partial(self._shade, gray, azimuth, elevation))
+        await self.image_worker(functools.partial(self._shade, bool(gray), float(azimuth), float(elevation)))
 
     def _shade(self, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0):
         self.image.shade(gray, azimuth, elevation)

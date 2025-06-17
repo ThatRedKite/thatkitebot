@@ -28,8 +28,10 @@ SOFTWARE.
 
 #region Imports
 import asyncio
+from functools import partial
 from typing import Optional
 from urllib.parse import urlparse, parse_qs, urlencode
+from typing import Callable
 
 import discord
 from discord.ext import commands
@@ -40,6 +42,42 @@ from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.url import get_avatar_url
 #endregion
+
+def image_command(*args, **kwargs):
+    def deco(func: Callable):
+        # set filename to function name
+        name = func.__code__.co_name
+
+        @commands.cooldown(4, 10, commands.BucketType.user)
+        async def wrapper(self, ctx: commands.Context,*args):
+            file = None
+            async with ctx.typing():
+                try:
+                    buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
+                    image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)
+                    
+                    await func(self, ctx, image, *args)
+                    
+                    embed, file = await image.make_blob_close(name)
+                    print(embed)
+                    await ctx.reply(embed=embed, file=file, mention_author=False)
+                    
+                finally:
+                    # close all the stuff
+                    buf.close()
+                    if file is not None:
+                        file.close()
+                    image.image.destroy()
+                    
+        # fix default command name
+        if not kwargs.get("name"):
+            kwargs.update({"name": name})
+
+        command: commands.Command = commands.command(*args, **kwargs)(wrapper)
+
+        return command
+    
+    return deco
 
 #region Cog
 class ImageStuff(commands.Cog, name="image commands"):
@@ -56,8 +94,6 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.sem = asyncio.Semaphore(12)
         self.process_pool = bot.process_pool
 
-    async def cog_command_error(self, ctx, error) -> None:
-        await util.errormsg(ctx, error)
 
     async def cog_check(self, ctx) -> bool:
         is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.FlagEnum.IMAGE)
@@ -70,327 +106,149 @@ class ImageStuff(commands.Cog, name="image commands"):
         if self.process_pool is not None:
             self.process_pool.shutdown(cancel_futures=True, wait=False)
 
-    @commands.cooldown(3, 5, commands.BucketType.guild)
-    @commands.command(aliases=["magic", "magick"])
-    async def magik(self, ctx: commands.Context) -> None:
+    
+    @image_command(name="magik", aliases=["magic", "magick"])
+    async def magik(self, ctx: commands.Context, image: ImageFunction,) -> None:
         """
         Applies some content aware and swirling scaling to an image.
         When the image is a GIF, it takes the first frame
         """
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.magik()
-            embed, file = await image.make_blob_close(name="magik")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.magik()
 
-    @commands.cooldown(3, 5, commands.BucketType.guild)
-    @commands.command(aliases=["swirlmagik", "smagic", "swirlmagic"])
-    async def smagik(self, ctx: commands.Context, angle: float = 60.0) -> None:
+    @image_command(name="swirlmagik", aliases=["smagik", "smagick"])
+    async def smagik(self, ctx: commands.Context, image: ImageFunction, angle:float = 60) -> None:
         """
         Applies some content aware and swirling scaling to an image.
         When the image is a GIF, it takes the first frame
         """
-        buf = await image_stuff.download_last_image(ctx, saiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 1, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.swirlmagik(angle)
-            embed, file = await image.make_blob_close(name="smagik")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.swirlmagik(angle)
 
-    @commands.cooldown(3, 15, commands.BucketType.guild)
-    @commands.command()
-    async def deepfry(self, ctx: commands.Context) -> None:
+    @image_command(name="deepfry")
+    async def deepfry(self, ctx: commands.Context, image: ImageFunction) -> None:
         """'Deepfries' an image by oversaturating it and applying noise"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 2, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.deepfry()
-            embed, file = await image.make_blob_close(name="deepfry")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.deepfry()
 
-    @commands.cooldown(3, 15, commands.BucketType.guild)
-    @commands.command()
-    async def wide(self, ctx: commands.Context) -> None:
+    @image_command(name="wide")
+    async def wide(self, ctx: commands.Context, image: ImageFunction) -> None:
         """Horizontally stretch an image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 3, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.wide()
-            embed, file = await image.make_blob_close(name="wide")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.wide()
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.command(aliases=["opacity"])
-    async def opacify(self, ctx: commands.Context) -> None:
+    @image_command(name="opacify")
+    async def opacify(self, ctx: commands.Context, image: ImageFunction) -> None:
         """Remove the alpha channel and replace it with white"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 4, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.opacify()
-            embed, file = await image.make_blob_close(name="opacify")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.opacify()
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command(aliases=["inflate"])
-    async def explode(self, ctx: commands.Context, factor: float = 2.0) -> None:
+    @image_command(aliases=["inflate"])
+    async def explode(self, ctx: commands.Context, image: ImageFunction, factor: float = 2.0) -> None:
         """Explodes an image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 5, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.explode(factor)
-            embed, file = await image.make_blob_close(name="explode")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.explode(factor)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command(aliases=["deflate"])
-    async def implode(self, ctx: commands.Context, factor: float = 1.0) -> None:
+
+    @image_command(aliases=["deflate"])
+    async def implode(self, ctx: commands.Context, image: ImageFunction, factor: float = 1.0) -> None:
         """Implodes an image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 6, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.implode(factor)
-            embed, file = await image.make_blob_close(name="implode")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.implode(factor)
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command(aliases=["inverse", "anti"])
-    async def invert(self, ctx: commands.Context) -> None:
+    
+    @image_command()
+    async def invert(self, ctx: commands.Context, image: ImageFunction) -> None:
         """Invert an image's colors"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 7, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.invert()
-            embed, file = await image.make_blob_close(name="invert")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.invert()
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command()
-    async def reduce(self, ctx: commands.Context) -> None:
+
+    @image_command()
+    async def reduce(self, ctx: commands.Context, image: ImageFunction) -> None:
         """Reduces an image's total colors"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 8, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.reduce()
-            embed, file = await image.make_blob_close(name="reduce")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.reduce()
 
-    @commands.cooldown(3, 10, commands.BucketType.user)
-    @commands.command()
-    async def swirl(self, ctx: commands.Context, angle: int = 60) -> None:
+    @image_command()
+    async def swirl(self, ctx: commands.Context, image: ImageFunction, angle: int = 60) -> None:
         """Swirl an image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 9, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.swirl(angle)
-            embed, file = await image.make_blob_close(name="swirl")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.swirl(angle)
 
-    @commands.cooldown(3, 15, commands.BucketType.user)
-    @commands.command()
-    async def caption(self, ctx, *, text: str = "") -> None:
+
+    @image_command()
+    async def caption(self, ctx, image: ImageFunction, text: str = "", color: str = "") -> None:
         """
         Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values.
         Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22` or `caption funny color:firebrick`
         A full list of colors can be found here: https://imagemagick.org/script/color.php
         """
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 10, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.caption(text=text, path="/app/data/static-resources/")
-            embed, file = await image.make_blob_close(name="caption")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        print(text)
+        await image.caption(text=f"{text} {color}", path="/app/data/static-resources/")
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def rotate(self, ctx: commands.Context, angle: int = 90) -> None:
+
+    @image_command()
+    async def rotate(self, ctx: commands.Context, image: ImageFunction, angle:float = 90) -> None:
         """Rotate an image clockwise 90 degrees by default, you can specify the degree value as an argument"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 11, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.rotate(angle)
-            embed, file = await image.make_blob_close(name="rotate")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
-
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["bw", "blackwhite"])
-    async def grey(self, ctx: commands.Context) -> None:
+        await image.rotate(angle)
+ 
+    @image_command(aliases=["bw", "blackwhite"])
+    async def grey(self, ctx: commands.Context, image: ImageFunction) -> None:
         """Make an image black and white"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 12, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.black_white()
-            embed, file = await image.make_blob_close(name="blackwhite")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.black_white()
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["piss"])
-    async def sepia(self, ctx: commands.Context, threshold: float = 0.8) -> None:
+    @image_command(aliases=["piss"])
+    async def sepia(self, ctx: commands.Context, image: ImageFunction, threshold: float = 0.8) -> None:
         """Add a sepia filter to an image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 13, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.sepia()
-            embed, file = await image.make_blob_close(name="sepia")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.sepia(threshold)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def polaroid(self, ctx: commands.Context) -> None:
+    @image_command()
+    async def polaroid(self, ctx: commands.Context, image: ImageFunction) -> None:
         """Add a polaroid filter to an image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 14, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.polaroid()
-            embed, file = await image.make_blob_close(name="polaroid")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.polaroid()
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["coal"])
-    async def charcoal(self, ctx: commands.Context, radius: float = 1.5, sigma: float = 0.5) -> None:
+    @image_command(aliases=["coal"])
+    async def charcoal(self, ctx: commands.Context, image: ImageFunction, radius: float = 1.5, sigma: float = 0.5) -> None:
         """Add a charcoal filter to an image, making it look like a charcoal drawing"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 15, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.charcoal(radius, sigma)
-            embed, file = await image.make_blob_close(name="charcoal")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.charcoal(radius, sigma)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def vignette(self, ctx: commands.Context, sigma: int = 3, x: int = 10, y: int = 10) -> None:
+    @image_command()
+    async def vignette(self, ctx: commands.Context, image: ImageFunction, sigma: int = 3, x: int = 10, y: int = 10) -> None:
         """Tries to emulate old school 3d effect"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 16, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.make_vignette(sigma, x , y)
-            embed, file = await image.make_blob_close(name="vignette")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.make_vignette(sigma, x , y)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["bubble"])
-    async def speech_bubble(self, ctx: commands.Context, flip: bool = False) -> None:
+    @image_command(aliases=["bubble"])
+    async def speech_bubble(self, ctx: commands.Context, image: ImageFunction, flip: bool = False) -> None:
         """Create a speech bubble like those memes"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 17, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.bubble()
-            embed, file = await image.make_blob_close(name="bubble", gif=True)
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.bubble(flip)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["scale"])
-    async def resize(self, ctx: commands.Context, scale: float = 0.5) -> None:
+    @image_command(aliases=["scale"])
+    async def resize(self, ctx: commands.Context, image: ImageFunction, scale: float = 0.5) -> None:
         """Resizes an image to a set factor"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 18, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.scale(scale)
-            embed, file = await image.make_blob_close(name="resize")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.scale(scale)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3) -> None:
+    @image_command()
+    async def blur(self, ctx: commands.Context, image: ImageFunction, radius: int = 0, sigma: int = 3) -> None:
         """Applies blur"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 19, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.blur(radius, sigma)
-            embed, file = await image.make_blob_close(name="blur")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.blur(radius, sigma)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["ablur"])
-    async def adaptive_blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3) -> None:
+    @image_command(aliases=["ablur"])
+    async def adaptive_blur(self, ctx: commands.Context, image: ImageFunction, radius: int = 0, sigma: int = 3) -> None:
         """Applies blur, but tries to utilize edge detect for a better result"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 20, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.adaptive_blur(radius, sigma)
-            embed, file = await image.make_blob_close(name="ablur")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.adaptive_blur(radius, sigma)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["mblur"])
-    async def motion_blur(self, ctx: commands.Context, radius: int = 0, sigma: int = 3, angle: int = -45) -> None:
+    @image_command(aliases=["mblur"])
+    async def motion_blur(self, ctx: commands.Context, image: ImageFunction, radius: int = 0, sigma: int = 3, angle: int = -45) -> None:
         """Applies motion blur"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 21, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.motion_blur(radius, sigma, angle)
-            embed, file = await image.make_blob_close(name="motion_blur")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.motion_blur(radius, sigma, angle)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def edge(self, ctx: commands.Context, radius: int = 1) -> None:
+    @image_command()
+    async def edge(self, ctx: commands.Context, image: ImageFunction, radius: int = 1) -> None:
         """Returns a black and white image with edges in white and the rest in black"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 22, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.edge(radius)
-            embed, file = await image.make_blob_close(name="edge")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.edge(radius)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def emboss(self, ctx: commands.Context, radius: float = 3.0, sigma: float = 1.75) -> None:
+    @image_command()
+    async def emboss(self, ctx: commands.Context, image: ImageFunction, radius: float = 3.0, sigma: float = 1.75) -> None:
         """Creates an embossed image"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 23, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.emboss(radius, sigma)
-            embed, file = await image.make_blob_close(name="emboss")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command(aliases=["smooth"])
-    async def kuwahara(self, ctx: commands.Context, radius: int = 1, sigma: float = 1.5) -> None:
-        """Attempts to smooth the image while preserving edges"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 24, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.kuwahara(radius, sigma)
-            embed, file = await image.make_blob_close(name="kuwahara")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.emboss(radius, sigma)
 
-    @commands.cooldown(5, 10, commands.BucketType.user)
-    @commands.command()
-    async def shade(self, ctx: commands.Context, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0) -> None:
+
+    @image_command()
+    async def shade(self, ctx: commands.Context, image: ImageFunction, gray: bool = True, azimuth: float = 286.0, elevation: float = 45.0) -> None:
         """Attempts to smooth the image while preserving edges"""
-        buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
-        async with ctx.channel.typing(), self.sem:
-            image = ImageFunction(buf, 25, loop=self.loop, process_pool=self.process_pool)  # initialize the image class
-            await image.shade(gray, azimuth, elevation)
-            embed, file = await image.make_blob_close(name="shade")
-            await ctx.reply(embed=embed, file=file, mention_author=False)
-            file.close()
+        await image.shade(gray, azimuth, elevation)
 
     @commands.cooldown(3, 10, commands.BucketType.channel)
     @commands.command()
