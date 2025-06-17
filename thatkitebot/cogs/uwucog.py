@@ -39,6 +39,7 @@ from discord.ext import commands
 from redis import asyncio as aioredis
 
 import thatkitebot
+from thatkitebot.types.message import Message
 from thatkitebot.base.url import get_avatar_url
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import set_up_guild_logger
@@ -143,10 +144,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     uwu = discord.SlashCommandGroup(
         "uwu",
         "UwUify Commands",
-        checks=[pc.mods_can_change_settings, pc.in_guild]
+        checks=[pc.mods_can_change_settings]
     )
 
-    @uwu.command(name="channel",description="Make a channel automatically UwU every message",checks=[pc.mods_can_change_settings])
+    @discord.guild_only()
+    @uwu.command(name="channel",description="Make a channel automatically UwU every message",checks=[pc.mods_can_change_settings],)
     async def _add_channel(
         self,
         ctx: discord.ApplicationContext,
@@ -168,7 +170,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             await ctx.interaction.response.send_message(f"{channel.mention} has been uwuified. Run for your lives!", ephemeral=silent)
         else:
             await ctx.interaction.response.send_message(f"{channel.mention} has been liberated from uwuification. Thank goodneess!", ephemeral=silent)
-
+    
+    @discord.guild_only()
     @uwu.command(name="user", description="Turn every message from this user into unintelligible uwu gibberish.")
     async def add_user(
             self,
@@ -192,6 +195,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         else:
             await ctx.interaction.response.send_message(f"{user.name} is now unfucked.", ephemeral=silent)
 
+    @discord.guild_only()
     @uwu.command(name="intensity", description="Change the global uwu intensity.")
     async def change_intensity(
         self,
@@ -199,10 +203,10 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         intensity: discord.Option(
             float,
             description="The intensity of the uwuification, default is 1.0",
-            default=1.0,
+            default=2.0,
             required=False,
             min_value=0.1,
-            max_value=10.0,
+            max_value=30.0,
         ),#type:ignore
     ):
         logger = set_up_guild_logger(ctx.guild.id)
@@ -216,18 +220,25 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     #endregion
 
     #region prefixed commands
+    @discord.guild_only()
     @commands.command(name="uwu_user")
     async def _uwu_user(self, ctx):
-        await ctx.send("This command is deprecated, please use the slash command version")
+        await ctx.send(f"This command is deprecated, please use {self.add_user.mention}")
 
+    @discord.guild_only()
+    @commands.command(name="uwu_user")
+    async def _uwu_user(self, ctx):
+        await ctx.send(f"This command is deprecated, please use {self.add_user.mention}")
+
+    @discord.guild_only()
     @commands.command(name="uwu_channel")
     async def _uwu_channel(self, ctx):
-        await ctx.send("This command is deprecated, please use the slash command version")
+        await ctx.send(f"This command is deprecated, please use {self._add_channel.mention}")
     #endregion
 
     #region main listener
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
@@ -260,10 +271,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     return
 
             files = []
-            for attachment in message.attachments:
-                async with self.bot.aiohttp_session.get(attachment.url) as resp:
-                    fp = io.BytesIO(await resp.read())
-                    files.append(discord.File(fp, filename=attachment.filename))
+            if not message.is_remix:
+                for attachment in message.attachments:
+                    async with self.bot.aiohttp_session.get(attachment.url) as resp:
+                        fp = io.BytesIO(await resp.read())
+                        files.append(discord.File(fp, filename=attachment.filename))
             
             # convert the input string to ascii
             msg_len = len(message.content) + 20

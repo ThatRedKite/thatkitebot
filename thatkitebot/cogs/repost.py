@@ -157,6 +157,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     #endregion
     
     #region Commands
+    @discord.guild_only()
     @commands.group(aliases=["repc", "repostchannel"])
     async def repost_channel(self, ctx: commands.Context):
         """
@@ -167,6 +168,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
             not_enabled_string = "not " if not await self.channel_is_enabled(ctx.channel) else ""
             await ctx.send(f"{ctx.channel.mention} is {not_enabled_string}enabled for repost detection.")
 
+    @discord.guild_only()
     @commands.check(pc.can_change_settings)
     @repost_channel.command(name="add")
     async def _add(self, ctx, channel: typing.Optional[discord.TextChannel]):
@@ -183,6 +185,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         await self.settings_redis.sadd("REPOST_CHANNELS", channel.id)
         await ctx.send(f"{channel.mention} has been added to the repost-activated channels.")
 
+    @discord.guild_only()
     @commands.check(pc.can_change_settings)
     @repost_channel.command(name="remove", aliases=["rm"])
     async def _remove(self, ctx, channel: typing.Optional[discord.TextChannel]):
@@ -198,6 +201,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         await self.settings_redis.srem("REPOST_CHANNELS", channel.id)
         await ctx.send(f"{channel.mention} has been removed from the repost-activated channels.")
 
+    @discord.guild_only()
     @commands.guild_only()
     @commands.group(name="repost")
     async def repost(self, ctx: commands.Context, *, message: typing.Optional[discord.Message]):
@@ -262,6 +266,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         else:
             return
 
+    @discord.guild_only()
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1

@@ -43,6 +43,7 @@ from redis import asyncio as aioredis
 class ChannelTypeLists:
     DEFAULT_CHANNEL_TYPES = [ChannelType.text, ChannelType.public_thread, ChannelType.private_thread, ChannelType.news, ChannelType.news_thread]
     THREADS = [ChannelType.public_thread, ChannelType.private_thread, ChannelType.news_thread]
+    NO_THREADS_TEXT = [ChannelType.text, ChannelType.news]
     ALL_TEXT_SERVER = [*DEFAULT_CHANNEL_TYPES, ChannelType.forum]
 
 
@@ -119,7 +120,6 @@ async def errormsg(ctx=None, msg: str = "", exc="", embed_only=False):
         embed.color = EmbedColors.traffic_red
         embed.set_footer(text=exc)
         await ctx.send(embed=embed, delete_after=5.0)
-        await asyncio.sleep(5.0)
     else:
         embed = discord.Embed(title="**ERROR!**", description=msg)
         embed.color = EmbedColors.traffic_red

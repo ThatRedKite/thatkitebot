@@ -79,6 +79,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         return embed
     
     #region Commands
+    @discord.guild_only()
     @settings.command(name="images")
     async def enable_images(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -90,6 +91,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Image Commands", enable, RedisFlags.FlagEnum.IMAGE))
 
 
+    @discord.guild_only()
     @settings.command(name="nsfw")
     async def enable_nsfw(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -100,7 +102,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # set the settings, log everything and generate an embed
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "NSFW Commands", enable, RedisFlags.FlagEnum.NSFW))
 
-
+    
+    @discord.guild_only()
     @settings.command(name="repost")
     async def enable_repost(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -112,6 +115,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Repost-Detection", enable, RedisFlags.FlagEnum.REPOST, further_config=True))
 
 
+    @discord.guild_only()
     @settings.command(name="uwu")
     async def enable_uwu(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -123,6 +127,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "UwUification Commands", enable, RedisFlags.FlagEnum.UWU, further_config=True))
 
 
+    @discord.guild_only()
     @settings.command(name="detrack")
     async def enable_detrack(self, ctx: discord.ApplicationContext, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -132,7 +137,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # set the settings, log everything and generate an embed
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Detracking", enable, RedisFlags.FlagEnum.DETRACK))
 
-
+    
+    @discord.guild_only()
     @settings.command(name="welcome_leaderboard")
     async def enable_welcome_leaderboard(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -144,6 +150,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "the Welcome-Leaderboard", enable, RedisFlags.FlagEnum.WELCOME))
 
 
+    @discord.guild_only()
     @settings.command(name="welcome_message")
     async def enable_welcome_message(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -155,6 +162,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "welcome messages", enable, RedisFlags.FlagEnum.WELCOME_MESSAGE))
 
 
+    @discord.guild_only()
     @settings.command(name="moderation")
     async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
@@ -165,6 +173,7 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # set the settings, log everything and generate an embed
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION, further_config=True))
 
+    @discord.guild_only()
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")
     async def _add_mod(self, ctx: discord.ApplicationContext, role: discord.Role):
         """
