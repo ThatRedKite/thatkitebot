@@ -36,6 +36,8 @@ from typing import Callable
 import discord
 from discord.ext import commands
 
+
+from thatkitebot.base.exceptions import *
 from thatkitebot.base import util, image_stuff
 from thatkitebot.base.image_stuff import ImageFunction
 from thatkitebot.tkb_redis.settings import RedisFlags
@@ -51,23 +53,44 @@ def image_command(*args, **kwargs):
         @commands.cooldown(4, 10, commands.BucketType.user)
         async def wrapper(self, ctx: commands.Context,*args):
             file = None
+            image = None
+            buf = None
             async with ctx.typing():
                 try:
                     buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
                     image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)
-                    
                     await func(self, ctx, image, *args)
-                    
-                    embed, file = await image.make_blob_close(name)
-                    print(embed)
+                    embed, file = image.save_image()
                     await ctx.reply(embed=embed, file=file, mention_author=False)
-                    
+                
+                except ImageTooLargeException:
+                    embed = discord.Embed(title="Error", description="The image is too large (>6000x6000).", color=ec.traffic_red)
+                    await ctx.reply(embed=embed, mention_author=False)
+                    return
+
+                except ImageScaleTooHighException:
+                    embed = discord.Embed(title="Error", description="Scaled image would be larger than allowed (>6000x6000).", color=ec.traffic_red)
+                    await ctx.reply(embed=embed, mention_author=False)
+                    return
+                
+                except Exception:
+                    embed = discord.Embed(title="Error", description="There has been an error processing the image.", color=ec.traffic_red)
+                    await ctx.reply(embed=embed, mention_author=False)
+                    return
+
                 finally:
                     # close all the stuff
-                    buf.close()
+                    if buf is not None:
+                        buf.close()
+                        del buf
+                    
                     if file is not None:
-                        file.close()
-                    image.image.destroy()
+                        del file
+
+                    if image is not None:
+                        image.image.destroy()
+                        del image
+                    
                     
         # fix default command name
         if not kwargs.get("name"):
@@ -93,7 +116,6 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.loop = bot.loop
         self.sem = asyncio.Semaphore(12)
         self.process_pool = bot.process_pool
-
 
     async def cog_check(self, ctx) -> bool:
         is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.FlagEnum.IMAGE)
@@ -216,7 +238,12 @@ class ImageStuff(commands.Cog, name="image commands"):
     @image_command(aliases=["scale"])
     async def resize(self, ctx: commands.Context, image: ImageFunction, scale: float = 0.5) -> None:
         """Resizes an image to a set factor"""
-        await image.scale(scale)
+        size = image.image.size
+        scale = abs(float(scale))
+        if (size[0] * scale) <= 6000 and (size[1] * scale) <= 6000:
+            await image.scale(scale)
+        else:
+            raise ImageScaleTooHighException
 
     @image_command()
     async def blur(self, ctx: commands.Context, image: ImageFunction, radius: int = 0, sigma: int = 3) -> None:
@@ -241,8 +268,7 @@ class ImageStuff(commands.Cog, name="image commands"):
     @image_command()
     async def emboss(self, ctx: commands.Context, image: ImageFunction, radius: float = 3.0, sigma: float = 1.75) -> None:
         """Creates an embossed image"""
-
-        await image.emboss(radius, sigma)
+        await image.emboss()
 
 
     @image_command()

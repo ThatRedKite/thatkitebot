@@ -32,6 +32,8 @@ class ImageTooLargeException(Exception):
 class NoImageFoundException(Exception):
     pass
 
+class ImageScaleTooHighException(Exception):
+    pass
 
 class InvalidTagsException(Exception):
     pass
