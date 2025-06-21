@@ -33,10 +33,11 @@ from datetime import datetime
 from redis.exceptions import ConnectionError
 from redis import asyncio as aioredis
 from discord.ext import commands, tasks
+from discord import Embed
 
 import thatkitebot
 from thatkitebot.base.util import errormsg
-from thatkitebot.tkb_redis.cache import RedisCacheAsync, CacheInvalidMessageException, NoDataException
+from thatkitebot.tkb_redis.cache import RedisCacheAsync
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 from thatkitebot.base.exceptions import *
 #endregion
@@ -55,25 +56,37 @@ class ListenerCog(commands.Cog):
         self.logger: logging.Logger = bot.logger
         self.cache: RedisCacheAsync = bot.r_cache
 
+        self.hourly_reset.start()
+        self.database_ping.start()
+        self.cache_update.start()
+
     # global error handlers
     @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error):
-        match type(error):
-            case commands.CommandOnCooldown:
-                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {round(error.retry_after, 1)} seconds.")
-            case commands.CommandInvokeError:
-                if self.bot.debug_mode:
-                    await errormsg(ctx, repr(error))
-                    
-                if not isinstance(error, (NotEnoughMessagesException, StarboardDisabledException)):
-                    self.bot.logger.error("Error during command: %s", error, exc_info=True)
-            case discord.errors.CheckFailure:
-                await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
-            case commands.MissingPermissions:
-                await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+    async def on_command_error(self, ctx: commands.Context, e):
+        match type(e):
+            case discord.CheckFailure:
+                print(e.args)
 
-        if self.bot.debug_mode:
-            raise error
+            case commands.CheckAnyFailure:
+                pass
+
+            case commands.CheckFailure:
+                pass
+            
+            case discord.Forbidden:
+                pass
+            
+            case commands.CommandOnCooldown:
+                pass
+
+            case commands.CommandNotFound:
+                pass
+
+            case commands.ArgumentParsingError:
+                pass
+
+            case _ :
+                raise e
             
     
     @commands.Cog.listener()
@@ -90,13 +103,13 @@ class ListenerCog(commands.Cog):
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
 
-    @tasks.loop(hours=1.0)
+    @tasks.loop(hours=1, reconnect=True)
     async def hourly_reset(self) -> None:
         self.bot.command_invokes_hour = 0
         self.bot.events_hour = 0
 
-    @tasks.loop(minutes=1)
-    async def database_ping(self) -> None:
+    @tasks.loop(minutes=1, reconnect=True)
+    async def database_ping(self,) -> None:
         try:
             await self.redis.ping()
             await self.redis_cache.ping()
@@ -107,7 +120,7 @@ class ListenerCog(commands.Cog):
             self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(exc)}")
     
     # execs the cache pipeline every 60 seconds
-    @tasks.loop(seconds=60)
+    @tasks.loop(seconds=60, reconnect=True)
     async def cache_update(self) -> None:
         # commit pending writes
         async with self.bot.cache_lock:
@@ -146,22 +159,17 @@ class ListenerCog(commands.Cog):
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        # async with self.bot.cache_lock:
-        #     await self.cache.update_message_raw(payload)
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-       #await self.bot.r_cache.mass_expire_messages(payload)
 
 
     @commands.Cog.listener()
     async def on_member_update(self, _, after: discord.Member) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        # await self.bot.add_user(after._user)
-        pass
     
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
@@ -172,7 +180,6 @@ class ListenerCog(commands.Cog):
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        #await self.bot.delete_message_raw(payload)
     
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
