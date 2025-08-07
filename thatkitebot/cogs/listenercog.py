@@ -64,45 +64,53 @@ class ListenerCog(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, e):
         match type(e):
-            case discord.CheckFailure:
-                print(e.args)
-
-            case commands.CheckAnyFailure:
-                pass
-
-            case commands.CheckFailure:
-                pass
+            case commands.CheckFailure | commands.CheckAnyFailure:
+                await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             
             case discord.Forbidden:
-                pass
+                await errormsg(ctx, "I cannot access this. (403 Forbidden)")
             
             case commands.CommandOnCooldown:
-                pass
+                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {round(e.retry_after, 1)} seconds.")
 
             case commands.CommandNotFound:
+                # we simply ignore invalid commands
                 pass
 
             case commands.ArgumentParsingError:
                 pass
 
-            case _ :
-                raise e
-            
-    
-    @commands.Cog.listener()
-    async def on_application_command_error(self, ctx: commands.Context, error):
-        match type(error):
-            case commands.CommandOnCooldown:
-                await errormsg(ctx, f"Sorry, but this command is on cooldown! Please wait {round(error.retry_after, 1)} seconds.")
-            case commands.CommandInvokeError:
-                if self.bot.debug_mode:
-                    await errormsg(ctx, repr(error))
-                raise error
-            case discord.errors.CheckFailure:
-                await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
             case commands.MissingPermissions:
                 await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
 
+            case commands.CommandInvokeError:
+                if self.bot.debug_mode:
+                    await errormsg(ctx, repr(e))
+                    
+                if not isinstance(e, (NotEnoughMessagesException, StarboardDisabledException)):
+                    await errormsg(ctx, f"An error has occurred: {type(e)}")
+                    self.bot.logger.error("Error during command: %s", e, exc_info=True)
+
+            case _ :
+                await errormsg(ctx, f"An error has occurred: {type(e)}")
+            
+    @commands.Cog.listener()
+    async def on_application_command_error(self, ctx: commands.Context, e):
+        match type(e):
+
+            case commands.CommandInvokeError:
+                if self.bot.debug_mode:
+                    await errormsg(ctx, repr(e))
+
+                self.bot.logger.error("Error during command: %s", e, exc_info=True)
+            
+            case discord.errors.CheckFailure:
+                await errormsg(ctx, "A check has failed! This command might be disabled on the server or you lack permission")
+
+            case commands.MissingPermissions:
+                await errormsg(ctx, "Sorry, but you don't have the permissions to do this")
+            
+    
     @tasks.loop(hours=1, reconnect=True)
     async def hourly_reset(self) -> None:
         self.bot.command_invokes_hour = 0
@@ -115,7 +123,10 @@ class ListenerCog(commands.Cog):
             await self.redis_cache.ping()
             # update last online time as well
             await self.redis.set("last", int(datetime.now().timestamp()))
-
+            # commit dangling cache messages
+            self.bot.sync_cache.exec()
+            await self.bot.r_cache.exec()
+            
         except ConnectionError as exc:
             self.logger.critical(f"REDIS: Lost connection to at least one redis instance!! Message: {repr(exc)}")
     
