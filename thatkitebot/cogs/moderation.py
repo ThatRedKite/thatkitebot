@@ -58,6 +58,7 @@ class Behavior:
         "Delete": 2,
         "Warn & Delete": 3
     }
+
 async def enable_check(ctx: discord.ApplicationContext) -> bool:
     redis = ctx.bot.redis
     is_enabled = await settings.RedisFlags.get_guild_flag(redis, ctx.guild, flag_offset=settings.RedisFlags.FlagEnum.MODERATION)
@@ -205,14 +206,12 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
         "edit_checker",
         "Edit Checking Commands",
         checks=[pc.mods_can_change_settings, enable_check, pc.in_guild],
-        guild_ids=[759419755253465188]
     )
 
     remix_delete = discord.SlashCommandGroup(
         "remix_delete",
         "Edit Checking Commands",
         checks=[pc.mods_can_change_settings, enable_check, pc.in_guild],
-        guild_ids=[759419755253465188]
     )
 
     moderation = discord.SlashCommandGroup(
