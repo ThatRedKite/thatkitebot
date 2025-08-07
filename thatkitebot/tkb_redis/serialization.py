@@ -27,6 +27,9 @@ SOFTWARE.
 import discord
 from typing import Optional
 
+import discord.types
+import discord.types.message
+
 #region dict functions
 def reaction_to_dict(reaction: discord.Reaction) -> dict:
     reaction_dict = dict(
@@ -123,28 +126,93 @@ def member_to_dict(member: discord.Member) -> dict:
         avatar = member._avatar
     )
 
+def role_to_dict(role: discord.Role) -> dict:
+    dict_role = dict(
+        id = role.id,
+        name = role.name,
+        color = role.color,
+        hoist = role.hoist,
+        icon = role.icon._key,
+        unicode_emoji = role.unicode_emoji,
+        position = role.position,
+        permissions = str(role._permissions),
+        managed = role.managed,
+        mentionable = role.mentionable,
+        tags = dict(
+            bot_id=role.tags.bot_id,
+            integration_id=role.tags.integration_id,
+            premium_subscriber=role.tags.is_premium_subscriber(),
+            subscription_listing_id=None,
+            available_for_purchase=None,
+            guild_connections=None
+        ),
+        flags=role.flags.value
+    )
+    return dict_role
+
+def call_to_dict(call: discord.MessageCall) -> dict:
+    dict_call = dict(
+        participants = list(call._participants),
+        ended_timestamp = call._ended_timestamp.isoformat() if call._ended_timestamp else None
+    )
+    return dict_call
+
+def message_interaction_to_dict(interaction: discord.MessageInteraction) -> dict:
+    dict_msg_interaction = dict(
+        id = interaction.id,
+        type = interaction.type.value,
+        name = interaction.name,
+        user = user_to_dict(interaction.user),
+    )
+    return dict_msg_interaction
+
+def interaction_metadata_to_dict(imd: discord.InteractionMetadata) -> dict:
+    dict_imd = dict(
+        id = imd.id,
+        type = imd.type.value,
+        user = user_to_dict(imd.user),
+        authorizing_integration_owners = {"0": imd.authorizing_integration_owners.guild_id, "1": imd.authorizing_integration_owners.user_id},
+        original_response_message_id = imd.original_response_message_id,
+        interacted_message_id = imd.interacted_message_id,
+        # not sure if we want to make this recursive
+        triggering_interaction_metadata = interaction_metadata_to_dict(imd.triggering_interaction_metadata) if imd.triggering_interaction_metadata else None,
+    )
+    return dict_imd
+
 def message_to_dict(message: discord.Message) -> dict:
     dict_message = dict(
-        type=message.type.value,
-        tts=message.tts,
-        timestamp=message.created_at.isoformat(),
-        pinned=message.pinned,
-        nonce=message.nonce,
-        mentions=message.raw_mentions,
-        mention_roles=message.raw_role_mentions,
-        mention_everyone=message.mention_everyone,
-        member=member_to_dict(message.author),
-        id=message.id,
-        channel_id=message.channel.id,
-        author=user_to_dict(message.author),
-        guild_id=message.guild.id or None,
-        content=message.content,
-        reference=message.reference.to_message_reference_dict() if message.reference else None,
-        attachments=_serialize_attachments(message),
-        embeds=_serialize_embeds(message),
-        edited_timestamp=message._edited_timestamp,
-        reactions=[reaction_to_dict(reaction) for reaction in message.reactions]
+        type = message.type.value,
+        tts = message.tts,
+        timestamp = message.created_at.isoformat(),
+        edited_timestamp = message.edited_at.isoformat() if message.edited_at else None,
+        pinned = message.pinned,
+        nonce = message.nonce,
+        mentions = [user_to_dict(user) for user in message.mentions],
+        mention_roles = [role_to_dict(role) for role in message.role_mentions],
+        mention_everyone = message.mention_everyone,
+        member = member_to_dict(message.author),
+        id = message.id,
+        channel_id = message.channel.id,
+        author = user_to_dict(message.author),
+        guild_id = message.guild.id or None,
+        content = message.content,
+        flags = message.flags.value,
+        attachments = _serialize_attachments(message),
+        embeds = _serialize_embeds(message),
+        reactions = [reaction_to_dict(reaction) for reaction in message.reactions],
+        components = [component.to_dict() for component in message.components],
+        poll = message.poll.to_dict() if message.poll else {},
+        call = call_to_dict(message.call) if message.call else {},
+        webhook_id = message.webhook_id,
+        activity = dict(message.activity) if message.application else {},
+        application = dict(message.application) if message.application else {},
+        application_id = message.application.get("id") if message.application else {},
+        interaction_metadata = interaction_metadata_to_dict(message.interaction_metadata) if message.interaction_metadata else {},
+        message_reference = message.reference.to_dict() if message.reference else {},
     )
+    if dict_message["message_reference"]:
+        dict_message["message_reference"].update({"channel_id": message.reference.channel_id})
+        
     return dict_message
 
 def channel_to_dict(channel: discord.abc.GuildChannel) -> dict:
