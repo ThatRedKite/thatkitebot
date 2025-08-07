@@ -37,14 +37,13 @@ import aiohttp
 
 from discord.ext import commands
 from PIL import Image as PILImage
-import wand.exceptions
+from wand.exceptions import *
 from wand.image import Image as WandImage
 from wand.color import Color
 from wand.font import Font
-import wand.image
-import wand.resource
 
 from .exceptions import *
+from .url import TENOR_PATTERN
 
 def _hasher(data: bytes) -> Optional[str]:
     """
@@ -70,14 +69,16 @@ async def hasher(loop: asyncio.AbstractEventLoop, data: bytes, pool: Optional[Pr
 
     try:
         # try to get the hash string from the executor
-        hash_string = await asyncio.wait_for(loop.run_in_executor(pool, functools.partial(_hasher, data)))
+        hash_string = await asyncio.wait_for(loop.run_in_executor(pool, functools.partial(_hasher, data)), timeout=10)
 
     except asyncio.TimeoutError:
         return None
     
+    except Exception as e:
+        raise e
+    
     return hash_string
     
-
 
 async def download_image(session: aiohttp.ClientSession, url: str):
     """
@@ -85,6 +86,25 @@ async def download_image(session: aiohttp.ClientSession, url: str):
     """
     async with session.get(url) as r:
         return await r.read()
+
+
+async def get_tenor_image_url(aiohttp_session: aiohttp.ClientSession, url:str, token:str) -> str:
+    """
+    Downloads a tenor gif and returns the hash of the image.
+    """
+    # define the header and the payload:
+    tenor = TENOR_PATTERN.findall(url)
+    if not tenor:
+        return None
+    payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
+
+    async with aiohttp_session.get(url="https://api.tenor.com/v1/gifs", params=payload) as r:
+        gifs = await r.json()
+        url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
+        return url
+
+
+    return None
 
 async def download_last_image(
         ctx: Union[discord.ApplicationContext, commands.Context],
@@ -194,7 +214,7 @@ def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: 
 
         # check if the message has a gif if the :gifv: argument is true
         elif embed.type == "gifv" and gifv:
-            yield embed.url, "image"
+            yield embed.url, "gifv"
             continue
 
         else:
@@ -209,68 +229,54 @@ class ImageFunction:
         buffer.seek(0)
         self.loop = loop
         self.process_pool = process_pool
+        self.embed = discord.Embed()
         
         try:
             self.image = WandImage(file=buffer)
-        except wand.exceptions.CacheError:
+        except CacheError:
             raise ImageTooLargeException
         finally:
             buffer.close()
         
         self.fn = fn
-
-    async def image_worker(self, func, name="_", gif: bool = False, does_return=False):
-        embed = discord.Embed()
-
-        if not does_return:
-            # for some reason it never runs the function if you use an actual executor
-            # so this is a temporary workaround
-            try:
-                await asyncio.wait_for(self.loop.run_in_executor(executor=self.process_pool, func=func), timeout=15.0)
-            except Exception as e:
-                embed.set_footer(text="There has been a fatal error processing this image. No effects have been applied.")
-
-                return embed, None
-
-        else:
-            try:
-                b2, fn = await asyncio.wait_for(self.loop.run_in_executor(self.process_pool, func), timeout=15.0)
-                # generate the embed and file object
-                embed.title = "Processed image"
-                extension = 'png' if not gif else 'gif'
-                embed.set_image(url=f"attachment://{name}.{extension}")
-                with BytesIO(b2) as buf:
-                    file = discord.File(buf, filename=f"{name}.{extension}")
-                return embed, file
+    
+    def save_image(self, is_gif=False) -> BytesIO:
+        buf = None
+        try:
+            buf = self._save_to_buffer()
+            self.embed.title = "Processed image"
+            extension = 'png' if not is_gif else 'gif'
+            self.embed.set_image(url=f"attachment://image.{extension}")
+            file = discord.File(fp=buf, filename=f"image.{extension}")
+            return self.embed, file
             
-            except Exception as e: 
+        except Exception as e:
+            self.embed.title = "Fatal Error"
+            self.embed.description = "There has been a fatal error processing this image"
+            self.embed.color = discord.Color.red()
+            return self.embed, None
+        
+        finally:
+            if self.image is not None:
                 self.image.destroy()
 
-                embed.title = "Fatal Error"
-                embed.description = "There has been a fatal error processing this image"
-                embed.color = discord.Color.red()
-                return embed, None
+            if buf is not None:
+                buf.close()
+
+    async def image_worker(self, func):
+        try:
+            await self.loop.run_in_executor(executor=self.process_pool, func=func)
+        except WandException as e:
+            # wand-related exceptions
+            print(e)
             
-            finally:
-                self.image.destroy()
-
-
-    async def make_blob_close(self, name: str = "image", gif=False):
-        return await self.image_worker(self._make_blob_close, name=f"{name}_{self.__hash__()}", does_return=True, gif=gif)
-
-    def _make_blob_close(self) -> (bytes, int):  #type: ignore
+    def _save_to_buffer(self) -> BytesIO:
         self.image.format = "png"
-        b = self.image.make_blob()
-        self.image.destroy()
-        return b, self.fn
-
-    async def make_blob(self, name: str = "image"):
-        return await self.image_worker(self._make_blob, name=f"{name}_{self.__hash__()}", does_return=True)
-
-    def _make_blob(self) -> (bytes, int): #type: ignore
-        self.image.format = "png"
-        b = self.image.make_blob()
-        return b, self.fn
+        buf = BytesIO()
+        self.image.save(file=buf)
+        self.image.close()
+        buf.seek(0)
+        return buf
 
     def close(self):
         self.image.destroy()
@@ -297,7 +303,7 @@ class ImageFunction:
     async def swirl(self, angle: float):
         await self.image_worker(functools.partial(self._swirl, float(angle)))
 
-    def _swirl(self, angle: int = -60):
+    def _swirl(self, angle: int=-60):
         self.image.swirl(degree=angle)
 
     async def invert(self):

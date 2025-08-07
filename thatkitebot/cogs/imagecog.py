@@ -73,7 +73,7 @@ def image_command(*args, **kwargs):
                     await ctx.reply(embed=embed, mention_author=False)
                     return
                 
-                except Exception:
+                except Exception as e:
                     embed = discord.Embed(title="Error", description="There has been an error processing the image.", color=ec.traffic_red)
                     await ctx.reply(embed=embed, mention_author=False)
                     return
