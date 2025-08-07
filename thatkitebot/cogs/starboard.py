@@ -34,18 +34,24 @@ from random import randint
 import discord
 from redis import asyncio as aioredis
 from discord.ext import commands
+from discord import SlashCommandOptionType
 
 import thatkitebot
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import Parsing
 from thatkitebot.base.util import parse_timestring, check_message_age
+from thatkitebot.base.util import ChannelTypeLists as ctl
 import thatkitebot.embeds.starboard
+import thatkitebot.tkb_redis
+import thatkitebot.tkb_redis.cache
 from thatkitebot.tkb_redis.settings import RedisFlags as flags
 import thatkitebot.embeds.starboard
 from thatkitebot.embeds.starboard import generate_embed
 from thatkitebot.base.exceptions import *
 from thatkitebot.base.util import set_up_guild_logger
 from thatkitebot.cogs.bookmark import Bookmark
+from thatkitebot.types.message import Message
+import thatkitebot.types.message
 
 #endregion
 
@@ -126,32 +132,49 @@ class StarboardSettings:
 #region Functions
 
 
-async def check_if_already_posted(message: discord.Message, starboard_channel: discord.TextChannel, bot_id: int):
+def process_message(starmsg: Message, original_message: Message, starboard_channel: discord.TextChannel, bot_id: int):
+        # ignore messages without embeds
+    if not starmsg.embeds:
+        return None
+
+    # ignore messages that are not somehow from the channel
+    if starmsg.channel is not starboard_channel:
+        return None
+    
+    # ignore messages that weren't sent by the bot
+    if starmsg.author.id != bot_id:
+        return None
+    try:
+        # FIXME
+        # ignore messages with empty embeds
+        
+        # make sure that the starred message is correct
+        if original_message.jump_url in starmsg.embeds[0].description and starmsg.embeds[0].timestamp == original_message.created_at:
+            return starmsg
+        
+    # continue if this dumb error ever occurs
+    except TypeError:
+        return None
+
+    return None
+
+
+async def check_if_already_posted(r_cache: thatkitebot.tkb_redis.cache.RedisCacheAsync, message: Message, starboard_channel: discord.TextChannel, bot_id: int):
     """
     Check if the message has already been posted to the starboard
     """
-    async for starmsg in starboard_channel.history(limit=300):
-        # ignore messages without embeds
-        if not starmsg.embeds:
+    # first look if we REALLY don't have any starboard messages checking the channel history we have cached
+    async for starmsg in r_cache.channel_history_iter(starboard_channel, bot_id, 100):
+        if (found := process_message(starmsg, message,starboard_channel,bot_id)) is not None:
+            return found
+        else:
             continue
 
-        # ignore messages that are not somehow from the channel
-        if starmsg.channel is not starboard_channel:
-            continue
-        
-        # ignore messages that weren't sent by the bot
-        if starmsg.author.id != bot_id:
-            continue
-        try:
-            # FIXME
-            # ignore messages with empty embeds
-            
-            # make sure that the starred message is correct
-            if message.jump_url in starmsg.embeds[0].description and starmsg.embeds[0].timestamp == message.created_at:
-                return starmsg
-            
-        # continue if this dumb error ever occurs
-        except TypeError:
+    # use the much slower API to check again just in case the cache doesn't know about some message, we will only check 20 messages though
+    async for starmsg in starboard_channel.history(limit=20):
+        if (found := process_message(starmsg, message,starboard_channel,bot_id)) is not None:
+            return found
+        else:
             continue
 
     return None
@@ -210,7 +233,7 @@ class StarboardCog(commands.Cog):
             self,
             ctx: discord.ApplicationContext,
             threshold: discord.Option(int, "Minimum amount of emojis", required=True, min_value=1, max_value=99), # type: ignore
-            channel: discord.Option(discord.abc.GuildChannel, "The channel where starboard messages are sent", required=True), # type: ignore
+            channel: discord.Option(SlashCommandOptionType.channel, "The channel where starboard messages are sent", required=True, channel_types=ctl.NO_THREADS_TEXT), # type: ignore
             emoji: discord.Option(str, "The emoji to count", required=True), # type: ignore
             max_age: discord.Option(str, "The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False), # type: ignore
             enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False), # type: ignore
@@ -254,8 +277,8 @@ class StarboardCog(commands.Cog):
             ctx: discord.ApplicationContext,
             threshold: discord.Option(int, description="Minimum amount of emojis", required=True, min_value=1, max_value=99), # type: ignore
             emoji: discord.Option(str, description="The emoji to count", required=True), # type: ignore
-            starboard_channel: discord.Option(discord.abc.GuildChannel, description="The channel where starboard messages are sent", required=True), # type: ignore
-            listen_channel: discord.Option(discord.abc.GuildChannel, description="The channel to listen in.", required=True), # type: ignore
+            starboard_channel: discord.Option(SlashCommandOptionType.channel, description="The channel where starboard messages are sent", required=True, channel_types=ctl.NO_THREADS_TEXT), # type: ignore
+            listen_channel: discord.Option(SlashCommandOptionType.channel, description="The channel to listen in.", required=True), # type: ignore
             max_age: discord.Option(str, description="The maximum age of messages added to starboard. Format like `1y 2w 3d 4h 5m 6s`", required=False), # type: ignore
             enable_video: discord.Option(bool, description="Whether to enable or disable videos", required=False), # type: ignore
             ignore_threads: discord.Option(bool, "Ignore all messages in Threads", required=False) # type: ignore
@@ -319,18 +342,18 @@ class StarboardCog(commands.Cog):
             await self.redis.sadd(name, user.id)
             return False
         
-    async def blacklist_toggle_all_threads(self, ctx, guild: discord.Guild, user: discord.User | discord.Member) -> bool:
+    async def blacklist_toggle_all_threads(self, ctx, guild: discord.Guild, channel: discord.TextChannel) -> bool:
         name = f"thread_blacklist:{guild.id}"
         logger = set_up_guild_logger(guild.id)
 
         if await self.redis.sismember(name):
-            logger.info(f"STARBOARD: User {ctx.author.name} unblacklisted #{user.name}'s threads in {ctx.guild.name}")
+            logger.info(f"STARBOARD: User {ctx.author.name} unblacklisted #{channel.name}'s threads in {ctx.guild.name}")
 
-            await self.redis.srem(name, user.id)
+            await self.redis.srem(name, channel.id)
             return True
         else:
-            logger.info(f"STARBOARD: User {ctx.author.name} blacklisted #{user.name}'s threads in {ctx.guild.name}")
-            await self.redis.sadd(name, user.id)
+            logger.info(f"STARBOARD: User {ctx.author.name} blacklisted #{channel.name}'s threads in {ctx.guild.name}")
+            await self.redis.sadd(name, channel.id)
             return False
     #endregion
 
@@ -339,7 +362,7 @@ class StarboardCog(commands.Cog):
     async def blacklist_channel(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.TextChannel, description="The channel you want to blacklist", required=True) # type: ignore
+            channel: discord.Option(SlashCommandOptionType.channel, description="The channel you want to blacklist", required=True, channel_types=ctl.ALL_TEXT_SERVER) # type: ignore
     ):
         await ctx.defer()
 
@@ -369,11 +392,11 @@ class StarboardCog(commands.Cog):
         else:
             await ctx.followup.send(f"Removed {user.name} from the starboard blacklist.")
 
-    @_blacklist.command(name="thread", description="Toggle blacklist for all threads of a channel")
+    @_blacklist.command(name="thread", description="Toggle blacklist for a specific thread")
     async def blacklist_all_threads(
             self,
             ctx: discord.ApplicationContext,
-            thread: discord.Option(discord.Thread, description="The thread you want to blacklist", required=True) # type: ignore
+            thread: discord.Option(SlashCommandOptionType.channel, description="The thread you want to blacklist", required=True, channel_types=ctl.THREADS) # type: ignore
     ):
         await ctx.defer()
 
@@ -387,11 +410,11 @@ class StarboardCog(commands.Cog):
             await ctx.followup.send(f"Removed {thread.mention} from the starboard blacklist.")
     
 
-    @_blacklist.command(name="threads", description="Toggle blacklist for all threads of a channel")
+    @_blacklist.command(name="channel_threads", description="Toggle blacklist for all threads of a channel")
     async def blacklist_all_threads(
             self,
             ctx: discord.ApplicationContext,
-            channel: discord.Option(discord.TextChannel, description="The channel", required=True) # type: ignore
+            channel: discord.Option(SlashCommandOptionType.channel, description="The channel", required=True, channel_types=ctl.NO_THREADS_TEXT) # type: ignore
     ):
         await ctx.defer()
 
@@ -534,7 +557,8 @@ class StarboardCog(commands.Cog):
 
     #region main listeners
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    async def on_raw_reaction_add(self, payload:\
+                                   discord.RawReactionActionEvent):
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
@@ -557,6 +581,10 @@ class StarboardCog(commands.Cog):
             if await self.redis.sismember(f"starboard_blacklist:{payload.guild_id}", str(payload.channel_id)):
                 return
             
+            # check if user has been blacklisted
+            if await self.redis.sismember(f"user_blacklist:{payload.guild_id}", str(payload.user_id)):
+                return  
+
             # see if we have the channel already cached
             channel = await self.bot.get_or_fetch_channel(payload.channel_id)
 
@@ -575,9 +603,13 @@ class StarboardCog(commands.Cog):
                 if await self.redis.sismember(f"starboard_blacklist:{channel.guild.id}", str(channel.parent_id)):
                     return
                 
+                # check if all threads of this channel have been blacklisteds
+                if await self.redis.sismember(f"thread_blacklist:{channel.guild.id}", str(channel.parent_id)):
+                    return
+                
                 if settings.ignore_threads:
                     return
-
+                
             # load the message into the internal cache
             message = await self.bot.get_or_fetch_message(payload.message_id, channel_id=payload.channel_id)
 
@@ -588,6 +620,10 @@ class StarboardCog(commands.Cog):
                         return
 
                     if settings.mode == StarboardMode.SINGLE_CHANNEL_THRESHOLD and str(message.channel.id) not in settings.channels:
+                        return
+
+                    #ignore people starring themselves
+                    if message.author.id == payload.user_id and not self.bot.debug_mode:
                         return
 
                     # check if the star emoji is the same as the starboard emoji
@@ -624,7 +660,8 @@ class StarboardCog(commands.Cog):
 
                         # check starboard channel history if message was not found in the database
                         if not in_database:
-                            _starboard_message = await check_if_already_posted(message, settings.channel, self.bot.user.id)
+                            _starboard_message = await check_if_already_posted(self.bot.r_cache, message, settings.channel, self.bot.user.id)
+
                             if _starboard_message is not None:
                                 starboard_message = _starboard_message
 
@@ -637,7 +674,7 @@ class StarboardCog(commands.Cog):
                         else:
                             # try fetching the original message with the id from the database
                             try:
-                                starboard_message = await settings.channel.fetch_message(in_database)
+                                starboard_message = await self.bot.get_or_fetch_message(in_database)
                                 already_posted = True
 
                             except discord.NotFound:
@@ -650,7 +687,15 @@ class StarboardCog(commands.Cog):
                             if settings.max_age != 0 and check_message_age(payload.message_id, settings.max_age):
                                 return
                             
-                            embed, pfp_file, video_file = await generate_embed(message, count, settings.emoji, aiohttp_session=self.bot.aiohttp_session, return_file=settings.video_enabled)
+                            embed, pfp_file, video_file = await generate_embed(
+                                message=message,
+                                count=count,
+                                star_emoji=settings.emoji,
+                                aiohttp_session=self.bot.aiohttp_session,
+                                return_file=settings.video_enabled,
+                                tenor_token=self.bot.tenor_token
+                            )
+
                             new_message = None
 
                             if video_file:
@@ -663,9 +708,16 @@ class StarboardCog(commands.Cog):
                             await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
                             return
 
-                        elif already_posted and isinstance(starboard_message, discord.Message):
+                        elif already_posted and isinstance(starboard_message, Message):
                             # update the starboard message
-                            embed, pfp_file, _ = await generate_embed(message, count, settings.emoji, aiohttp_session=self.bot.aiohttp_session)
+                            embed, pfp_file, _ = await generate_embed(
+                                message,
+                                count,
+                                settings.emoji,
+                                aiohttp_session=self.bot.aiohttp_session,
+                                return_file=True,
+                                tenor_token=self.bot.tenor_token
+                            )
                             await starboard_message.edit(embed=embed, files=[pfp_file])
 
                         else:
@@ -680,6 +732,9 @@ class StarboardCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx: discord.ApplicationContext, exception):
+        if ctx.cog is not self:
+            return
+        
         if ctx and isinstance(exception.original, StarboardDisabledException):
                 await ctx.followup.send("Starboard has been disabled. Please re-enable it to change settings.")
         else:
@@ -689,7 +744,7 @@ class StarboardCog(commands.Cog):
     @commands.command(hidden=True)
     async def embed_test(self, ctx: commands.Context):
         msg = await self.bot.get_or_fetch_message(ctx.message.reference.message_id, ctx.message.reference.channel_id) if ctx.message.reference else ctx.message
-        embed, pfp_file, video_file = await generate_embed(msg, randint(1, 1000), "⭐", True, self.bot.aiohttp_session)
+        embed, pfp_file, video_file = await generate_embed(msg, randint(1, 1000), "⭐", True, self.bot.aiohttp_session,self.bot.tenor_token)
         if video_file:
             await ctx.send(embed=embed,files=[pfp_file, video_file], view=StarboardView(self.bookmark_redis))
         else:
