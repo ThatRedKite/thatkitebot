@@ -26,26 +26,25 @@ SOFTWARE.
 
 #region imports
 import io
-from random import randint
 
-from discord import Embed, Message, Color, File, EmbedField, ButtonStyle
-from discord import ui
+from discord import Embed, Message, Color, File, EmbedField
 
-from thatkitebot.base.image_stuff import get_embed_urls
+from thatkitebot.base.image_stuff import get_embed_urls, get_tenor_image_url
 from thatkitebot.base.url import get_avatar_url
 #endregion
 
 class StarboardEmbed(Embed):
-    def __init__(self, message:Message, emoji: str, count: int):
+    def __init__(self, message:Message, emoji: str, count: int, color: Color = Color.gold()):
         self.message = message
         self.emoji = emoji
         self.count = count
         self._video_url: str = ""
+        self._tenor_url: str = ""
         self.url = None
         self.author = None
         self.footer = None
         self.image = None
-        self.colour = Color.gold()
+        self.colour = color
         self.timestamp = message.created_at
         self.type = "rich" 
         self._fields = []
@@ -54,17 +53,15 @@ class StarboardEmbed(Embed):
         self._set_video = False
         self._show_channel_name = False
         self._show_nickname = False
+        self._set_tenor_gif = False
         
         self.title = f"{message.author.name}"
         if self._show_nickname and message.author.nick is not None:
             self.title += f" ({message.author.nick})"
 
-        self.description=""
-        #self.description = f"{message.jump_url}"
+        self.description = f"{message.jump_url}"
 
         self.append_field(self.gen_count_field())
-        self.append_field(self.gen_count2_field())
-        self.append_field(EmbedField(value="​ ", name="​", inline=True))
 
         if content_field := self.gen_content_field():
             self.append_field(content_field)
@@ -83,6 +80,10 @@ class StarboardEmbed(Embed):
                 break
 
             if content:
+                if url and content_type == "gifv":
+                    self._tenor_url = url
+                    self._set_tenor_gif = True
+
                 # only content is an image url
                 if url in content:
                     content = content.replace(url, f"[{content_type} link]({url})")
@@ -110,7 +111,6 @@ class StarboardEmbed(Embed):
                     if content_type == "image" and not self._set_images:
                         self.set_image(url=url)
                         self._set_images = True
-
                     elif content_type == "video":
                         self._video_url = url
                         self._set_video = True
@@ -140,7 +140,6 @@ class StarboardEmbed(Embed):
         
         return EmbedField(name="Original Message", value=self.message.jump_url, inline=True)
         
-
     async def set_pfp(self, aiohttp) -> File:
         async with aiohttp.get(get_avatar_url(self.message.author)) as resp:
             self.set_thumbnail(url=f"attachment://{self.message.author.id}.{resp.content_type.split('/')[1]}")
@@ -157,10 +156,16 @@ class StarboardEmbed(Embed):
             content_type = content_type.replace("quicktime", "mov")
             return File(fp=io.BytesIO(await resp.read()), filename=f"{self.message.id}.{content_type}")
 
+    async def detenorize_gif(self, aiohttp_session, token) -> File:
+        if self._tenor_url and self._set_tenor_gif and token:
+            url = await get_tenor_image_url(aiohttp_session, self._tenor_url, token)
+            self.set_image(url=url)
+
 #region main code
-async def generate_embed(message: Message, count: int, star_emoji: str, return_file=False, aiohttp_session=None) -> tuple[StarboardEmbed,File]:
+async def generate_embed(message: Message, count: int, star_emoji: str, return_file=False, aiohttp_session=None, tenor_token=None) -> tuple[StarboardEmbed,File]:
     embed = StarboardEmbed(message, star_emoji, count)
-    
+    await embed.detenorize_gif(aiohttp_session, tenor_token)
+
     if return_file:
         pfp_file = await embed.set_pfp(aiohttp_session)
 
