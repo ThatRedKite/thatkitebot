@@ -27,8 +27,6 @@ SOFTWARE.
 #region Imports
 import textwrap
 import re
-import typing
-import asyncio
 from unidecode import unidecode
 from random import choice, Random
 from datetime import datetime
@@ -36,13 +34,18 @@ from datetime import datetime
 import discord
 import markovify
 from discord.ext import commands
+from discord import ChannelType
 from uwuipy import uwuipy
 
 from thatkitebot.base import url, util
 from thatkitebot.base.util import PermissonChecks as pc
+from thatkitebot.base.util import ChannelTypeLists as CTL
 from thatkitebot.base.exceptions import NotEnoughMessagesException
-from thatkitebot.tkb_redis.cache import RedisCacheAsync, CacheInvalidMessageException
+from thatkitebot.tkb_redis.cache import RedisCacheAsync
+from thatkitebot.types.message import Message
 #endregion
+
+
 
 #region Cog
 class FunStuff(commands.Cog, name="fun commands"):
@@ -50,13 +53,82 @@ class FunStuff(commands.Cog, name="fun commands"):
     Miscellaneous 'fun' commands that don't fit anywhere else.
     """
     def __init__(self, bot):
-        self.bot: discord.Client = bot
-        self._last_member = None
+        self.bot: discord.Bot = bot
         self.dirname = bot.dir_name
         self.redis = bot.redis_cache
         self.cache: RedisCacheAsync = bot.r_cache
 
-        self.history_semaphore = asyncio.Semaphore(2)
+    @staticmethod
+    def _last_time(messages: list[Message]) -> datetime | None:
+        if (l := len(messages)) == 0:
+            return None
+        elif l == 1:
+            return messages[0].created_at
+        elif l > 1:
+            # sort messages by time
+            a: list[Message] = sorted(messages, key=lambda m: m.created_at.timestamp(), reverse=True)
+            return a[0].created_at
+        
+    async def _generate_markov(self, member: discord.Member = None, channel: discord.TextChannel = None, include_threads: bool = False, length: int = 4) -> discord.Embed:
+        messages = []
+        api_counter = 0
+        cache_counter = 0
+
+        if channel and member:
+            async for message in self.cache.channel_history_iter(channel, member.id, limit=None):
+                messages.append(message)
+                cache_counter += 1
+        
+            if len(messages) < 200:
+                async for message in channel.history(limit=1000, before=self._last_time(messages)).filter(lambda m: m not in messages and m.author.id == member.id):
+                    messages.append(message)
+                    await self.cache.add_message_object(message)
+                    api_counter += 1
+
+        elif channel and not member:
+            async for message in self.cache.channel_history_iter(channel, limit=None):
+                messages.append(message)
+                cache_counter += 1
+
+            if len(messages) < 200:
+                async for message in channel.history(limit=1000, before=self._last_time(messages)).filter(lambda m: m not in messages):
+                    messages.append(message)
+                    await self.cache.add_message_object(message)
+                    api_counter += 1
+
+
+        output = set()
+        model = markovify.NewlineText("\n".join([m.clean_content for m in messages]))
+
+        for _ in range(length):
+            if sentence := model.make_sentence(tries=100):
+                output.add(sentence)
+        
+        embed = discord.Embed(description=". ".join(output))
+        if member and channel:
+            embed.title = f"Markov output for {member.mention} in {channel.mention}"
+            embed.color = member.color or member.accent_color
+            embed.set_thumbnail(url=url.get_avatar_url(member))
+        elif channel and not member:
+            embed.title = f"Markov output for {channel.mention}"
+        else:
+            embed.title = f"Markov output ..."            
+        embed.set_footer(text=f"Channel: #{message.channel.name} | Messages: {cache_counter + api_counter} (Cache: {cache_counter}, API: {api_counter})")
+
+        return embed
+
+    @discord.command(name="markov", description="Get markov chain output for a specified channel (all users)", guild_ids=[759419755253465188])
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    async def _markov_slash(
+        self,
+        ctx: discord.ApplicationContext,
+        channel: discord.Option(discord.TextChannel, required=True, channel_types=CTL.DEFAULT_CHANNEL_TYPES), # type: ignore
+        user: discord.Option(discord.Member,"When set, only messages from this user will be used", required=False), # type: ignore
+        length: discord.Option(int, "Number of sentences to generate", min_value=1, max_value=10, default=4, required=False), # type: ignore
+    ):
+        await ctx.defer()
+        e = await self._generate_markov(member=user, channel=channel, length=length)
+        await ctx.respond(embed=e)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
@@ -72,65 +144,10 @@ class FunStuff(commands.Cog, name="fun commands"):
     async def inspirobot(self, ctx) -> None:
         """Sends a motivational quote from inspirobot.me."""
         await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
-
-    @commands.cooldown(5, 60, commands.BucketType.channel)
-    @commands.command(name="markov", aliases=["mark", "m"])
-    async def _markov(self, ctx: commands.Context, user: typing.Optional[discord.User], channel: typing.Optional[discord.TextChannel]) -> None:
-        """
-        This command generates a bunch of nonsense text by feeding your messages to a markov chain.
-        Optional Arguments: `user` and `channel` (they default to yourself and if no channel is provided,
-        it will use the channel the command was issued in.)
-        """
-        # FIXME
-        if not user:
-            user = ctx.message.author  # default to message author
-
-        if not channel:
-            channel = ctx.channel # default to current channel
-
-        async with ctx.channel.typing(), self.history_semaphore:
-            try:
-                # try to get the messages from the cache
-                message_list = await self.cache.get_messages(ctx.guild.id, channel.id, user.id)
-                # populate the cache if there are less than 300 messages
-                if not len(message_list) > 300:
-                    # we have a channel but not enough messages, so we iterate over the user history in this channel
-                    async for message in channel.history(limit=5000).filter(lambda m: m.author is user):
-                        try:
-                            await self.cache.add_message_object(message)  # add the message to the cache
-                        except CacheInvalidMessageException:
-                            pass
-                        message_list.append(str(message.clean_content))  # add the message to the message_list
-
-            except discord.Forbidden:
-                await util.errormsg(ctx, "I don't have access to that channel <:molvus:798286553553436702>")
-                return
-
-            try:
-                # since people often don't use punctuation, we just use newline-separated text.
-                model = markovify.NewlineText("\n".join(message_list))  # generate the model from the messages
-            except KeyError:
-                raise NotEnoughMessagesException
-
-            sentences = set()  # create a set to avoid duplicate messages (only works sometimes)
-            for _ in range(10):
-                if sentence := model.make_sentence(tries=30):
-                    sentences.add(sentence)  # add the sentence to the set
-                else:
-                    sentence = model.make_short_sentence(5)  # try to make a short sentence instead
-                    if sentence:
-                        sentences.add(sentence)  # and add it to the set
-
-            if sentences:
-                out = ". ".join(sentences)  # join the strings together with periods
-                embed = discord.Embed(title=f"Markov chain output for {user.display_name}:", description=f"*{out}*")
-                embed.set_footer(text=f"User: {str(user)}, channel: {str(channel)}")
-                embed.color = 0x6E3513
-                embed.set_thumbnail(url=user.avatar.url)
-                await ctx.send(embed=embed)
-
-            else:
-                raise NotEnoughMessagesException
+    
+    @commands.command(name="markov")
+    async def _markov(self, ctx) -> None:
+       await ctx.reply(f"This command has been replaced by {self._markov_slash.mention}.")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
@@ -203,24 +220,6 @@ class FunStuff(commands.Cog, name="fun commands"):
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.check(pc.can_send_image)
-    @commands.command(name="fakewaifu")
-    async def _twdne(self, ctx) -> None:
-        """Send an image from thiswaifudoesnotexist.net"""
-        file, embed = await url.twdne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
-
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(pc.can_send_image)
-    @commands.command(name="fakefur", hidden=True)
-    async def _tfdne(self, ctx) -> None:
-        """Send an image from thisfursonadoesnotexist.com <:amsmiles:910537357613228072>"""
-        file, embed = await url.tfdne(self.bot.aiohttp_session)
-        async with ctx.typing():
-            await ctx.send(file=file, embed=embed)
-
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.check(pc.can_send_image)
     @commands.command(name="xkcd", aliases=["comic", "xkcdcomic"])
     async def _xkcd(self, ctx, *, args=None) -> None:
         """Send a random or specific xkcd comic"""
@@ -244,7 +243,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         else:
             ref = ctx.message.reference
             seed = ref.message_id
-            # FIXME
+            # FIXME ?
             message = await self.bot.get_or_fetch_message(ref.message_id, ref.channel_id)
             msg = message.content
 
@@ -278,15 +277,10 @@ class FunStuff(commands.Cog, name="fun commands"):
                 await ctx.send(msg)
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, exception) -> None:
-        if not isinstance(exception, (commands.CommandError, commands.CommandInvokeError)):
+    async def on_command_error(self, ctx: commands.Context, exception) -> None:
+        if ctx.cog is not self:
             return
-
-        try:
-            if isinstance(exception.original, NotEnoughMessagesException):
-                await ctx.send("Failed to generate a markov output. Please try another user or channel.")
-        except:
-            return
+        
 #endregion
 
 def setup(bot) -> None:
