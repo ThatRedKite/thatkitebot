@@ -572,11 +572,13 @@ class RedisCacheSyncPartial:
         entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
         
         # fix the missing channel_id in message references
-        # if we have a forwarded message, don't even bother trying to get the ids, 
+        # if we have a forwarded message, don't even bother trying to get the ids as they might be from an unknown server 
         if (ref_data := message_data.get("message_reference")) is not None:
-            ref_data.update({"channel_id":str(self.get_channel_id(ref_data["message_id"])) or str(channel_id)})
-            # try to remove referenced message to avoid storing messages twice
+            if mid := ref_data.get("message_id"):
+                ref_data.update({"channel_id":str(self.get_channel_id(mid)) or str(channel_id)})
+            
             try:
+                # try to remove referenced message to avoid storing messages twice
                 message_data.pop("referenced_message")
             except KeyError:
                 pass
