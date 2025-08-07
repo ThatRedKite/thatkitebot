@@ -144,6 +144,7 @@ class ThatKiteBot(commands.Bot, ABC):
     def __init__(self, command_prefix, dir_name, tt, help_command=None, description=None, **options):
         self.logger = logger
         self._connection = None
+        self.case_insensitive = True
 
         self.logger.info("Redis: Trying to connect")
         try:
@@ -233,26 +234,6 @@ class ThatKiteBot(commands.Bot, ABC):
     async def fetch_channel(self, channel_id: int, /) -> GuildChannel | PrivateChannel | discord.Thread:
         return await self.get_or_fetch_channel(channel_id)
     
-#    async def add_message(self, message: discord.Message):
-#        async with self.cache_lock:
-#            await self.r_cache.add_message_object(message)
-
-#    async def add_reaction(self, payload: discord.RawReactionActionEvent):
-#        async with self.cache_lock:
-#            pass
-        
-#    async def get_message(self, message_id: int, guild_id = None, channel_id=None, author_id=None) -> discord.Message | None:
-#        async with self.cache_lock:
-#            return await self.r_cache.get_message_object(message_id,guild_id,channel_id, author_id, fetch=True)
-
-#    async def fetch_user(self, user_id: int) -> discord.User:
-#        async with self.cache_lock:
-#            return await self.r_cache.get_user_object(user_id)
-    
-#    async def add_user(self, user: discord.User):
-#        async with self.cache_lock:
-#            await self.r_cache.add_user(user)
-
     async def mass_delete_raw(self, payload: discord.RawBulkMessageDeleteEvent):
         async with self.cache_lock:
             await self.r_cache.mass_expire_messages(payload.message_ids, payload.guild_id, payload.channel_id)
@@ -261,18 +242,6 @@ class ThatKiteBot(commands.Bot, ABC):
         async with self.cache_lock:
             await self.r_cache.expire_message_now(payload.message_id, payload.guild_id, payload.channel_id)
 
-#    async def get_user(self, id: int) -> discord.User | None:
-#        async with self.cache_lock:
-#            return await self.r_cache.get_user_object(id)
-#        
-#    async def get_guild(self, id: int) -> discord.Guild | None:
-#        async with self.cache_lock:
-#            return await self.r_cache.get_guild_object(id)
-#    
-#    async def fetch_guild(self, guild_id: int, /, *, with_counts=True) -> discord.Guild:
-#        async with self.cache_lock:
-#            return await self.r_cache.get_guild_object(guild_id,with_counts)
-        
            
     # let's use this to set up some stuff that requires asyncio stuff to work
     async def start(self, token: str, *, reconnect: bool = True) -> None:
@@ -296,8 +265,6 @@ class ThatKiteBot(commands.Bot, ABC):
 
         self.logger.info("Trying to connect to Discord…")
         await self.connect(reconnect=reconnect)
-    
-
 #endregion
 
 

@@ -78,7 +78,8 @@ class CogName(commands.Cog, name="Cog Name"): #replace with actual name
     @commands.is_owner()
     @dbg.command(name="wand_cleanup")
     async def _error_test_slash(self, ctx: discord.ApplicationContext):
-       wand.resource.shutdown()
+        
+        gc.collect()        
 
     @commands.is_owner()
     @dbg.command(name="test_error")

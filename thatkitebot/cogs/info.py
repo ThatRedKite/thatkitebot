@@ -307,7 +307,7 @@ class InfoCog(commands.Cog, name="Info"):
     async def edit_field(
         self, ctx: discord.ApplicationContext,
         section: Option(str, "Pick a section!", required=True, autocomplete=get_sections), # type: ignore
-        option: Option(str, "Choose option.", required=True, autocomplete=get_options)
+        option: Option(str, "Choose option.", required=True, autocomplete=get_options)  # type: ignore
     ) -> None: # type: ignore
         """Add, edit or remove a field in section"""
 

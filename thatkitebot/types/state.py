@@ -138,8 +138,10 @@ class PartiallyCachedState(discord.state.ConnectionState):
         try:
             msg_object = Message(state=self, channel=channel, data=data)
             return msg_object
+        
         # TODO: fix this
         except Exception as e:
+            pass
             raise e
         
     def _get_message(self, msg_id: int) -> Message:
