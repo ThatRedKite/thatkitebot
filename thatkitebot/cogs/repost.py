@@ -35,9 +35,8 @@ import discord
 from redis import asyncio as aioredis
 from discord.ext import commands
 
-from thatkitebot.base.image_stuff import hasher, download_image, get_image_urls
+from thatkitebot.base.image_stuff import hasher, download_image, get_image_urls, get_tenor_image_url
 from thatkitebot.base.util import ids_from_link, set_up_guild_logger
-from thatkitebot.base.url import TENOR_PATTERN
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis import cache as ca
 from thatkitebot.base.util import PermissonChecks as pc
@@ -66,24 +65,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         self.hasher_pool = bot.process_pool
 
     #region Methods
-    async def get_tenor_image(self, url:str, token:str) -> str:
-        """
-        Downloads a tenor gif and returns the hash of the image.
-        """
-        # define the header and the payload:
-        tenor = TENOR_PATTERN.findall(url)
-        if not tenor:
-            return
-        
-        headers = {"User-Agent": "ThatKiteBot/4.0", "content-type": "application/json"}
-        payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
 
-        async with self.aiohttp.get(url="https://api.tenor.com/v1/gifs", params=payload, headers=headers) as r:
-            gifs = await r.json()
-            url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
-
-        async with self.aiohttp.get(url) as r2:
-             return await hasher(self.loop, await r2.read(), self.hasher_pool)
 
     async def channel_is_enabled(self, channel) -> bool:
         """
@@ -98,7 +80,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     async def hash_from_url(self, urls: list[str]):
         for url in urls:
             image_data = await download_image(self.aiohttp, url)
-            yield hasher(image_data)
+            yield await hasher(self.loop, image_data)
 
     async def extract_imagehash(self, message):
         """
@@ -128,9 +110,10 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                     case "gifv":
                         #  this feature *requires* a tenor API Token!
                         if self.tt:
-                            # download and hash the teno r gif
+                            # download and hash the tenor gif
                             try:
-                                yield await self.get_tenor_image(message.content, self.tt) or None
+                                async with self.aiohttp.get(get_tenor_image_url(message.content)) as r:
+                                    yield hasher(self.loop, await r.read(), self.hasher_pool)
                             except:
                                 yield None
                     case "video":
@@ -217,27 +200,22 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                 channel_id = message.channel.id
 
             # load the message from the discord api
-
             urls = []
-            # todo see if tenor stuff works
-            try:
-                # try to get the message from the cache to get the attachment urls
-                cache = ca.RedisCacheAsync(self.cache_redis, self.bot, auto_exec=True)
-                ids, message_json = await cache.get_message_object(message_id, ctx.guild.id)
-                urls = [url for url in message_json["urls"]]
 
-            except ca.CacheInvalidMessageException:
-                # oh no, the message is not cached, time to use the Discord API
-                channel = await self.bot.fetch_channel(channel_id)
-                message = await channel.fetch_message(message_id)
-                urls = await get_image_urls(message, video=False, gifv=True)
+            message = await self.bot.get_or_fetch_message(message_id, channel_id)
+            urls = await get_image_urls(message, video=False, gifv=True)
 
-            async with self.repost_database_lock:
+            if not urls:
+                await ctx.send("There doesn't seem to be any images in this message.")
+                return
+
+            async with self.repost_database_lock: # lock the db
                 async for imghash in self.hash_from_url(urls):
                     if not imghash:
                         continue
+                    
+                    repost = False    
                     try:
-                        repost = False
                         async for distance, hash_key in self.check_distance(imghash):
                             if distance < 20:
                                 repost = True
@@ -259,6 +237,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                         if not repost:
                             # the message seems to be the original
                             await ctx.send("This seems to be the original image.")
+
                     except TypeError:
                         # the message is not an image
                         await ctx.send("There doesn't seem to be any images in this message.")
@@ -271,7 +250,6 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     async def on_message(self, message: discord.Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        
         #ignore DMs
         if not message.guild:
             return
@@ -279,7 +257,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
         if not message.embeds and not message.attachments:
             return  # return if the message does not contain an image
 
-        if not await self.channel_is_enabled(message.channel) or message.author.bot and message.guild:
+        if not await self.channel_is_enabled(message.channel) or message.author.bot:
             return  # return, if the channel is not enabled or the message is from a bot and not a DM
 
         repost = False
