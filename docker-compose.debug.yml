@@ -34,4 +34,4 @@ services:
   redis_cache:
     container_name: thatkitebot_redis_cache
     image: "valkey/valkey:alpine"
-    entrypoint: valkey-server --appendonly no --hz 50
+    entrypoint: valkey-server --save "" --appendonly no --hz 50
