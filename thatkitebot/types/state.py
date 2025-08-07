@@ -135,8 +135,13 @@ class PartiallyCachedState(discord.state.ConnectionState):
             self._view_store.update_from_message(raw.message_id, data["components"])
 
     def create_message(self, *, channel, data) -> Message:
-        return Message(state=self, channel=channel, data=data)
-
+        try:
+            msg_object = Message(state=self, channel=channel, data=data)
+            return msg_object
+        # TODO: fix this
+        except Exception as e:
+            raise e
+        
     def _get_message(self, msg_id: int) -> Message:
         if (data := self.r_cache.get_message_dict(msg_id)) is not None:
             channel_id = self.r_cache.get_channel_id(msg_id)

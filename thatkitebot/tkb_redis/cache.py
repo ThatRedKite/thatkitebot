@@ -61,10 +61,11 @@ class RedisCacheAsync:
         self.autoexpire: timedelta = timedelta(weeks=2)
         
         self.lut            =   aioredis.Redis(host="redis", db=15, decode_responses=False)
+        self.message_cache  =   aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
         self.guild_cache    =   aioredis.Redis(host="redis_cache", db=1, decode_responses=False)
         self.channel_cache  =   aioredis.Redis(host="redis_cache", db=2, decode_responses=False)
         self.user_cache     =   aioredis.Redis(host="redis_cache", db=3, decode_responses=False)
-        self.message_cache  =   aioredis.Redis(host="redis_cache", db=4, decode_responses=False)
+        
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
         self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
@@ -132,11 +133,11 @@ class RedisCacheAsync:
         # User Pipeline 
         await self.user_pipeline.execute()
 
-        if data := await self.compressed_read_key(self.channel_cache, str(user_id)):
+        if data := await self.compressed_read_key(self.user_cache, str(user_id)):
             return data
         else:
             data = await self.state.http.get_user(user_id)
-            await self.compressed_write_key(self.channel_cache, str(user_id), data)
+            await self.compressed_write_key(self.user_cache, str(user_id), data)
             return data
 
     async def update_message_raw(self, payload: discord.RawMessageUpdateEvent):
@@ -307,7 +308,7 @@ class RedisCacheAsync:
         # fix the missing channel_id in message references
         # if we have a forwarded message, don't even bother trying to get the ids, 
         if (ref_data := message_data.get("message_reference")) is not None:
-            ref_data.update({"channel_id":str(self.get_channel_id(ref_data["message_id"])) or str(channel_id)})
+            ref_data.update({"channel_id":str(await self.get_channel_id(ref_data["message_id"])) or str(channel_id)})
             # try to remove referenced message to avoid storing messages twice
             try:
                 message_data.pop("referenced_message")
@@ -426,7 +427,7 @@ class RedisCacheSyncPartial:
         self.autoexpire: timedelta = timedelta(weeks=2)
         
         self.lut            =   syncredis.Redis(host="redis", db=15, decode_responses=False)
-        self.message_cache  =   syncredis.Redis(host="redis_cache", db=4, decode_responses=False)
+        self.message_cache  =   syncredis.Redis(host="redis_cache", db=0, decode_responses=False)
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
         self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
@@ -604,10 +605,10 @@ class RedisCacheSync(RedisCacheSyncPartial):
         self.autoexpire: timedelta = timedelta(weeks=2)
         
         self.lut            =   syncredis.Redis(host="redis", db=15, decode_responses=False)
+        self.message_cache  =   syncredis.Redis(host="redis_cache", db=0, decode_responses=False)
         self.guild_cache    =   syncredis.Redis(host="redis_cache", db=1, decode_responses=False)
         self.channel_cache  =   syncredis.Redis(host="redis_cache", db=2, decode_responses=False)
         self.user_cache     =   syncredis.Redis(host="redis_cache", db=3, decode_responses=False)
-        self.message_cache  =   syncredis.Redis(host="redis_cache", db=4, decode_responses=False)
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
         self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
@@ -640,7 +641,7 @@ class RedisCacheSync(RedisCacheSyncPartial):
         # User Pipeline 
         self.user_pipeline.execute()
 
-        if data := self.compressed_read_key(self.channel_cache, str(user_id)):
+        if data := self.compressed_read_key(self.user_cache, str(user_id)):
             return data
         
         return None
