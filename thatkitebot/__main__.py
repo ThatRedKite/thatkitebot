@@ -149,15 +149,15 @@ class ThatKiteBot(commands.Bot, ABC):
         self.logger.info("Redis: Trying to connect")
         try:
             # db 0 is free at the moment as it formerly contained the auth stuff
-            self.redis = aioredis.Redis(host="redis", db=1, decode_responses=True)
-            self.redis_repost = aioredis.Redis(host="redis", db=2, decode_responses=True)
-            self.redis_welcomes = aioredis.Redis(host="redis", db=3, decode_responses=True)
-            self.redis_bookmarks = aioredis.Redis(host="redis", db=4, decode_responses=True)
-            self.redis_starboard = aioredis.Redis(host="redis", db=5, decode_responses=True)
-            self.persistent_cache = aioredis.Redis(host="redis", db=6, decode_responses=False)
+            self.redis = aioredis.Redis(host="thatkitebot_redis", db=1, decode_responses=True)
+            self.redis_repost = aioredis.Redis(host="thatkitebot_redis", db=2, decode_responses=True)
+            self.redis_welcomes = aioredis.Redis(host="thatkitebot_redis", db=3, decode_responses=True)
+            self.redis_bookmarks = aioredis.Redis(host="thatkitebot_redis", db=4, decode_responses=True)
+            self.redis_starboard = aioredis.Redis(host="thatkitebot_redis", db=5, decode_responses=True)
+            self.persistent_cache = aioredis.Redis(host="thatkitebot_redis", db=6, decode_responses=False)
 
-            self.redis_cache = aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
-            self.redis_queue = aioredis.Redis(host="redis_cache", db=1, decode_responses=True)
+            self.redis_cache = aioredis.Redis(host="thatkitebot_redis_cache", db=0, decode_responses=False)
+            self.redis_queue = aioredis.Redis(host="thatkitebot_redis_cache", db=1, decode_responses=True)
 
             self.r_cache = RedisCacheAsync(self, auto_exec=False)
             self.sync_cache = RedisCacheSync(self, auto_exec=False)

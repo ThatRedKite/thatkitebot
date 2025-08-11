@@ -53,18 +53,20 @@ class LUT_Keys(discord.Enum):
 
 #region async class
 class RedisCacheAsync:
-    def __init__(self,bot: discord.Bot,auto_exec=False):
+    def __init__(self,bot: discord.Bot, auto_exec=False, **kwargs):
         
         self.bot = bot
         self.auto_exec = auto_exec
 
         self.autoexpire: timedelta = timedelta(weeks=2)
+        self.persistent_host = kwargs.get("persistent_host", "thatkitebot_redis")
+        self.host = kwargs.get("host", "thatkitebot_redis_cache") 
         
-        self.lut            =   aioredis.Redis(host="redis", db=15, decode_responses=False)
-        self.message_cache  =   aioredis.Redis(host="redis_cache", db=0, decode_responses=False)
-        self.guild_cache    =   aioredis.Redis(host="redis_cache", db=1, decode_responses=False)
-        self.channel_cache  =   aioredis.Redis(host="redis_cache", db=2, decode_responses=False)
-        self.user_cache     =   aioredis.Redis(host="redis_cache", db=3, decode_responses=False)
+        self.lut            =   aioredis.Redis(host=self.persistent_host, db=15, decode_responses=False)
+        self.message_cache  =   aioredis.Redis(host=self.host, db=0, decode_responses=False)
+        self.guild_cache    =   aioredis.Redis(host=self.host, db=1, decode_responses=False)
+        self.channel_cache  =   aioredis.Redis(host=self.host, db=2, decode_responses=False)
+        self.user_cache     =   aioredis.Redis(host=self.host, db=3, decode_responses=False)
         
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
@@ -421,13 +423,16 @@ class RedisCacheAsync:
 #endregion
 
 class RedisCacheSyncPartial:
-    def __init__(self, bot, auto_exec=False):
+    def __init__(self, bot, auto_exec=False, **kwargs):
         self.bot = bot
         self.auto_exec = auto_exec
         self.autoexpire: timedelta = timedelta(weeks=2)
         
-        self.lut            =   syncredis.Redis(host="redis", db=15, decode_responses=False)
-        self.message_cache  =   syncredis.Redis(host="redis_cache", db=0, decode_responses=False)
+        self.persistent_host = kwargs.get("persistent_host", "thatkitebot_redis")
+        self.host = kwargs.get("host", "thatkitebot_redis_cache") 
+
+        self.lut            =   syncredis.Redis(host=self.persistent_host, db=15, decode_responses=False)
+        self.message_cache  =   syncredis.Redis(host=self.host, db=0, decode_responses=False)
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
         self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
@@ -598,19 +603,22 @@ class RedisCacheSyncPartial:
     
 #region sync class
 class RedisCacheSync(RedisCacheSyncPartial):
-    def __init__(self, bot, auto_exec=False):
+    def __init__(self, bot, auto_exec=False, **kwargs):
         self.state: discord.state.ConnectionState = bot._connection
         self.bot = bot
 
         self.auto_exec = auto_exec
 
         self.autoexpire: timedelta = timedelta(weeks=2)
+
+        self.persistent_host = kwargs.get("persistent_host", "thatkitebot_redis")
+        self.host = kwargs.get("host", "thatkitebot_redis_cache") 
         
-        self.lut            =   syncredis.Redis(host="redis", db=15, decode_responses=False)
-        self.message_cache  =   syncredis.Redis(host="redis_cache", db=0, decode_responses=False)
-        self.guild_cache    =   syncredis.Redis(host="redis_cache", db=1, decode_responses=False)
-        self.channel_cache  =   syncredis.Redis(host="redis_cache", db=2, decode_responses=False)
-        self.user_cache     =   syncredis.Redis(host="redis_cache", db=3, decode_responses=False)
+        self.lut            =   syncredis.Redis(host=self.persistent_host, db=15, decode_responses=False)
+        self.message_cache  =   syncredis.Redis(host=self.host, db=0, decode_responses=False)
+        self.guild_cache    =   syncredis.Redis(host=self.host, db=1, decode_responses=False)
+        self.channel_cache  =   syncredis.Redis(host=self.host, db=2, decode_responses=False)
+        self.user_cache     =   syncredis.Redis(host=self.host, db=3, decode_responses=False)
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
         self.message_pipeline   =   self.message_cache.pipeline(transaction=False)

@@ -1,9 +1,9 @@
 services:
   thatkitebot:
     build:  .
-    links:
-      - "redis:thatkitebot_redis"
-      - "redis_cache:thatkitebot_redis_cache"
+    depends_on:
+      - redis
+      - redis_cache
     volumes:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/

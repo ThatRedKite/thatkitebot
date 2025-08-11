@@ -1,14 +1,13 @@
 services:
   thatkitebot:
+    depends_on:
+      - redis
+      - redis_cache
     build:
       context: .
       dockerfile: ./Dockerfile.debug
-    links:
-      - "redis:thatkitebot_redis"
-      - "redis_cache:thatkitebot_redis_cache"
     ports:
       - 5678:5678
-
     volumes:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/
