@@ -55,7 +55,6 @@ class FunStuff(commands.Cog, name="fun commands"):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
         self.dirname = bot.dir_name
-        self.redis = bot.redis_cache
         self.cache: RedisCacheAsync = bot.r_cache
 
     @staticmethod

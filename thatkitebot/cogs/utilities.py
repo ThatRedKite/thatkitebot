@@ -58,7 +58,7 @@ class UtilityCommands(commands.Cog, name="Potentially useful commands"):
         Displays the status of the bot.
         """
 
-        await ctx.send(embed=await status_embed(self.bot, self.bot.redis_cache))
+        await ctx.send(embed=await status_embed(self.bot, self.bot.r_cache.message_cache))
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(pass_context=True, aliases=["serverinfo", "guildinfo", "server"])

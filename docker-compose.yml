@@ -1,9 +1,12 @@
 services:
   thatkitebot:
-    build:  .
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     depends_on:
       - redis
       - redis_cache
+
     volumes:
       - ./thatkitebot/:/app/thatkitebot
       - ./data/:/app/data/

@@ -146,22 +146,24 @@ class ThatKiteBot(commands.Bot, ABC):
         self._connection = None
         self.case_insensitive = True
 
+        self.redis_host = "thatkitebot_redis"
+        self.redis_host_cache = "thatkitebot_redis_cache"
+
         self.logger.info("Redis: Trying to connect")
         try:
             # db 0 is free at the moment as it formerly contained the auth stuff
-            self.redis = aioredis.Redis(host="thatkitebot_redis", db=1, decode_responses=True)
-            self.redis_repost = aioredis.Redis(host="thatkitebot_redis", db=2, decode_responses=True)
-            self.redis_welcomes = aioredis.Redis(host="thatkitebot_redis", db=3, decode_responses=True)
-            self.redis_bookmarks = aioredis.Redis(host="thatkitebot_redis", db=4, decode_responses=True)
-            self.redis_starboard = aioredis.Redis(host="thatkitebot_redis", db=5, decode_responses=True)
-            self.persistent_cache = aioredis.Redis(host="thatkitebot_redis", db=6, decode_responses=False)
+            # this initializes all the different redis connections needed to run kitebot
+            self.redis = aioredis.Redis(host=self.redis_host, db=1, decode_responses=True)
+            self.redis_repost = aioredis.Redis(host=self.redis_host, db=2, decode_responses=True)
+            self.redis_welcomes = aioredis.Redis(host=self.redis_host, db=3, decode_responses=True)
+            self.redis_bookmarks = aioredis.Redis(host=self.redis_host, db=4, decode_responses=True)
+            self.redis_starboard = aioredis.Redis(host=self.redis_host, db=5, decode_responses=True)
+            self.persistent_cache = aioredis.Redis(host=self.redis_host, db=6, decode_responses=False)
 
-            self.redis_cache = aioredis.Redis(host="thatkitebot_redis_cache", db=0, decode_responses=False)
-            self.redis_queue = aioredis.Redis(host="thatkitebot_redis_cache", db=1, decode_responses=True)
-
-            self.r_cache = RedisCacheAsync(self, auto_exec=False)
-            self.sync_cache = RedisCacheSync(self, auto_exec=False)
-
+            # initialize the async and the normal cache classes
+            self.r_cache = RedisCacheAsync(self, auto_exec=False, host=self.redis_host_cache)
+            self.sync_cache = RedisCacheSync(self, auto_exec=False, host=self.redis_host_cache)
+            
             self.settings_lock = asyncio.Lock()
             self.cache_lock = self.r_cache.lock
 

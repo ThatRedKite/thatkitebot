@@ -214,8 +214,7 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
             return
 
         try:
-            cache = RedisCacheAsync(self.bot.redis_cache, self.bot)
-            author_id = await cache.get_author_id(message.reference.message_id)
+            author_id = await self.bot.r_cache.get_author_id(message.reference.message_id)
             if author_id is None:
                 author_id = (await self.bot.get_channel(payload.channel_id).fetch_message(message.reference.message_id)).author.id
 

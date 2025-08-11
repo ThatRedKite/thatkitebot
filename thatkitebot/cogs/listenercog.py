@@ -49,7 +49,7 @@ class ListenerCog(commands.Cog):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
-        self.redis_cache: aioredis.Redis = bot.redis_cache
+        self.redis_cache: aioredis.Redis = bot.r_cache.message_cache
         self.redis_welcomes: aioredis.Redis = bot.redis_welcomes
         self.repost_redis: aioredis.Redis = bot.redis_repost
 
