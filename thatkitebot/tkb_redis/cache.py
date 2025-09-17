@@ -224,10 +224,7 @@ class RedisCacheAsync:
         # ID pipeline, Message pipeline, Channel Pipeline, User Pipeline
 
         self.bot.sync_cache.exec()
-        await self.id_pipeline.execute()
-        await self.message_pipeline.execute()
-        await self.channel_pipeline.execute()
-        await self.user_pipeline.execute()
+        await self.id_pipeline.execute(), self.message_pipeline.execute(), self.channel_pipeline.execute(), self.user_pipeline.execute()
 
         if user_id:
             scan_pattern = f"{channel.guild.id}:{user_id}:{channel.id}:*"
@@ -256,12 +253,8 @@ class RedisCacheAsync:
             await self.message_cache.expire(entry_name, timedelta(seconds=15), lt=True)
 
             # clean up the LUT
-            await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
-            await self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
-            await self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
-
-            await self.message_pipeline.execute()
-            await self.id_pipeline.execute()
+            await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+            await self.message_pipeline.execute(), self.id_pipeline.execute()
 
     async def mass_expire_messages(self, message_ids: list[int], guild_id: int, channel_id: int):
         names = []
@@ -269,20 +262,14 @@ class RedisCacheAsync:
         for message_id in message_ids:
             if author_id := await self.get_author_id(message_id):
                 names.append(f"{guild_id}:{author_id}:{channel_id}:{message_id}")
-                await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
-                await self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
-                await self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
-
+                await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
             else:
                 continue
 
-        await self.message_pipeline.delete(*names)
-        await self.message_pipeline.execute()
-        await self.id_pipeline.execute()
+        await self.message_pipeline.delete(*names), self.message_pipeline.execute(), self.id_pipeline.execute()
 
     async def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
-        await self.id_pipeline.execute()
-        await self.message_pipeline.execute()
+        await self.id_pipeline.execute(), self.message_pipeline.execute()
 
         guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
                 
@@ -317,7 +304,7 @@ class RedisCacheAsync:
             except KeyError:
                 pass
 
-        await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
+        await self.compressed_write_key(self.message_pipeline, entry_name, message_data), 
     
         await self.message_pipeline.expire(entry_name, self.autoexpire)
         
@@ -343,9 +330,7 @@ class RedisCacheAsync:
         # exectue the write pipeline to commit any pending changes before reading 
 
         # ID Pipeline, Channel Pipeline, Guild Pipeline
-        await self.channel_pipeline.execute()
-        await self.id_pipeline.execute()
-        await self.guild_pipeline.execute()
+        await self.channel_pipeline.execute(), self.id_pipeline.execute(), self.guild_pipeline.execute()
         
         if channel_data := await self.get_channel_dict(channel_id, fetch):
             if guild := await self.get_guild_object(guild_id, fetch):
