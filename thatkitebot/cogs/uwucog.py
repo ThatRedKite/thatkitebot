@@ -28,8 +28,9 @@ SOFTWARE.
 import re
 import io
 import textwrap
-from typing import Union
+import asyncio
 
+from typing import Union
 import discord
 
 from unidecode import unidecode
@@ -39,22 +40,91 @@ from discord.ext import commands
 from redis import asyncio as aioredis
 
 import thatkitebot
-from thatkitebot.types.message import Message
 from thatkitebot.base.url import get_avatar_url
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
+from thatkitebot.types.message import Message
 #endregion
 
 
 #region Functions
-async def uwuify(message: str, id: int, intensity: float = 1.0, enable_nsfw = False):
+def uwuify(message: str, id: int, intensity: float = 1.0, enable_nsfw = False):
     # initialize the uwuipy class, multiplying the default intensites by :intensity:
     uwu = uwuipy(id, *map(lambda m: (m * intensity), (0.1, 0.05, 0.0075)), 1.0, nsfw_actions=enable_nsfw)
     message = uwu.uwuify(message)
 
     return message
 
+def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw = False) -> list[discord.Embed]:
+    uwu = uwuipy(id, *map(lambda m: (m * intensity), (0.1, 0.05, 0.0075)), 1.0, nsfw_actions=enable_nsfw)
+    embeds = []
+    for embed in message.embeds:
+        match embed.type:
+            # ignore embeds that just contain media
+            case "image" | "gifv" | "youtube":
+                embeds.append(embed)
+
+            # bot rich embeds often contain fields and footers which will need to be uwuified as well
+            case "rich":
+                fields = []
+
+                for field in embed.fields:
+                    uwu_field = discord.EmbedField(
+                        name = uwu.uwuify(field.name),
+                        value = uwu.uwuify(field.value),
+                        inline=field.inline
+                    )
+                    fields.append(uwu_field)
+
+                footer = None
+                if embed.footer:
+                    footer = discord.EmbedFooter(
+                        text = uwu.uwuify(embed.footer.text),
+                        icon_url=embed.footer.icon_url
+                    )
+
+                uwu_rich = discord.Embed(
+                    title=uwu.uwuify(embed.title) if embed.title else None,
+                    description=uwu.uwuify(embed.description) if embed.description else None,
+                    image=embed.image,
+                    thumbnail=embed.thumbnail,
+                    url=embed.url,
+                    fields=fields,
+                    footer=footer,
+                    type="rich",
+                    color=embed.color,
+                    timestamp=embed.timestamp
+                )
+                
+                if embed.author:
+                    # uwuify the author, if present
+                    uwu_rich.set_author(
+                        name=uwu.uwuify(embed.author.name),
+                        url=embed.author.url,
+                        icon_url=embed.author.icon_url
+                    )
+
+                embeds.append(uwu_rich)
+
+            case "article" | "link":
+                uwu_article = discord.Embed(
+                    title=uwu.uwuify(embed.title),
+                    description=uwu.uwuify(embed.description),
+                    image=embed.thumbnail if embed.thumbnail else None,
+                    url=embed.url if embed.url else None,
+                    color=embed.color,
+                    type="article"
+                )
+                if embed.provider:
+                    uwu_article.set_author(name=uwu.uwuify(embed.provider.name), url=embed.provider.url)
+                embeds.append(uwu_article)
+
+            case _:
+                raise
+    return embeds
+                
+                
 
 async def get_uwu_webhook(webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
     webhooks = await channel.webhooks()
@@ -119,9 +189,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             return True
 
     async def _listener_checks(self, message):
-        if message.author.bot:
-            return False
-
         if not await self._uwu_enabled(message):
             return False
 
@@ -279,48 +346,62 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             
             # convert the input string to ascii
             msg_len = len(message.content) + 20
-            msg = unidecode(message.content, errors="preserve")
+            msg_content = unidecode(message.content, errors="preserve")
+            process_embeds = True
 
             # if the user cant embed links, make links not embed by surrounding them with <>
             if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
                 links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
-                msg = re.sub(links, r"<\1>", msg)
-
-            msg_small = textwrap.wrap(msg, msg_len)
+                msg_content = re.sub(links, r"<\1>", msg_content)
+                process_embeds = False
+            
+            msg_small = textwrap.wrap(msg_content, msg_len)
 
             # - all intensities override each other, individual user being the strongest one -
 
-            # try to get the global intensity
-            intensity = await self.redis.hget(f"uwui:{message.guild.id}", "g") or 1.0
+            # get the intensities in order author, channel, global
+            intensities = await self.redis.hmget(f"uwui:{message.guild.id}", [f"u:{message.author.id}", f"c:{message.channel.id}", "g"])
+            
+            # get the first non-None intensity or default to 1.0 if there isn't any intensity set
+            intensity = float(next(i for i in intensities if i is not None) or 1.0)
 
-            # try to get the channel's intensity
-            intensity = float(await self.redis.hget(f"uwui:{message.guild.id}", f"c:{message.channel.id}") or intensity)
+            msg_content = None
+            output = None
+            # check if we have text in the message and uwuify it
+            if len(msg_small) > 0:
+                msg_content = uwuify(msg_small[0], message.id, intensity, message.channel.nsfw) 
 
-            # try to get the user's individual intensity
-            intensity = float(await self.redis.hget(f"uwui:{message.guild.id}", f"u:{message.author.id}") or intensity)
+                # split it up while maintaining whole words
+                output = textwrap.wrap(msg_content, 2000)
+                # for each new "message" send it in the channel
+                # thanks paradox for breaking the >2000 msg limit
 
-            msg = await uwuify(msg_small[0], message.id, intensity, message.channel.nsfw)
-            # split it up while maintaining whole words
-
-            output = textwrap.wrap(msg, 2000)
-            # for each new "message" send it in the channel
-            # thanks paradox for breaking the >2000 msg limit
-
+            # get the username to use for the webhook, uses new usernames if discriminator is 0 else it uses old usernames (bots tend to have old usernames)
             username = message.author.name if message.author.discriminator == "0" else message.author.name + "#" + message.author.discriminator
+            
+            # process the embeds
+            uwu_embeds = None
+            if process_embeds:
+                uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
 
-            await webhook.send(
-                content=output[0],
-                username=username,
+            # wrap both the send webhook and delete message coroutines into Future objects
+            a = asyncio.ensure_future(webhook.send(
+                content=output[0] if output else None,
+                username=message.author.nick or username,
                 avatar_url=get_avatar_url(user=message.author),
                 files=files,
+                embeds=uwu_embeds,
                 allowed_mentions=discord.AllowedMentions(
                     everyone=message.author.guild_permissions.mention_everyone,
                     roles=False,
                     users=True
                 ),
-            )
+            ))
+            b = asyncio.ensure_future(message.delete(reason="UwU Delete"))
+        
+            # await those futures side by side
+            await a, b
 
-            await message.delete(reason="UwU Delete")
     #endregion
 #endregion
 
