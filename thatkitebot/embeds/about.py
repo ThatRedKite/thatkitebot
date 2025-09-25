@@ -58,7 +58,7 @@ async def gen_embed(self) -> Embed:
         "woo200": "<@1129767250342195222>",
         "Caraffa-git": "<@303227573121449994>"
     }
-    jsonData = await url._contributorjson(self.bot.aiohttp_session)
+    jsonData = await url.get_contributor_json(self.bot.aiohttp_session)
     # get a list of "login" field values from json string variable jsonData
     authorlist = [x["login"] for x in jsonData]
     # if a username contains [bot] remove it from the list

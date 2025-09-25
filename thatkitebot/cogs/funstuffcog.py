@@ -126,8 +126,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         length: discord.Option(int, "Number of sentences to generate", min_value=1, max_value=10, default=4, required=False), # type: ignore
     ):
         await ctx.defer()
-        e = await self._generate_markov(member=user, channel=channel, length=length)
-        await ctx.respond(embed=e)
+        await ctx.respond(embed=await self._generate_markov(member=user, channel=channel, length=length))
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
@@ -142,7 +141,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.check(pc.can_send_image)
     async def inspirobot(self, ctx) -> None:
         """Sends a motivational quote from inspirobot.me."""
-        await ctx.send(embed=await url.inspirourl(session=self.bot.aiohttp_session))
+        await ctx.send(embed=await url.get_inspirobot_url(session=self.bot.aiohttp_session))
     
     @commands.command(name="markov")
     async def _markov(self, ctx) -> None:
@@ -222,7 +221,7 @@ class FunStuff(commands.Cog, name="fun commands"):
     @commands.command(name="xkcd", aliases=["comic", "xkcdcomic"])
     async def _xkcd(self, ctx, *, args=None) -> None:
         """Send a random or specific xkcd comic"""
-        embed = await url._xkcd(args)
+        embed = await url.get_xkcd(args)
         if embed is None:
             await util.errormsg(ctx, "Invalid arguments")
             return

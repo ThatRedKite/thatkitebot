@@ -35,7 +35,8 @@ import discord
 from redis import asyncio as aioredis
 from discord.ext import commands
 
-from thatkitebot.base.image_stuff import hasher, download_image, get_image_urls, get_tenor_image_url
+from thatkitebot.base.image_stuff import hasher, download_image
+from thatkitebot.base.url import get_image_urls, get_tenor_image_url
 from thatkitebot.base.util import ids_from_link, set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.tkb_redis import cache as ca

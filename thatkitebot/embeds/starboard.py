@@ -29,8 +29,8 @@ import io
 
 from discord import Embed, Message, Color, File, EmbedField
 
-from thatkitebot.base.image_stuff import get_embed_urls, get_tenor_image_url
-from thatkitebot.base.url import get_avatar_url
+from thatkitebot.base.url import get_embed_urls
+from thatkitebot.base.url import get_avatar_url, get_tenor_image_url
 #endregion
 
 class StarboardEmbed(Embed):

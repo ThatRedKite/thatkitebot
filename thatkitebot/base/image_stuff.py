@@ -42,8 +42,9 @@ from wand.image import Image as WandImage
 from wand.color import Color
 from wand.font import Font
 
+from .url import get_embed_urls
+
 from .exceptions import *
-from .url import TENOR_PATTERN
 
 def _hasher(data: bytes) -> Optional[str]:
     """
@@ -88,24 +89,6 @@ async def download_image(session: aiohttp.ClientSession, url: str):
         return await r.read()
 
 
-async def get_tenor_image_url(aiohttp_session: aiohttp.ClientSession, url:str, token:str) -> str:
-    """
-    Downloads a tenor gif and returns the hash of the image.
-    """
-    # define the header and the payload:
-    tenor = TENOR_PATTERN.findall(url)
-    if not tenor:
-        return None
-    payload = {"key": token, "ids": int(tenor[0]), "media_filter": "minimal"}
-
-    async with aiohttp_session.get(url="https://api.tenor.com/v1/gifs", params=payload) as r:
-        gifs = await r.json()
-        url = gifs["results"][0]["media"][0]["gif"]["url"]  # dictionary magic to get the url of the gif
-        return url
-
-
-    return None
-
 async def download_last_image(
         ctx: Union[discord.ApplicationContext, commands.Context],
         aiohttp_session: aiohttp.ClientSession,
@@ -134,95 +117,6 @@ async def download_last_image(
         buf = BytesIO(await resp.read())
         buf.seek(0)
         return buf
-
-async def get_image_urls(message: discord.Message, video: bool = False, gifv: bool = False) -> list[str]:
-    # check if the message has an attachment or embed of the type "image"
-    if message.attachments:
-        return [attachment.url for attachment in message.attachments]
-
-    if not message.embeds:
-        raise NoImageFoundException
-
-    embed_urls = []
-    for embed in message.embeds:
-        if embed.type == "image":
-            # if it does, return the embed's url
-            embed_urls.append(embed.url)
-            continue
-        # check if the message has an embed of the type "rich" and if it contains an image
-        elif embed.type == "rich" and embed.image:
-            embed_urls.append(embed.image.url)
-            continue
-        # check if the message has a video if the :video: argument is true
-        elif embed.type == "video" and video:
-            embed_urls.append(embed.url)
-        # check if the message has a gif if the :gifv: argument is true
-        elif embed.type == "gifv" and gifv:
-            embed_urls.append(embed.url)
-        else:
-            # if it doesn't, return None
-            raise NoImageFoundException
-
-    return embed_urls
-
-def get_embed_urls(message: discord.Message, video_enabled: bool = False, gifv: bool = False) -> (str | None, str | None): # type: ignore
-    """
-    clone of :get_image_urls but with different output format: [(url, embed_type), ...]
-    """
-    if message.attachments:
-        for attachment in message.attachments:
-            content_type = attachment.content_type
-            if "image" in content_type:
-                yield attachment.url, "image"
-
-            elif "video" in content_type:
-                yield attachment.url, "video"
-
-    if not message.embeds:
-        yield None, None
-        return
-
-    for embed in message.embeds:
-        if embed.type == "image":
-            # if it does, return the embed's url
-            yield embed.url, "image"
-            continue
-
-        # check if the message has an embed of the type "rich" and if it contains an image
-        elif embed.type == "rich" and embed.image:
-            yield embed.image.url, "image"
-            continue
-
-        # check if the message has a video if the :video: argument is true
-        elif embed.type == "video" and video_enabled:
-
-            # --- special cases for different websites ---
-
-            if embed.provider and embed.provider.name == "YouTube":
-                # special case for youtube, ignore any videos, return video thumbnail instead
-                yield embed.thumbnail.url, "image"
-                continue
-
-
-            yield embed.video.url, "video"
-            continue
-
-        # embeds where a thumbnail (if present) will be returned
-        elif embed.type in ["link", "article"] and embed.thumbnail:
-            yield embed.thumbnail.url, "image"
-            continue
-
-        # check if the message has a gif if the :gifv: argument is true
-        elif embed.type == "gifv" and gifv:
-            yield embed.url, "gifv"
-            continue
-
-        else:
-            # if it doesn't, stop the generator
-            yield None, None
-            return
-        
-    return
 
 class ImageFunction:
     def __init__(self, buffer: BytesIO, fn: int, loop: asyncio.AbstractEventLoop, process_pool: Optional[ProcessPoolExecutor]):
