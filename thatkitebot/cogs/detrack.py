@@ -56,30 +56,33 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
+        try:
+            with open(os.path.join(bot.data_dir, "detrackparams.toml"), "r") as f:
+                # load the detrackparams.toml file to get the detrack settings
+                try:
+                    self.detrack_data = toml.load(f)
+                    self.domains = self.detrack_data["domains"]
+                    self.LUT: dict = self.detrack_data["LUT"]
+                except toml.decoder.TomlDecodeError:
+                    print("detrackparams.toml is not valid TOML. Please fix it.")
+                    return
 
-        with open(os.path.join(bot.data_dir, "detrackparams.toml"), "r") as f:
-            # load the detrackparams.toml file to get the detrack settings
-            try:
-                self.detrack_data = toml.load(f)
-                self.domains = self.detrack_data["domains"]
-                self.LUT: dict = self.detrack_data["LUT"]
-            except toml.decoder.TomlDecodeError:
-                print("detrackparams.toml is not valid TOML. Please fix it.")
-                return
-
-        self.reassembled_regexes = dict()
-        for domain in self.domains:
-            new_values = {
-                domain: dict(
-                    path=self.construct_re(self.domains[domain]["path"]),
-                    params=self.construct_re(self.domains[domain]["params"]),
-                    netloc=self.construct_re(self.domains[domain]["netloc"]),
-                    netloc_dl=self.construct_re(self.domains[domain].get("netloc_dl")) if self.domains[domain].get("netloc_dl") else None,
-                    query=self.construct_re(self.domains[domain]["query"]),
-                    fragment=self.construct_re(self.domains[domain]["fragment"]),
-                    )
-                }
-            self.reassembled_regexes.update(new_values)
+            self.reassembled_regexes = dict()
+            for domain in self.domains:
+                new_values = {
+                    domain: dict(
+                        path=self.construct_re(self.domains[domain]["path"]),
+                        params=self.construct_re(self.domains[domain]["params"]),
+                        netloc=self.construct_re(self.domains[domain]["netloc"]),
+                        netloc_dl=self.construct_re(self.domains[domain].get("netloc_dl")) if self.domains[domain].get("netloc_dl") else None,
+                        query=self.construct_re(self.domains[domain]["query"]),
+                        fragment=self.construct_re(self.domains[domain]["fragment"]),
+                        )
+                    }
+                self.reassembled_regexes.update(new_values)
+        except FileNotFoundError:
+            self.bot.logger.error("detrackparams.toml is missing, detracking will NOT work!")
+            return
 
     @staticmethod
     def get_detrack_aliases() -> list[str]:
