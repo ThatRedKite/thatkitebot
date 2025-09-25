@@ -26,6 +26,8 @@ SOFTWARE.
 
 #region imports
 import io
+import textwrap
+
 
 from discord import Embed, Message, Color, File, EmbedField
 
@@ -33,6 +35,7 @@ from thatkitebot.base.url import get_embed_urls
 from thatkitebot.base.url import get_avatar_url, get_tenor_image_url
 #endregion
 
+ZWSP = "​"
 class StarboardEmbed(Embed):
     def __init__(self, message:Message, emoji: str, count: int, color: Color = Color.gold()):
         self.message = message
@@ -61,20 +64,22 @@ class StarboardEmbed(Embed):
 
         self.description = f"{message.jump_url}"
 
-        self.append_field(self.gen_count_field())
-
-        if content_field := self.gen_content_field():
+        if content_field := self.gen_content_field(message):
             self.append_field(content_field)
 
-        self.set_footer(text=f"Id: {self.message.id}")
-        
+        self.append_field(self.gen_count_field())
 
-    def gen_content_field(self) -> EmbedField:
+        self.set_footer(text=f"id: {self.message.id} | #{self.message.channel.name}")
+    
+    def gen_pad_field(self) -> EmbedField:
+        return EmbedField(name=ZWSP, value=ZWSP)
+
+    def gen_content_field(self, message: Message) -> EmbedField:
         # content string
-        content = self.message.clean_content or ""
+        content = message.clean_content or ""
         # bools to ensure only one image or video has been set
 
-        for url, content_type in get_embed_urls(self.message, video_enabled=True, gifv=True):
+        for url, content_type in get_embed_urls(message, video_enabled=True, gifv=True):
     
             if not (url or content_type):
                 break
@@ -127,26 +132,31 @@ class StarboardEmbed(Embed):
                     self._set_video = True
 
         if content:
-            return EmbedField(name=f"​", value=content, inline=False)
+            wrapped_content = textwrap.wrap(content, 1023)
+            if len(wrapped_content) > 1:
+                wrapped_content[0] += "…"
+
+            return EmbedField(name=ZWSP, value=wrapped_content[0], inline=False)
         
         return None
         
     def gen_count_field(self) -> EmbedField:
-        return EmbedField(name=self.emoji, value=f"{self.count}", inline=True)
+        return EmbedField(value=f"{self.count} x {self.emoji}", name=ZWSP, inline=True)
     
     def gen_count2_field(self) -> EmbedField:
         if self._show_channel_name:
             return EmbedField(name="Original Message", value=f"{self.message.jump_url} ({self.message.channel.name})", inline=True)
         
         return EmbedField(name="Original Message", value=self.message.jump_url, inline=True)
-        
+    
+    # this will get the url of a person's profile picture (or a default one), download it and return it
     async def set_pfp(self, aiohttp) -> File:
         async with aiohttp.get(get_avatar_url(self.message.author)) as resp:
             self.set_thumbnail(url=f"attachment://{self.message.author.id}.{resp.content_type.split('/')[1]}")
             #self.set_footer(text=f"Id: {self.message.id}", icon_url=f"attachment://{self.message.author.id}.{resp.content_type.split('/')[1]}")
             return File(fp=io.BytesIO(await resp.read()), filename=f"{self.message.author.id}.{resp.content_type.split('/')[1]}")
 
-    async def download_video(self, aiohttp) -> File:
+    async def download_video(self, aiohttp) -> File | None:
         if not self._video_url:
             return None
         
@@ -156,7 +166,8 @@ class StarboardEmbed(Embed):
             content_type = content_type.replace("quicktime", "mov")
             return File(fp=io.BytesIO(await resp.read()), filename=f"{self.message.id}.{content_type}")
 
-    async def detenorize_gif(self, aiohttp_session, token) -> File:
+    # this will check if there is a tenor url present and get an actual gif url for it, or do nothing
+    async def detenorize_gif(self, aiohttp_session, token) -> File | None:
         if self._tenor_url and self._set_tenor_gif and token:
             url = await get_tenor_image_url(aiohttp_session, self._tenor_url, token)
             self.set_image(url=url)
