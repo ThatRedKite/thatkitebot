@@ -36,7 +36,7 @@ import discord
 from unidecode import unidecode
 from uwuipy import uwuipy
 from discord import abc
-from discord.ext import commands
+from discord.ext import commands, tasks
 from redis import asyncio as aioredis
 
 import thatkitebot
@@ -124,23 +124,6 @@ def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw
                 raise
     return embeds
                 
-                
-
-async def get_uwu_webhook(webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
-    webhooks = await channel.webhooks()
-    uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == f"uwuhook{webhook_id}"), None)
-    if not uwu_webhook:
-        try:
-            webhooker = await channel.create_webhook(
-                name=f"uwuhook{webhook_id}",
-                reason='uwuhook is for UwU'
-            )
-        except discord.HTTPException:
-            return None
-        return webhooker
-
-    else:
-        return uwu_webhook
 #endregion
 
 #region Cog
@@ -148,6 +131,12 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
+        self.webhooks = {}
+
+
+    @tasks.loop(hours=1)
+    async def clear_webhook_cache(self):
+        self.webhooks.clear()
 
     #region private methods
     async def _uwu_enabled(self, ctx):
@@ -200,6 +189,30 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         #    return False
 
         return is_user or is_channel
+    
+    async def get_uwu_webhook(self, webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
+        # try to get cached webhook
+        if (uwu_webhook := self.webhooks.get(channel.id)) is not None:
+            return uwu_webhook
+        else:
+            webhooks = await channel.webhooks()
+            uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == f"uwuhook{webhook_id}"), None)
+
+            if not uwu_webhook:
+                try:
+                    webhooker = await channel.create_webhook(
+                        name=f"uwuhook{webhook_id}",
+                        reason='uwuhook is for UwU'
+                    )
+                    self.webhooks.update({channel.id: webhooker})
+                    return webhooker
+                except discord.HTTPException:
+                    return None
+                
+
+            else:
+                self.webhooks.update({channel.id:uwu_webhook})
+                return uwu_webhook
     #endregion
 
     #
@@ -303,104 +316,120 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         await ctx.send(f"This command is deprecated, please use {self._add_channel.mention}")
     #endregion
 
+
+    async def uwuify_message(self, message: Message):
+        # Check if the user is a bot and if they are affected by uwuify
+        # Carter's code (Updated)
+        
+        # get or create the uwu webhook
+        # if we failed to create it somehow, raise 
+
+        if not (webhook := await self.get_uwu_webhook("", message.channel)):
+            raise ValueError("Invalid Webhook")
+        
+        if not webhook.token:
+            # try to create a webhook with the bot id in the name, in case another uwuhook already exists (like the dev server)
+            webhook = await self.get_uwu_webhook(self.bot.user.id, message.channel)
+
+            # if we still fail to create it, return
+            if not webhook:
+                raise ValueError("Invalid Webhook")
+
+        files = []
+
+        # copy attachments if they are not remixes
+        if not message.is_remix and message.attachments:
+            for attachment in message.attachments:
+                async with self.bot.aiohttp_session.get(attachment.url) as resp:
+                    fp = io.BytesIO(await resp.read())
+                    files.append(discord.File(fp, filename=attachment.filename))
+        
+        # convert the input string to ascii
+        msg_len = len(message.content) + 20
+        msg_content = unidecode(message.content, errors="preserve")
+        process_embeds = True
+
+        # if the user cant embed links, make links not embed by surrounding them with <>
+        if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
+            links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
+            msg_content = re.sub(links, r"<\1>", msg_content)
+            process_embeds = False
+        
+        msg_small = textwrap.wrap(msg_content, msg_len)
+
+        # - all intensities override each other, individual user being the strongest one -
+
+        # get the intensities in order author, channel, global
+        intensities = await self.redis.hmget(f"uwui:{message.guild.id}", [f"u:{message.author.id}", f"c:{message.channel.id}", "g"])
+        
+        # get the first non-None intensity or default to 1.0 if there isn't any intensity set
+        try:
+            intensity = float(next(i for i in intensities if i is not None) or 1.0)
+        except StopIteration:
+            intensity = 1.0
+
+        output = None
+        # check if we have text in the message and uwuify it
+        if len(msg_small) > 0:
+            msg_content = uwuify(msg_small[0], message.id, intensity, message.channel.nsfw) 
+
+            # split it up while maintaining whole words
+            output = textwrap.wrap(msg_content, 2000)
+            # for each new "message" send it in the channel
+            # thanks paradox for breaking the >2000 msg limit
+
+        # get the username to use for the webhook, uses new usernames if discriminator is 0 else it uses old usernames (bots tend to have old usernames)
+        username = message.author.name if message.author.discriminator == "0" else message.author.name + "#" + message.author.discriminator
+        
+        # process the embeds
+        uwu_embeds = None
+        if process_embeds:
+            uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
+
+        # wrap both the send webhook and delete message coroutines into Future objects
+        
+        a = asyncio.ensure_future(webhook.send(
+            content=output[0] if output else None,
+            username=message.author.nick or username,
+            avatar_url=get_avatar_url(user=message.author),
+            files=files,
+            embeds=uwu_embeds,
+            allowed_mentions=discord.AllowedMentions(
+                everyone=message.author.guild_permissions.mention_everyone,
+                roles=False,
+                users=True
+            ),
+        ))
+
+        b = asyncio.ensure_future(message.delete(reason="UwU Delete"))
+    
+        # await those futures side by side
+        try:
+            await a, b
+        except discord.Forbidden | discord.InvalidArgument | discord.NotFound:
+            # remove the non-working webhook from the cache
+            try:
+                self.webhooks.pop(message.channel.id)
+            except KeyError:
+                return
+            
     #region main listener
     @commands.Cog.listener()
     async def on_message(self, message: Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
-        # ignore DMs
-        if not message.guild:
+        # ignore DMs and webhooks
+        if not message.guild or message.webhook_id:
             return
-
-        webhook = None
-
-        # Check if the user is a bot and if they are affected by uwuify
+        
         if not await self._listener_checks(message):
             return
-
-        # Carter's code (Updated)
-        # ignore webhooks
-        if not message.webhook_id:
-            # get or create the uwu webhook
-            webhook = await get_uwu_webhook("", message.channel)
-
-            # if we failed to create it somehow, return
-            if not webhook:
-                return
-            
-            if not webhook.token:
-                # try to create a webhook with the bot id in the name, in case another uwuhook already exists (like the dev server)
-                webhook = await get_uwu_webhook(self.bot.user.id, message.channel)
-
-                # if we still fail to create it, return
-                if not webhook:
-                    return
-
-            files = []
-            if not message.is_remix:
-                for attachment in message.attachments:
-                    async with self.bot.aiohttp_session.get(attachment.url) as resp:
-                        fp = io.BytesIO(await resp.read())
-                        files.append(discord.File(fp, filename=attachment.filename))
-            
-            # convert the input string to ascii
-            msg_len = len(message.content) + 20
-            msg_content = unidecode(message.content, errors="preserve")
-            process_embeds = True
-
-            # if the user cant embed links, make links not embed by surrounding them with <>
-            if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
-                links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
-                msg_content = re.sub(links, r"<\1>", msg_content)
-                process_embeds = False
-            
-            msg_small = textwrap.wrap(msg_content, msg_len)
-
-            # - all intensities override each other, individual user being the strongest one -
-
-            # get the intensities in order author, channel, global
-            intensities = await self.redis.hmget(f"uwui:{message.guild.id}", [f"u:{message.author.id}", f"c:{message.channel.id}", "g"])
-            
-            # get the first non-None intensity or default to 1.0 if there isn't any intensity set
-            intensity = float(next(i for i in intensities if i is not None) or 1.0)
-
-            msg_content = None
-            output = None
-            # check if we have text in the message and uwuify it
-            if len(msg_small) > 0:
-                msg_content = uwuify(msg_small[0], message.id, intensity, message.channel.nsfw) 
-
-                # split it up while maintaining whole words
-                output = textwrap.wrap(msg_content, 2000)
-                # for each new "message" send it in the channel
-                # thanks paradox for breaking the >2000 msg limit
-
-            # get the username to use for the webhook, uses new usernames if discriminator is 0 else it uses old usernames (bots tend to have old usernames)
-            username = message.author.name if message.author.discriminator == "0" else message.author.name + "#" + message.author.discriminator
-            
-            # process the embeds
-            uwu_embeds = None
-            if process_embeds:
-                uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
-
-            # wrap both the send webhook and delete message coroutines into Future objects
-            a = asyncio.ensure_future(webhook.send(
-                content=output[0] if output else None,
-                username=message.author.nick or username,
-                avatar_url=get_avatar_url(user=message.author),
-                files=files,
-                embeds=uwu_embeds,
-                allowed_mentions=discord.AllowedMentions(
-                    everyone=message.author.guild_permissions.mention_everyone,
-                    roles=False,
-                    users=True
-                ),
-            ))
-            b = asyncio.ensure_future(message.delete(reason="UwU Delete"))
         
-            # await those futures side by side
-            await a, b
+        try:
+            await self.uwuify_message(message)
+        except ValueError:
+            return
 
     #endregion
 #endregion
