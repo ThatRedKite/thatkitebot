@@ -94,8 +94,3 @@ def get_channel(bot, channel_data: dict, guild: discord.Guild):
             # the factory can't be a DMChannel or GroupChannel here
             # GuildChannels expect a Guild, we may be passing an Object
             return factory(guild=guild, state=bot._connection, data=channel_data)
-
-        
-
-
-

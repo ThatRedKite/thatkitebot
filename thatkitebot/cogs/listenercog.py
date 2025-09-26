@@ -176,7 +176,6 @@ class ListenerCog(commands.Cog):
         self.bot.events_hour += 1
         self.bot.events_total += 1
 
-
     @commands.Cog.listener()
     async def on_member_update(self, _, after: discord.Member) -> None:
         self.bot.events_hour += 1
