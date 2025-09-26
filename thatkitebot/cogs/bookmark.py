@@ -97,7 +97,7 @@ class BookmarkModal(discord.ui.Modal):
         bm = Bookmark.from_message(self.redis, interaction.user.id, self.message, self.children[0].value.lstrip().rstrip())
         await bm.save()
         # await add_bookmark(self.redis, interaction, self.message, )
-        await interaction.response.send_message("I added the message to your bookmarks", ephemeral=True)
+        await interaction.response.send_message(f"I added the message to your bookmarks", ephemeral=True)
 
 
 class ConfirmDeleteModal(discord.ui.Modal):
@@ -173,6 +173,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
         fields = []
         page_list = []
         try:
+            counter = 1
             async for ids, comment in get_bookmarks(self.redis, ctx.user):
                 # split the key into the IDs required to assemble the reference link
                 id_list = ids.split(":")
@@ -181,7 +182,8 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
                 link = link_from_ids(guild_id=id_list[0], channel_id=id_list[1], message_id=id_list[2])
 
                 # add a field containing the note and the link to the embed
-                fields.append((f"'{comment}'", link))
+                fields.append((f"{counter} - '{comment}'", link))
+                counter += 1
 
         except NoBookmarksException:
             # stop with a message if the user has no bookmarks
