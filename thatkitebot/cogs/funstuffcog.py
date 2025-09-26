@@ -231,53 +231,6 @@ class FunStuff(commands.Cog, name="fun commands"):
             return
         await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 10, commands.BucketType.user)
-    @commands.command(name="uwuify", aliases=["uwu"])
-    async def _uwuify(self, ctx: commands.Context, *, msg: str = None) -> None:
-        """
-        UwUify your text (now even more cursed)
-        """
-        # if not, grab the seed by using the original message id
-        if not ctx.message.reference:
-            seed = ctx.message.id
-
-        # fetch the message from the reference
-        else:
-            ref = ctx.message.reference
-            seed = ref.message_id
-            # FIXME ?
-            message = await self.bot.get_or_fetch_message(ref.message_id, ref.channel_id)
-            msg = message.content
-
-        # if the message content is empty, return
-        if not msg:
-            return
-
-        async with ctx.channel.typing():
-            # declare a new uwu object using the message id as seed
-            uwu = uwuipy(seed)
-            # convert the input string to ascii
-            msg = unidecode(msg)
-
-            # if the user cant send images, make links not embed by surrounding them with <>
-            if not pc.can_send_image(ctx):
-                links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
-                msg = re.sub(links, r"<\1>" , msg)
-
-            # do the deed
-            msg = uwu.uwuify(msg)
-
-            # if the message is longer than 2 000 characters
-            if len(msg) > 2000:
-                # split it up while maintaining whole words
-                output = textwrap.wrap(msg, 2000)
-                # for each new "message" send it in the channel
-                for _msg in output:
-                    await ctx.send(_msg)
-            # if the message is under the limit, just send it as usual
-            else:
-                await ctx.send(msg)
-
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, exception) -> None:
         if ctx.cog is not self:
