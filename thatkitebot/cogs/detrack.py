@@ -47,9 +47,14 @@ from thatkitebot.base.util import errormsg
 # and de-ampifies links (not yet implemented) when the setting is turned on
 
 class DetrackView(discord.ui.View):
+    def __init__(self, *items, original_author_id, timeout = 180, disable_on_timeout = False):
+        self.orig_id = original_author_id
+        super().__init__(*items, timeout=timeout, disable_on_timeout=disable_on_timeout)
+
     @discord.ui.button(label="Close", style=discord.ButtonStyle.red, emoji=de.discord_to_unicode("wastebasket"))
     async def close_button_callback(self, button, interaction: discord.Interaction) -> None:
-         pass
+        if interaction.user.id == self.orig_id:
+            await interaction.message.delete()
 
 #region Cog
 class DetrackCog(commands.Cog, name="Detrack commands"):
@@ -181,23 +186,15 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
 
         # return the detracted message
         if detracked_strs:
-            embed = discord.Embed(
-                title="I've cleaned tracking links contained in your message!",
-                description=
-                    " You can find the clean versions below."
-                    " You can copy them and edit your original message."
-                    " The original author can react with '🗑️' to delete this"
-                    "\nThis ~~tape~~ message will self-destruct in 30 seconds."
-            )
-                  
             clean_links = ""
             for i in detracked_strs:
                 clean_links += f"```{i}```\n"
-                
-            embed.add_field(name="​", value=clean_links)
+
+            embed = discord.Embed(title="I've cleaned tracking links contained in your message!",)    
+            embed.add_field(name="Detracked Link", value=clean_links)
             embed.set_footer(text="Tip: you can copy the link directly to your clipboard by clicking the icon to the right of the link.")
-            my_mgs = await message.reply(embed=embed, silent=True, delete_after=30.0)
-            await my_mgs.add_reaction("🗑️")
+            await message.reply(embed=embed, silent=True, delete_after=30.0, view=DetrackView(original_author_id=message.author.id))
+
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
