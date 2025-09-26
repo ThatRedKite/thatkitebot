@@ -121,10 +121,7 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
         print("init_settings.json is not valid json. Please fix it.")
         exit(1)
 
-#endregion
-
-#region state class
-#endregion
+#end region
 
 
 # region bot class
