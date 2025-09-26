@@ -104,14 +104,18 @@ class FunStuff(commands.Cog, name="fun commands"):
                 output.add(sentence)
         
         embed = discord.Embed(description=". ".join(output))
+
+        if len(output) < 1:
+            embed.description = "Failed to generate output. Probably not enough messages from this user / channel"
+
         if member and channel:
-            embed.title = f"Markov output for {member.mention} in {channel.mention}"
+            embed.title = f"Output for {member.nick if member.nick else member.name} in {channel.mention}"
             embed.color = member.color or member.accent_color
             embed.set_thumbnail(url=url.get_avatar_url(member))
         elif channel and not member:
-            embed.title = f"Markov output for {channel.mention}"
+            embed.title = f"Output for {channel.mention}"
         else:
-            embed.title = f"Markov output ..."            
+            embed.title = f"Output ..."            
         embed.set_footer(text=f"Channel: #{message.channel.name} | Messages: {cache_counter + api_counter} (Cache: {cache_counter}, API: {api_counter})")
 
         return embed
