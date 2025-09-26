@@ -30,6 +30,9 @@ from typing import Optional
 import discord.types
 import discord.types.message
 
+REMOVE_IF_EMPTY = "REMOVE_IF_EMPTY"
+
+
 #region dict functions
 def reaction_to_dict(reaction: discord.Reaction) -> dict:
     reaction_dict = dict(
@@ -113,7 +116,7 @@ def user_to_dict(user: discord.User) -> dict:
 
 def member_to_dict(member: discord.Member) -> dict:
     return dict(
-        roles = list(member._roles) if member._roles else [],
+        roles = list(member._roles) if member.roles else [],
         premium_since = member.premium_since.isoformat() if member.premium_since else None,
         pending = member.pending,
         nick = member.nick,
@@ -181,38 +184,40 @@ def interaction_metadata_to_dict(imd: discord.InteractionMetadata) -> dict:
 
 def message_to_dict(message: discord.Message) -> dict:
     dict_message = dict(
-        type = message.type.value,
-        tts = message.tts,
-        timestamp = message.created_at.isoformat(),
-        edited_timestamp = message.edited_at.isoformat() if message.edited_at else None,
-        pinned = message.pinned,
-        nonce = message.nonce,
-        mentions = [user_to_dict(user) for user in message.mentions],
-        mention_roles = [role_to_dict(role) for role in message.role_mentions],
-        mention_everyone = message.mention_everyone,
-        member = member_to_dict(message.author),
         id = message.id,
         channel_id = message.channel.id,
         author = user_to_dict(message.author),
-        guild_id = message.guild.id or None,
         content = message.content,
-        flags = message.flags.value,
+        timestamp = message.created_at.isoformat(),
+        edited_timestamp = message.edited_at.isoformat() if message.edited_at else None,
+        tts = message.tts,
+        mention_everyone = message.mention_everyone,
+        mentions = [user_to_dict(user) for user in message.mentions],
+        mention_roles = [role_to_dict(role) for role in message.role_mentions],
+        mention_channels = [], # FIXME
         attachments = _serialize_attachments(message),
         embeds = _serialize_embeds(message),
         reactions = [reaction_to_dict(reaction) for reaction in message.reactions],
-        components = [component.to_dict() for component in message.components],
-        poll = message.poll.to_dict() if message.poll else {},
-        call = call_to_dict(message.call) if message.call else {},
-        webhook_id = message.webhook_id,
-        activity = dict(message.activity) if message.application else {},
-        application = dict(message.application) if message.application else {},
-        application_id = message.application.get("id") if message.application else {},
-        interaction_metadata = interaction_metadata_to_dict(message.interaction_metadata) if message.interaction_metadata else {},
-        message_reference = message.reference.to_dict() if message.reference else {},
+        nonce = message.nonce,
+        pinned = message.pinned,
+        type = message.type.value,
+        webhook_id = message.webhook_id if message.webhook_id else REMOVE_IF_EMPTY,
+        guild_id = message.guild.id or None,
+        flags = message.flags.value,
+        components = [component.to_dict() for component in message.components] if message.components else REMOVE_IF_EMPTY,
+        poll = message.poll.to_dict() if message.poll else REMOVE_IF_EMPTY,
+        call = call_to_dict(message.call) if message.call else REMOVE_IF_EMPTY,
+        activity = dict(message.activity) if message.application else REMOVE_IF_EMPTY,
+        application = dict(message.application) if message.application else REMOVE_IF_EMPTY,
+        application_id = message.application.get("id") if message.application else REMOVE_IF_EMPTY,
+        interaction_metadata = interaction_metadata_to_dict(message.interaction_metadata) if message.interaction_metadata else REMOVE_IF_EMPTY,
+        message_reference = message.reference.to_dict() if message.reference else REMOVE_IF_EMPTY,
     )
-    if dict_message["message_reference"]:
-        dict_message["message_reference"].update({"channel_id": message.reference.channel_id})
-        
+
+    for key in list(dict_message.keys()):
+        if dict_message[key] == REMOVE_IF_EMPTY:
+            dict_message.pop(key)
+
     return dict_message
 
 def channel_to_dict(channel: discord.abc.GuildChannel) -> dict:
