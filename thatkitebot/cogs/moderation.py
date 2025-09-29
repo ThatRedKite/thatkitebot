@@ -28,6 +28,7 @@ SOFTWARE.
 import os
 import io
 import logging
+from datetime import datetime, timedelta, timezone
 
 import discord
 import aiofiles
@@ -44,6 +45,7 @@ from thatkitebot.types.message import Message
 class Offsets:
     EDIT_CHECKER = 0
     REMIX_DELETE = 1
+    NEW_ACCOUNT = 2
     # more will follow
 
 class Behavior:
@@ -75,6 +77,7 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
         self.logger: logging.Logger = bot.logger
         self.edit_checker = self.EditChecker(bot, self.redis)
         self.remix_checker = self.RemixDelete(bot,self.redis)
+        self.new_account_checker = self.NewAccountCheck(bot, self.redis)
 
     #region EditChecker class
     class EditChecker:
@@ -185,7 +188,9 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
                     await warn_channel.send(embed=warn_embed)
             
     #endregion
-        
+
+
+    #region Remix Delete class
     class RemixDelete:
         def __init__(self, bot, redis: aioredis.Redis):
             self.bot = bot
@@ -201,6 +206,50 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
             if message.is_remix and await self._enabled_in_guild(message.guild.id):
                 await message.delete()
 
+    #endregion
+
+    #region New Account Check Class
+    class NewAccountCheck:
+        def __init__(self, bot, redis: aioredis.Redis):
+            self.bot = bot
+            self.redis = redis
+
+        async def _enabled_in_guild(self, guild_id: int) -> bool:
+            return await settings.RedisFlags.get_guild_flag_custom(self.redis, guild_id, "moderation", Offsets.NEW_ACCOUNT)
+        
+        async def enable_in_guild(self, guild_id: int, enable: bool, warn_channel: discord.TextChannel, min_age: str, role = None):
+            await settings.RedisFlags.set_guild_flag_custom(self.redis, guild_id, "moderation", enable, Offsets.NEW_ACCOUNT)
+            await self.redis.hset(f"new_acc:{guild_id}", mapping={"warn_channel": warn_channel.id, "age": parse_timestring(min_age)})
+
+            if role:
+                await self.redis.hset(f"new_acc:{guild_id}", "role_id", str(role.id))
+
+        async def disable_in_guild(self, guild_id: int):
+            await settings.RedisFlags.set_guild_flag_custom(self.redis, guild_id, "moderation", False, Offsets.NEW_ACCOUNT)
+            await self.redis.delete(f"new_acc:{guild_id}")
+
+        async def process_join(self, member: discord.Member):
+            if not await self._enabled_in_guild(member.guild.id):
+                return None
+            param = await self.redis.hgetall(f"new_acc:{member.guild.id}")
+            create_time = discord.utils.snowflake_time(member.id)
+            min_age = timedelta(seconds=int(param.get("age"))) 
+            now = datetime.now(timezone.utc)
+
+            now_diff = now - create_time
+
+            if now_diff < min_age:
+                warn_channel_id = int(param.get("warn_channel"))
+                warn_channel = await self.bot.get_or_fetch_channel(warn_channel_id)
+                content = None
+                if (role_id := param.get("role_id")) is not None:
+                    content = f"<@&{role_id}>"
+
+                warn_channel: discord.TextChannel
+                await warn_channel.send(content, embed=mod_embeds.gen_new_account_warning(member, now_diff))
+
+    #endregion
+
     #region Command groups
     edit_checker = discord.SlashCommandGroup(
         "edit_checker",
@@ -211,6 +260,12 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
     remix_delete = discord.SlashCommandGroup(
         "remix_delete",
         "Edit Checking Commands",
+        checks=[pc.mods_can_change_settings, enable_check, pc.in_guild],
+    )
+
+    new_acc_warning = discord.SlashCommandGroup(
+        "new_account",
+        "Warn about newly created accounts",
         checks=[pc.mods_can_change_settings, enable_check, pc.in_guild],
     )
 
@@ -433,6 +488,34 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
 
         await ctx.followup.send("Toggled remix autodelete")
 
+    #region NewAccount commands
+    @new_acc_warning.command(name="disable", description="Disable")
+    async def _enable_new_acc_warning(
+        self,
+        ctx: discord.ApplicationContext,
+        channel: discord.Option(discord.TextChannel, description="The channel to send the warning in", required=True), #type: ignore
+        age_threshold: discord.Option(str, description="Accounts newer than this will trigger a warning. Format like `1y 2w 3d 4h 5m 6s`"), #type: ignore
+        ping_role: discord.Option(discord.Role, description="Optionally ping this role in every warning message.", required=False)# type: ignore
+
+    ): #type: ignore
+        time_diff = 0
+
+        await ctx.defer()
+        if not ctx.guild:
+            await ctx.followup.send("Error! This command can only used in guilds. DMs won't work.")
+            return
+
+        time_diff = parse_timestring(age_threshold)
+
+        if time_diff <= 0:
+            await ctx.followup.send("Please specify a valid time! Make sure you format it like that: `31d 5h`")
+            return
+
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} changed new account check age to {age_threshold} in {ctx.guild.name}")
+
+        await self.new_account_checker.enable_in_guild(ctx.guild_id, True, channel, age_threshold, ping_role)
+        await ctx.followup.send(f"Successfully enabled new account checking. I will send a warning in {channel.mention} if accounts newer than **{age_threshold}** join.")
 
     #region listeners
     #
@@ -442,18 +525,21 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        # check if edit checking is enabled
-        await self.edit_checker.process_payload(payload)
-        # ignore DMs
+        if payload.guild_id:
+            await self.edit_checker.process_payload(payload)
 
     @commands.Cog.listener()
     async def on_message(self, message) -> None:
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        # check if edit checking is enabled
-        await self.remix_checker.process_message(message)
-        # ignore DMs
+        if message.guild:
+            await self.remix_checker.process_message(message)
 
+    @commands.Cog.listener()
+    async def on_member_join(self, joined_member: discord.Member):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+        await self.new_account_checker.process_join(joined_member)
     #endregion
 
 def setup(bot) -> None:

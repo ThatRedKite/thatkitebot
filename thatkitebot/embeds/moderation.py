@@ -25,9 +25,12 @@ SOFTWARE.
 #endregion
 
 #region imports
-from discord import Embed, Color, ClientException
+from datetime import timedelta, datetime, timezone
+
+from discord import Embed, Color, ClientException, Member
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.util import link_from_ids
+from thatkitebot.base.url import get_avatar_url
 #endregion
 
 #region main code
@@ -45,6 +48,29 @@ def gen_edit_warning(payload) -> Embed:
         pass
     except ClientException:
         pass
+
+    return warn_embed
+
+# TODO
+def gen_new_account_warning(member: Member, timediff: timedelta) -> Embed:
+    warn_embed = Embed(
+        title="New Account Warning",
+        description=f"Accont age under threshold for user {member.mention}",
+        color=ec.traffic_red,
+        thumbnail=get_avatar_url(member)
+    )
+
+    warn_embed.add_field(
+        name="** **",
+        value=f"**Username**:\n`{member.name}`\n**Display Name**:\n`{member.display_name}`\n**Nickname**:\n`{member.nick}`\n**ID**:\n`{member.id}`"
+    )
+    
+    warn_embed.add_field(
+        name="** **",
+        value=f"**Join Time**:\n<t:{int(member.joined_at.timestamp())}>\n**Account Creation Time**:\n<t:{int(member.created_at.timestamp())}:R>\n**Account Age**:\n`{timediff}`"
+    )
+
+    warn_embed.timestamp = datetime.now(timezone.utc)
 
     return warn_embed
 #endregion
