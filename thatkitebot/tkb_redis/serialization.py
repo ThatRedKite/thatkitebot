@@ -30,7 +30,7 @@ from typing import Optional
 import discord.types
 import discord.types.message
 
-REMOVE_IF_EMPTY = "REMOVE_IF_EMPTY"
+REMOVE = "REMOVE_IF_EMPTY"
 
 
 #region dict functions
@@ -133,9 +133,9 @@ def role_to_dict(role: discord.Role) -> dict:
     dict_role = dict(
         id = role.id,
         name = role.name,
-        color = role.color,
+        color = int(role.color) if role.color else None,
         hoist = role.hoist,
-        icon = role.icon._key,
+        icon = role.icon._key if role.icon else None,
         unicode_emoji = role.unicode_emoji,
         position = role.position,
         permissions = str(role._permissions),
@@ -182,6 +182,15 @@ def interaction_metadata_to_dict(imd: discord.InteractionMetadata) -> dict:
     )
     return dict_imd
 
+def channel_to_channelmention(channel: discord.TextChannel) -> dict:
+    dict_channelmention = dict(
+        id=channel.id,
+        guild_id=channel.guild.id,
+        type=channel.type.value,
+        name=channel.name
+    )
+    return dict_channelmention
+
 def message_to_dict(message: discord.Message) -> dict:
     dict_message = dict(
         id = message.id,
@@ -193,29 +202,30 @@ def message_to_dict(message: discord.Message) -> dict:
         tts = message.tts,
         mention_everyone = message.mention_everyone,
         mentions = [user_to_dict(user) for user in message.mentions],
-        mention_roles = [role_to_dict(role) for role in message.role_mentions],
-        mention_channels = [], # FIXME
+        mention_roles = [role.id for role in message.role_mentions],
+        mention_channels = [channel_to_channelmention(channel) for channel in message.channel_mentions] if message.channel_mentions else REMOVE,
         attachments = _serialize_attachments(message),
         embeds = _serialize_embeds(message),
-        reactions = [reaction_to_dict(reaction) for reaction in message.reactions],
-        nonce = message.nonce,
+        reactions = [reaction_to_dict(reaction) for reaction in message.reactions] if message.reactions else REMOVE,
+        nonce = message.nonce if message.nonce else REMOVE,
         pinned = message.pinned,
         type = message.type.value,
-        webhook_id = message.webhook_id if message.webhook_id else REMOVE_IF_EMPTY,
+        webhook_id = message.webhook_id if message.webhook_id else REMOVE,
         guild_id = message.guild.id or None,
-        flags = message.flags.value,
-        components = [component.to_dict() for component in message.components] if message.components else REMOVE_IF_EMPTY,
-        poll = message.poll.to_dict() if message.poll else REMOVE_IF_EMPTY,
-        call = call_to_dict(message.call) if message.call else REMOVE_IF_EMPTY,
-        activity = dict(message.activity) if message.application else REMOVE_IF_EMPTY,
-        application = dict(message.application) if message.application else REMOVE_IF_EMPTY,
-        application_id = message.application.get("id") if message.application else REMOVE_IF_EMPTY,
-        interaction_metadata = interaction_metadata_to_dict(message.interaction_metadata) if message.interaction_metadata else REMOVE_IF_EMPTY,
-        message_reference = message.reference.to_dict() if message.reference else REMOVE_IF_EMPTY,
+        flags = message.flags.value if message.flags else REMOVE,
+        components = [component.to_dict() for component in message.components] if message.components else REMOVE,
+        poll = message.poll.to_dict() if message.poll else REMOVE,
+        call = call_to_dict(message.call) if message.call else REMOVE,
+        activity = dict(message.activity) if message.application else REMOVE,
+        application = dict(message.application) if message.application else REMOVE,
+        application_id = message.application.get("id") if message.application else REMOVE,
+        interaction_metadata = interaction_metadata_to_dict(message.interaction_metadata) if message.interaction_metadata else REMOVE,
+        message_reference = message.reference.to_dict() if message.reference else REMOVE,
+        # TODO: implement stickers
     )
 
     for key in list(dict_message.keys()):
-        if dict_message[key] == REMOVE_IF_EMPTY:
+        if dict_message[key] == REMOVE:
             dict_message.pop(key)
 
     return dict_message
