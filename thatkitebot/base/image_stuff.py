@@ -157,9 +157,9 @@ class ImageFunction:
             if buf is not None:
                 buf.close()
 
-    async def image_worker(self, func):
+    async def image_worker(self, func, *args):
         try:
-            await self.loop.run_in_executor(executor=self.process_pool, func=func)
+            await self.loop.run_in_executor(executor=self.process_pool, func=functools.partial(func, *args))
         except WandException as e:
             # wand-related exceptions
             print(e)
