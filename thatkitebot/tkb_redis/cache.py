@@ -91,9 +91,12 @@ class RedisCacheAsync:
         for pipeline in self._pipelines:
             pipeline.command_stack.clear()
 
-    async def exec(self):
+    async def exec(self):    
         for pipeline in self._pipelines:
-            await pipeline.execute()
+            try:
+                await pipeline.execute(),
+            except:
+                continue
 
     async def compressed_write_hash(self, pipeline, name: str, key: str, dict_data:dict):
         return await pipeline.hset(name, key, compress_data(dict_data))
@@ -156,6 +159,10 @@ class RedisCacheAsync:
         entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
         await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
         await self.message_pipeline.expire(entry_name, self.autoexpire)
+
+        # fix the missing channel_id in message references
+        if message_data.get("message_reference"):
+            message_data["message_reference"].update({"channel_id": message_data["channel_id"]})
                                            
         await self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
         await self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
@@ -557,16 +564,8 @@ class RedisCacheSyncPartial:
         entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
         
         # fix the missing channel_id in message references
-        # if we have a forwarded message, don't even bother trying to get the ids as they might be from an unknown server 
-        if (ref_data := message_data.get("message_reference")) is not None:
-            if mid := ref_data.get("message_id"):
-                ref_data.update({"channel_id":str(self.get_channel_id(mid)) or str(channel_id)})
-            
-            try:
-                # try to remove referenced message to avoid storing messages twice
-                message_data.pop("referenced_message")
-            except KeyError:
-                pass
+        if message_data.get("message_reference"):
+            message_data["message_reference"].update({"channel_id": message_data["channel_id"]})
 
         self.compressed_write_key(self.message_pipeline, entry_name, message_data)
     
