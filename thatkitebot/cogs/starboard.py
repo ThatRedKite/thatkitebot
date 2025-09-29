@@ -699,10 +699,10 @@ class StarboardCog(commands.Cog):
                             new_message = None
 
                             if video_file:
-                                new_message = await settings.channel.send(embed=embed, files=[pfp_file, video_file])
+                                new_message = await settings.channel.send(embed=embed, files=[pfp_file, video_file], view=StarboardView(self.bookmark_redis))
 
                             else:
-                                new_message = await settings.channel.send(embed=embed, files=[pfp_file])
+                                new_message = await settings.channel.send(embed=embed, files=[pfp_file], view=StarboardView(self.bookmark_redis))
 
                             # add the new message to the database
                             await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
