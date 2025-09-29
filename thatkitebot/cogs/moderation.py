@@ -489,7 +489,7 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
         await ctx.followup.send("Toggled remix autodelete")
 
     #region NewAccount commands
-    @new_acc_warning.command(name="disable", description="Disable")
+    @new_acc_warning.command(name="enable", description="Enable new account detection")
     async def _enable_new_acc_warning(
         self,
         ctx: discord.ApplicationContext,
@@ -516,6 +516,22 @@ class ModerationCog(commands.Cog, name="Moderation Commands"):
 
         await self.new_account_checker.enable_in_guild(ctx.guild_id, True, channel, age_threshold, ping_role)
         await ctx.followup.send(f"Successfully enabled new account checking. I will send a warning in {channel.mention} if accounts newer than **{age_threshold}** join.")
+
+    @new_acc_warning.command(name="disable", description="Disable new account detection")
+    async def _disable_new_acc_warning(
+        self,
+        ctx: discord.ApplicationContext
+    ): #type: ignore
+        await ctx.defer()
+        if not ctx.guild:
+            await ctx.followup.send("Error! This command can only used in guilds. DMs won't work.")
+            return
+
+        logger = set_up_guild_logger(ctx.guild.id)
+        logger.info(f"MODERATION: User {ctx.author.name} disabled new account checking in {ctx.guild.name}")
+
+        await self.new_account_checker.disable_in_guild(ctx.guild_id)
+        await ctx.followup.send(f"Successfully disabled new account checking.")
 
     #region listeners
     #
