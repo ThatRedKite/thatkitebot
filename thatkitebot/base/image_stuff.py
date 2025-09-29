@@ -326,7 +326,7 @@ class ImageFunction:
         await self.image_worker(functools.partial(self._make_vignette, float(sigma), float(x), float(y)))
 
     def _make_vignette(self, sigma: int = 3, x: int = 10, y: int = 10):
-        self.image.vignette(float(sigma), float(x), float(y))
+        self.image.vignette(float(sigma), int(x), int(y))
 
     async def bubble(self, flip=False):
         await self.image_worker(self._bubble, flip)
