@@ -48,7 +48,7 @@ def reaction_to_dict(reaction: discord.Reaction) -> dict:
 
 def _serialize_embeds(message: discord.Message) -> list[Optional[discord.Embed]]:
     if message.embeds:
-            return [embed.to_dict() for embed in message.embeds]
+        return [embed.to_dict() for embed in message.embeds]
     else:
         return []
         
@@ -194,7 +194,7 @@ def channel_to_channelmention(channel: discord.TextChannel) -> dict:
 def message_to_dict(message: discord.Message) -> dict:
     dict_message = dict(
         id = message.id,
-        channel_id = message.channel.id,
+        channel_id = message.channel.id if message.channel else 0,
         author = user_to_dict(message.author),
         content = message.content,
         timestamp = message.created_at.isoformat(),
