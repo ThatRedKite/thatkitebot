@@ -53,10 +53,10 @@ __name__ = "ThatKiteBot"
 __version__ = "4.1"
 __author__ = "ThatRedKite and contributors"
 
-tempdir = "/tmp/tkb/"
-data_dir = "/app/data"
-dir_name = "/app/thatkitebot"
-log_dir = "/var/log/thatkitebot"
+TEMP_DIR = "/tmp/tkb/"
+DATA_DIR = "/app/data"
+DIR_NAME = "/app/thatkitebot"
+LOG_DIR = "/var/log/thatkitebot"
 
 EXTENSIONS = [extension.split(".")[-1] for extension in ENABLED_EXTENSIONS]
 
@@ -91,34 +91,49 @@ logger.addHandler(global_handler)
 
 # region settings
 # check if the init_settings.json file exists and if not, create it
-if not Path(os.path.join(data_dir, "init_settings.json")).exists():
+if not Path(os.path.join(DATA_DIR, "init_settings.json")).exists():
     print("No init_settings.json file found. Creating one now.")
     settings_dict_empty = {
         "discord token": "",
         "tenor api key": "",
         "prefix": "+",
+        "redis hostname": "thatkitebot_redis",
+        "redis cache hostname": "thatkitebot_redis_cache",
     }
+
     # write the dict as json to the init_settings.json file with the json library
-    with open(os.path.join(data_dir, "init_settings.json"), "w") as f:
+    with open(os.path.join(DATA_DIR, "init_settings.json"), "w") as f:
         # dump the dict as json to the file with an indent of 4 and support for utf-8
         json.dump(settings_dict_empty, f, indent=4, ensure_ascii=False)
     # make the user 1000 the owner of the file, so they can edit it
-    os.chown(os.path.join(data_dir, "init_settings.json"), 1000, 1000)
+    os.chown(os.path.join(DATA_DIR, "init_settings.json"), 1000, 1000)
 
     # exit the program
     exit(1)
 
+class InitSettings:
+    def __init__(self, settings_dict: dict, **kwargs):
+        # first try to get settings from the dict, then try to get it from kwargs and raise KeyError if that fails
+        self.discord_token: str = settings_dict.get("discord token") or kwargs["discord_token"]
+        self.tenor_token: str = settings_dict.get("tenor api ky") or kwargs["tenor_token"]
+        self.prefix: str = settings_dict.get("prefix") or kwargs["prefix"]
+
+        # same as above except with get in both cases to avoid KeyError since these are not guaranteed to be present
+        # and can also be given a reasonable default value (unlike the tokens)
+        self.redis_hostname: str = settings_dict.get("redis hostname", kwargs.get("redis_hostname", "thatkitebot_redis"))
+        self.redis_cache_hostname: str = settings_dict.get("redis cache hostname", kwargs.get("redis_cache_hostname", "thatkitebot_redis_cache"))
+
 # load the init_settings.json file with the json library
-with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
+with open(os.path.join(DATA_DIR, "init_settings.json"), "r") as f:
     try:
-        settings_dict = json.load(f)
-        # get the discord token, the tenor api key, and the prefix from the dict
-        discord_token = settings_dict["discord token"]
-        tenor_token = settings_dict["tenor api key"]
-        prefix = settings_dict["prefix"]
+        init_settings = InitSettings(json.load(f))
 
     except json.decoder.JSONDecodeError:
         print("init_settings.json is not valid json. Please fix it.")
+        exit(1)
+    
+    except KeyError as e:
+        print("init_settings.json does not contain all required fields ('discord token', 'tenor api key', 'prefix'). Exiting.")
         exit(1)
 
 #end region
@@ -126,7 +141,6 @@ with open(os.path.join(data_dir, "init_settings.json"), "r") as f:
 
 # region bot class
 class ThatKiteBot(commands.Bot, ABC):
-    
     def _get_state(self, **options: discord.Any) -> PartiallyCachedState:
         return PartiallyCachedState(
             dispatch=self.dispatch,
@@ -138,13 +152,13 @@ class ThatKiteBot(commands.Bot, ABC):
             **options,
     )
     
-    def __init__(self, command_prefix, dir_name, tt, help_command=None, description=None, **options):
+    def __init__(self, init_settings: InitSettings, help_command=None, description=None, **options):
         self.logger = logger
         self._connection = None
         self.case_insensitive = True
 
-        self.redis_host = "thatkitebot_redis"
-        self.redis_host_cache = "thatkitebot_redis_cache"
+        self.redis_host = init_settings.redis_hostname
+        self.redis_host_cache = init_settings.redis_cache_hostname
 
         self.logger.info("Redis: Trying to connect")
         try:
@@ -156,7 +170,7 @@ class ThatKiteBot(commands.Bot, ABC):
             self.redis_bookmarks = aioredis.Redis(host=self.redis_host, db=4, decode_responses=True)
             self.redis_starboard = aioredis.Redis(host=self.redis_host, db=5, decode_responses=True)
             self.persistent_cache = aioredis.Redis(host=self.redis_host, db=6, decode_responses=False)
-
+            
             # initialize the async and the normal cache classes
             self.r_cache = RedisCacheAsync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
             self.sync_cache = RedisCacheSync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
@@ -171,10 +185,10 @@ class ThatKiteBot(commands.Bot, ABC):
             exit(1)
 
         # do all the original init stuff
-        super().__init__(command_prefix, help_command=help_command, description=description, **options)
+        super().__init__(init_settings.prefix, help_command=help_command, description=description, **options)
 
         # paths
-        self.dir_name = dir_name
+        self.dir_name = DIR_NAME
         self.data_dir = "/app/data/"
         self.temp_dir = "/tmp/"
 
@@ -192,7 +206,7 @@ class ThatKiteBot(commands.Bot, ABC):
 
         # settings
         self.debug_mode = int(os.getenv("KITEBOT_DEBUG")) == 1
-        self.tenor_token = tt
+        self.tenor_token = init_settings.tenor_token
         self.enable_voice = False  # global override for deactivating voice commands
         
         # sessions
@@ -269,13 +283,13 @@ class ThatKiteBot(commands.Bot, ABC):
 
 #region init
 
-bot = ThatKiteBot(prefix, dir_name, tt=tenor_token, intents=intents, max_messages=None)
+bot = ThatKiteBot(init_settings=init_settings, intents=intents, max_messages=None)
 logger.info(f"Starting {__name__} version {__version__} ({bot.git_hash})")
 
 
 # try to start the bot with the token from the init_settings.json file and catch any login errors
 try:
-    bot.run(discord_token)
+    bot.run(init_settings.discord_token)
 
 except discord.LoginFailure:
     logger.critical("Login failed. Check your token. If you don't have a token, get one from https://discordapp.com/developers/applications/me")
