@@ -115,7 +115,7 @@ class InitSettings:
     def __init__(self, settings_dict: dict, **kwargs):
         # first try to get settings from the dict, then try to get it from kwargs and raise KeyError if that fails
         self.discord_token: str = settings_dict.get("discord token") or kwargs["discord_token"]
-        self.tenor_token: str = settings_dict.get("tenor api ky") or kwargs["tenor_token"]
+        self.tenor_token: str = settings_dict.get("tenor api key") or kwargs["tenor_token"]
         self.prefix: str = settings_dict.get("prefix") or kwargs["prefix"]
 
         # same as above except with get in both cases to avoid KeyError since these are not guaranteed to be present
