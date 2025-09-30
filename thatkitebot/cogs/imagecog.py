@@ -196,7 +196,6 @@ class ImageStuff(commands.Cog, name="image commands"):
         Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22` or `caption funny color:firebrick`
         A full list of colors can be found here: https://imagemagick.org/script/color.php
         """
-        print(text)
         await image.caption(text=f"{text} {color}", path="/app/data/static-resources/")
 
 
