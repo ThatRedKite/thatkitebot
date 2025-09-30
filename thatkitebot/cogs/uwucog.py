@@ -442,7 +442,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # await those futures side by side
         try:
             await a, b
-        except discord.InvalidArgument:
+        except:
             # remove the non-working webhook from the cache
             try:
                 self.webhooks.pop(message.channel.id)
