@@ -162,7 +162,9 @@ class RedisCacheAsync:
 
         # fix the missing channel_id in message references
         if message_data.get("message_reference"):
-            message_data["message_reference"].update({"channel_id": message_data["channel_id"]})
+            # replies only reply to messages in the same channel, so we simply copy the channel id
+            # without this pycord will error out because it expects this to be here
+            message_data["message_reference"].update({"channel_id": channel_id})
                                            
         await self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
         await self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
@@ -565,7 +567,9 @@ class RedisCacheSyncPartial:
         
         # fix the missing channel_id in message references
         if message_data.get("message_reference"):
-            message_data["message_reference"].update({"channel_id": message_data["channel_id"]})
+            # replies only reply to messages in the same channel, so we simply copy the channel id
+            # without this pycord will error out because it expects this to be here
+            message_data["message_reference"].update({"channel_id": channel_id})
 
         self.compressed_write_key(self.message_pipeline, entry_name, message_data)
     
