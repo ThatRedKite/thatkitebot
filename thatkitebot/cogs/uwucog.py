@@ -197,12 +197,12 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         
         else:
             webhooks = await channel.webhooks()
-            uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == f"uwuhook{webhook_id}"), None)
+            uwu_webhook: discord.Webhook = next((hook for hook in webhooks if hook.name == f"uwuhook-{self.bot.user.id}"), None)
 
             if not uwu_webhook:
                 try:
                     webhooker = await channel.create_webhook(
-                        name=f"uwuhook{webhook_id}",
+                        name=f"uwuhook-{self.bot.user.id}",
                         reason='uwuhook is for UwU'
                     )
                     self.webhooks.update({channel.id: webhooker})
@@ -374,12 +374,12 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         """
         UwUify your text (now even more cursed)
         """
-
+        message = None
         # fetch the message from the reference
         if ctx.message.reference:
             ref = ctx.message.reference
             message = await self.bot.get_or_fetch_message(ref.message_id, ref.channel_id)
-
+        
         # if the message content is empty, return
         output, files, uwu_embeds = await self.uwuify_message(message)
         
@@ -417,7 +417,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         except discord.Forbidden:
             return
-
+        
         output, files, uwu_embeds = await self.uwuify_message(message)
 
         # get the username to use for the webhook, uses new usernames if discriminator is 0 else it uses old usernames (bots tend to have old usernames)
@@ -429,7 +429,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             username=message.author.nick or username,
             avatar_url=get_avatar_url(user=message.author),
             files=files,
-            embeds=uwu_embeds,
+            embeds=uwu_embeds or [],
             allowed_mentions=discord.AllowedMentions(
                 everyone=message.author.guild_permissions.mention_everyone,
                 roles=False,
@@ -442,7 +442,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # await those futures side by side
         try:
             await a, b
-        except discord.Forbidden | discord.InvalidArgument | discord.NotFound:
+        except discord.InvalidArgument:
             # remove the non-working webhook from the cache
             try:
                 self.webhooks.pop(message.channel.id)
