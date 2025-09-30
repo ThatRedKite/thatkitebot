@@ -45,13 +45,13 @@ from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.url import get_avatar_url
 #endregion
 
-def image_command(*args, **kwargs):
+def image_command(is_gif=False, *args, **kwargs):
     def deco(func: Callable):
         # set filename to function name
         name = func.__code__.co_name
 
         @commands.cooldown(4, 10, commands.BucketType.user)
-        async def wrapper(self, ctx: commands.Context,*args):
+        async def wrapper(self, ctx: commands.Context, *args):
             file = None
             image = None
             buf = None
@@ -60,7 +60,7 @@ def image_command(*args, **kwargs):
                     buf = await image_stuff.download_last_image(ctx, aiohttp_session=self.session)
                     image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)
                     await func(self, ctx, image, *args)
-                    embed, file = image.save_image()
+                    embed, file = image.save_image(is_gif=is_gif)
                     await ctx.reply(embed=embed, file=file, mention_author=False)
                 
                 except ImageTooLargeException:
@@ -229,7 +229,7 @@ class ImageStuff(commands.Cog, name="image commands"):
         """Tries to emulate old school 3d effect"""
         await image.make_vignette(sigma, x , y)
 
-    @image_command(aliases=["bubble"])
+    @image_command(aliases=["bubble"], is_gif=True)
     async def speech_bubble(self, ctx: commands.Context, image: ImageFunction, flip: bool = False) -> None:
         """Create a speech bubble like those memes"""
         await image.bubble(flip)
