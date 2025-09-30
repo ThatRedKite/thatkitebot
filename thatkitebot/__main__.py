@@ -158,8 +158,8 @@ class ThatKiteBot(commands.Bot, ABC):
             self.persistent_cache = aioredis.Redis(host=self.redis_host, db=6, decode_responses=False)
 
             # initialize the async and the normal cache classes
-            self.r_cache = RedisCacheAsync(self, auto_exec=False, host=self.redis_host_cache)
-            self.sync_cache = RedisCacheSync(self, auto_exec=False, host=self.redis_host_cache)
+            self.r_cache = RedisCacheAsync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
+            self.sync_cache = RedisCacheSync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
             
             self.settings_lock = asyncio.Lock()
             self.cache_lock = self.r_cache.lock
