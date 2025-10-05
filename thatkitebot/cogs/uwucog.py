@@ -190,7 +190,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         return is_user or is_channel
     
-    async def get_uwu_webhook(self, webhook_id, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
+    async def get_uwu_webhook(self, channel: discord.TextChannel) -> Union[discord.Webhook, None]:
         # try to get cached webhook
         if (uwu_webhook := self.webhooks.get(channel.id)) is not None:
             return uwu_webhook
@@ -404,12 +404,11 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # get or create the uwu webhook
         # if we failed to create it somehow, raise 
         try:
-            if not (webhook := await self.get_uwu_webhook("", message.channel)):
+            if not (webhook := await self.get_uwu_webhook(message.channel)):
                 return
             
             if not webhook.token:
-                # try to create a webhook with the bot id in the name, in case another uwuhook already exists (like the dev server)
-                webhook = await self.get_uwu_webhook(self.bot.user.id, message.channel)
+                webhook = await self.get_uwu_webhook(message.channel)
 
                 # if we still fail to create it, return
                 if not webhook:
@@ -435,7 +434,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 roles=False,
                 users=True
             ),
-        ))
+            
+        )),
 
         b = asyncio.ensure_future(message.delete(reason="UwU Delete"))
     
