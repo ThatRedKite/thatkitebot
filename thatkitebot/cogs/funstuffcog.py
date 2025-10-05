@@ -25,8 +25,6 @@ SOFTWARE.
 #endregion
 
 #region Imports
-import textwrap
-import re
 from unidecode import unidecode
 from random import choice, Random
 from datetime import datetime
@@ -34,8 +32,6 @@ from datetime import datetime
 import discord
 import markovify
 from discord.ext import commands
-from discord import ChannelType
-from uwuipy import uwuipy
 
 from thatkitebot.base import url, util
 from thatkitebot.base.util import PermissonChecks as pc
@@ -102,7 +98,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         for _ in range(length):
             if sentence := model.make_sentence(tries=100):
                 output.add(sentence)
-        
+    
         embed = discord.Embed(description=". ".join(output))
 
         if len(output) < 1:
@@ -120,7 +116,7 @@ class FunStuff(commands.Cog, name="fun commands"):
 
         return embed
 
-    @discord.command(name="markov", description="Get markov chain output for a specified channel (all users)", guild_ids=[759419755253465188])
+    @discord.command(name="markov", description="Get markov chain output for a specified channel (all users)")
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def _markov_slash(
         self,
