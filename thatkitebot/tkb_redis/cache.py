@@ -160,12 +160,6 @@ class RedisCacheAsync:
         await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
         await self.message_pipeline.expire(entry_name, self.autoexpire)
 
-        # fix the missing channel_id in message references
-        if message_data.get("message_reference"):
-            # replies only reply to messages in the same channel, so we simply copy the channel id
-            # without this pycord will error out because it expects this to be here
-            message_data["message_reference"].update({"channel_id": channel_id})
-                                           
         await self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
         await self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
         await self.id_pipeline.hset(LUT_Keys.GUILD.value, mapping={str(message_id): str(guild_id)})
@@ -466,21 +460,24 @@ class RedisCacheSyncPartial:
         return None
 
     def expire_message_now(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None):
+        self.message_pipeline.execute()
+        self.id_pipeline.execute()
+
         guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
 
-        if guild_id and author_id and channel_id:
-            entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
-
-            # expire message in 
-            self.message_cache.expire(entry_name, timedelta(seconds=15), lt=True)
-
-            # clean up the LUT
+        if message_id:
+            # clean up the LUT 
             self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
             self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
             self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
 
-            self.message_pipeline.execute()
-            self.id_pipeline.execute()
+            if guild_id and author_id and channel_id:
+                entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
+                # expire message in 10 seconds
+                self.message_cache.expire(entry_name, timedelta(seconds=10), lt=True)
+
+        self.message_pipeline.execute()
+        self.id_pipeline.execute()
     
     def _get_ids(self, message_id, guild_id, channel_id, author_id) -> tuple[int]:
         if not guild_id:
@@ -547,7 +544,6 @@ class RedisCacheSyncPartial:
         if guild_id and author_id and channel_id and message_id:
             # if we got the message data from the cache, cool
             if (message_data := self.compressed_read_key(self.message_cache, f"{guild_id}:{author_id}:{channel_id}:{message_id}")) is not None:
-                message_data.update({"channel_id": int(channel_id)})
                 return message_data
 
         return None
@@ -564,13 +560,7 @@ class RedisCacheSyncPartial:
         assert None not in (message_id, guild_id, channel_id, author_id)
 
         entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
-        
-        # fix the missing channel_id in message references
-        if message_data.get("message_reference"):
-            # replies only reply to messages in the same channel, so we simply copy the channel id
-            # without this pycord will error out because it expects this to be here
-            message_data["message_reference"].update({"channel_id": channel_id})
-
+    
         self.compressed_write_key(self.message_pipeline, entry_name, message_data)
     
         self.message_pipeline.expire(entry_name, self.autoexpire)

@@ -24,9 +24,6 @@ SOFTWARE.
 """
 #endregion
 
-import discord.types
-import discord.types.channel
-from thatkitebot.tkb_redis.serialization import message_to_dict
 from thatkitebot.types.message import Message
 from thatkitebot.tkb_redis.cache import RedisCacheSyncPartial, RedisCacheSync, decompress_data
 
@@ -44,6 +41,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
     def __init__(self, *, dispatch, handlers, hooks, http, loop, cache, **options):
         self.r_cache: RedisCacheSyncPartial = cache
         self.max_messages = None
+        self.logger = logging.getLogger("global")
 
         super().__init__(dispatch=dispatch, handlers=handlers, hooks=hooks, http=http, loop=loop, **options)
 
@@ -53,10 +51,8 @@ class PartiallyCachedState(discord.state.ConnectionState):
         # channel would be the correct type here
 
         message = Message(channel=channel, data=data, state=self)  # type: ignore
-
-        # cache the message
         self.r_cache.add_message_dict(data)
-
+        # cache the message
         self.dispatch("message", message)
 
         # we ensure that the channel is either a TextChannel, VoiceChannel, StageChannel, or Thread
@@ -73,11 +69,11 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
         found = self._get_message(raw.message_id)
         raw.cached_message = found
+        self.r_cache.expire_message_now(raw.message_id, raw.guild_id, raw.channel_id)
         self.dispatch("raw_message_delete", raw)
-
+        
         if found is not None:
             self.dispatch("message_delete", found)
-            self.r_cache.expire_message_now(raw.message_id, raw.guild_id, raw.channel_id)
 
     def parse_message_delete_bulk(self, data) -> None:
         raw = discord.RawBulkMessageDeleteEvent(data)
@@ -125,7 +121,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
             # ref: #5999
             older_message.author = message.author
 
-            self.r_cache.update_message(data)
+            self.r_cache.add_message_dict(data)
             self.dispatch("message_edit", older_message, message)
         else:
             self.r_cache.add_message_dict(data)
@@ -136,25 +132,18 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
     def create_message(self, *, channel, data) -> Message:
         try:
-            msg_object = Message(state=self, channel=channel, data=data)
-            return msg_object
-        
-        # TODO: fix this
-        except Exception as e:
-            pass
-            raise e
+            return Message(state=self, channel=channel, data=data)
+        except KeyError as e:
+            self.logger.error(f"Failed to create message {data.get('id')} due to KeyError")       
         
     def _get_message(self, msg_id: int) -> Message:
         if (data := self.r_cache.get_message_dict(msg_id)) is not None:
-            channel_id = self.r_cache.get_channel_id(msg_id)
-            channel = self.get_channel(channel_id)
+            channel = self.get_channel(data["channel_id"])
             return self.create_message(channel=channel, data=data)
-         
-        return None
     
 
 # insanely buggy mess
-class FullyCachedState(discord.state.ConnectionState):
+class FullyCachedState(PartiallyCachedState):
     def __init__(self, *, dispatch, handlers, hooks, http, loop, cache, **options):
         self.r_cache: RedisCacheSync = cache
         self.max_messages = None
@@ -168,92 +157,6 @@ class FullyCachedState(discord.state.ConnectionState):
             _guilds.append(discord.Guild(data=decompress_data(data_compressed), state=self))
 
         return _guilds
-
-    def parse_message_create(self, data):
-        channel, _ = self._get_guild_channel(data)
-        # channel would be the correct type here
-
-        message = Message(channel=channel, data=data, state=self)  # type: ignore
-
-        # cache the message
-        self.r_cache.add_message_dict(message)
-        self.r_cache.message_pipeline.execute()
-
-        self.dispatch("message", message)
-
-        # we ensure that the channel is either a TextChannel, VoiceChannel, StageChannel, or Thread
-        if channel and channel.__class__ in (
-            discord.TextChannel,
-            discord.VoiceChannel,
-            discord.StageChannel,
-            discord.Thread,
-        ):
-            channel.last_message_id = message.id  # type: ignore
-
-    def parse_message_delete(self, data) -> None:
-        raw = discord.RawMessageDeleteEvent(data)
-
-        found = self._get_message(raw.message_id)
-        raw.cached_message = found
-        self.dispatch("raw_message_delete", raw)
-
-        if found is not None:
-            self.dispatch("message_delete", found)
-            self.r_cache.expire_message_now(raw.message_id, raw.guild_id, raw.channel_id)
-
-    def parse_message_delete_bulk(self, data) -> None:
-        raw = discord.RawBulkMessageDeleteEvent(data)
-
-        #TODO: implement cached message retrieval here
-        raw.cached_messages = []
-
-        self.r_cache.mass_expire_messages(raw.message_ids, raw.guild_id, raw.channel_id)
-        self.dispatch("raw_bulk_message_delete", raw)
-
-    def parse_message_reaction_add(self, data) -> None:
-        emoji = data["emoji"]
-        emoji_id = discord.utils._get_as_snowflake(emoji, "id")
-        emoji = discord.PartialEmoji.with_state(
-            self, id=emoji_id, animated=emoji.get("animated", False), name=emoji["name"]
-        )
-        raw = discord.RawReactionActionEvent(data, emoji, "REACTION_ADD")
-
-        if member_data := data.get("member"):
-            if (guild := self._get_guild(raw.guild_id)) is not None:
-                raw.member = discord.Member(data=member_data, guild=guild, state=self)
-            else:
-                raw.member = None
-        else:
-            raw.member = None
-
-        self.dispatch("raw_reaction_add", raw)
-
-        # rich interface here
-        if (message := self._get_message(raw.message_id)) is not None:
-            emoji = self._upgrade_partial_emoji(emoji)
-            reaction = message._add_reaction(data, emoji, raw.user_id)
-            self.r_cache.add_message_object(message)
-
-            if user := (raw.member or self._get_reaction_user(message.channel, raw.user_id)):
-                self.dispatch("reaction_add", reaction, user)
-
-    def parse_message_update(self, data) -> None:
-        raw = discord.RawMessageUpdateEvent(data)
-        if (message := self._get_message(raw.message_id)) is not None:
-            older_message = copy.copy(message)
-            raw.cached_message = older_message
-            self.dispatch("raw_message_edit", raw)
-            # Coerce the `after` parameter to take the new updated Member
-            # ref: #5999
-            older_message.author = message.author
-
-            self.r_cache.add_message_dict(data)
-            self.dispatch("message_edit", older_message, message)
-        else:
-            self.dispatch("raw_message_edit", raw)
-
-        if "components" in data and self._view_store.is_message_tracked(raw.message_id):
-            self._view_store.update_from_message(raw.message_id, data["components"])
 
     def parse_user_update(self, data) -> None:
         # self.user is *always* cached when this is called
