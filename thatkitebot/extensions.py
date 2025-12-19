@@ -1,6 +1,7 @@
 # this determines the load order of the cogs
 ENABLED_EXTENSIONS = [
     "thatkitebot.cogs.listenercog",
+    "thatkitebot.cogs.bookmark", # needs to be loaded before starboard
     "thatkitebot.cogs.starboard",
     "thatkitebot.cogs.repost",
     "thatkitebot.cogs.moderation",
@@ -13,7 +14,6 @@ ENABLED_EXTENSIONS = [
     "thatkitebot.cogs.chemistry",
 #    "thatkitebot.cogs.music",
     "thatkitebot.cogs.info",
-    "thatkitebot.cogs.bookmark",
     "thatkitebot.cogs.sudocog",
     "thatkitebot.cogs.settings",
     "thatkitebot.cogs.unitscog",

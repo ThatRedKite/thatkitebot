@@ -80,8 +80,9 @@ class Bookmark:
 
 #region UI Classes
 class BookmarkModal(discord.ui.Modal):
-    def __init__(self, redis: aioredis.Redis, message: discord.Message, interaction: discord.Interaction, *args, **kwargs):
+    def __init__(self, bot, redis: aioredis.Redis, message: discord.Message, interaction: discord.Interaction, *args, **kwargs):
         self.redis = redis
+        self._list_mention = bot.cogs["Bookmarks"]._list.mention
         self.message = message
         self.interaction = interaction
         super().__init__(*args, **kwargs)
@@ -97,7 +98,7 @@ class BookmarkModal(discord.ui.Modal):
         bm = Bookmark.from_message(self.redis, interaction.user.id, self.message, self.children[0].value.lstrip().rstrip())
         await bm.save()
         # await add_bookmark(self.redis, interaction, self.message, )
-        await interaction.response.send_message(f"I added the message to your bookmarks", ephemeral=True)
+        await interaction.response.send_message(f"I added the message to your bookmarks, use {self._list_mention} to see your bookmarks.", ephemeral=True)
 
 
 class ConfirmDeleteModal(discord.ui.Modal):
@@ -128,9 +129,9 @@ class DeletionSelectView(discord.ui.View):
 
         self.select = discord.ui.Select(
             min_values=1,
-            max_values=1,
-            options=[discord.SelectOption(label=comment) for comment in comments],
-            placeholder="The bookmark you want to delete",
+            max_values=len(comments),
+            options=reversed([discord.SelectOption(label=comment) for comment in comments]),
+            placeholder="The bookmark(s) you want to delete",
         )
 
         self.select.callback = self.select_callback
@@ -138,15 +139,13 @@ class DeletionSelectView(discord.ui.View):
         self.add_item(self.select)
 
     async def select_callback(self, interaction: discord.Interaction) -> None:
-        selected = self.select.values[0]
-        index = self.comments.index(selected)
-        key = self.keys[index]
-        hash_key = f"bookmarks:{interaction.user.id}"
-        await self.redis.hdel(hash_key, key)
-        await interaction.response.send_message("Successfully deleted the bookmark", ephemeral=True)
+        for selected in self.select.values:
+            index = self.comments.index(selected)
+            key = self.keys[index]
+            hash_key = f"bookmarks:{interaction.user.id}"
+            await self.redis.hdel(hash_key, key)
+        await interaction.response.send_message("Successfully deleted the bookmark(s)", ephemeral=True)
 #endregion
-
-
 
 #region Cog
 class BookmarkCog(commands.Cog, name="Bookmarks"):
@@ -159,7 +158,7 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
     @discord.message_command(name="Bookmark Message", description="Description")
     async def _add(self, ctx: discord.ApplicationContext, msg: discord.Message) -> None:
         """Bookmarks a message for you."""
-        modal = BookmarkModal(self.redis, msg, ctx.interaction, title="Bookmark Comment")
+        modal = BookmarkModal(self.bot, self.redis, msg, ctx.interaction, title="Bookmark Comment")
         await ctx.send_modal(modal)
 
     @bm.command(name="clear", description="Deletes all bookmarks")
@@ -210,25 +209,26 @@ class BookmarkCog(commands.Cog, name="Bookmarks"):
 
     @bm.command(name="delete", description="Deletes a bookmark")
     async def _delete(self, ctx) -> None:
-        await ctx.defer()
+        #await ctx.defer()
         try:
             # initialize two empty lists intended to store the comments and the keys
             comments = []
             keys = []
-
+            
+            cnt = 1
             async for key, comment in get_bookmarks(self.redis, ctx.user):
                 keys.append(key)
-                comments.append(comment)
+                comments.append(f"[{cnt}] {comment}")
+                cnt += 1
 
         except NoBookmarksException:
             return await ctx.send_response("You don't have any bookmarks!", ephemeral=True)
 
-        await ctx.followup.send("Pick the bookmark you want to delete:", view=DeletionSelectView(
-            self.redis,
-            keys,
-            comments,
-            ctx
-        ), ephemeral=True)
+        await ctx.send_response(
+            "Pick the bookmark you want to delete:",
+            view=DeletionSelectView(self.redis, keys, comments, ctx),
+            ephemeral=True
+        )
 #endregion
 
 def setup(bot) -> None:

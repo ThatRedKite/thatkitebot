@@ -63,8 +63,9 @@ class StarboardMode:
 #endregion
 
 class StarboardView(discord.ui.View):
-    def __init__(self, redis: aioredis.Redis):
+    def __init__(self, bot, redis: aioredis.Redis):
         self.redis = redis
+        self.bot = bot
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Bookmark Post", style=discord.ButtonStyle.secondary, custom_id=f"starboard-bookmark-button", emoji="🔖")
@@ -74,7 +75,7 @@ class StarboardView(discord.ui.View):
         del bm
 
         try:
-            await interaction.respond(f"Added {interaction.message.jump_url} to your bookmarks", ephemeral=True)
+            await interaction.respond(f"Added {interaction.message.jump_url} to your bookmarks, use {self.bot.cogs["Bookmarks"]._list.mention} to see your bookmarks.", ephemeral=True)
         except:
             return
             
@@ -190,7 +191,7 @@ class StarboardCog(commands.Cog):
         self.logger: logging.Logger = bot.logger
 
         self.starboard_lock = asyncio.Lock()
-        self.bot.add_view(StarboardView(self.bookmark_redis))
+        self.bot.add_view(StarboardView(bot, self.bookmark_redis))
         reload(thatkitebot.embeds.starboard)
 
 
@@ -699,10 +700,10 @@ class StarboardCog(commands.Cog):
                             new_message = None
 
                             if video_file:
-                                new_message = await settings.channel.send(embed=embed, files=[pfp_file, video_file], view=StarboardView(self.bookmark_redis))
+                                new_message = await settings.channel.send(embed=embed, files=[pfp_file, video_file], view=StarboardView(self.bot, self.bookmark_redis))
 
                             else:
-                                new_message = await settings.channel.send(embed=embed, files=[pfp_file], view=StarboardView(self.bookmark_redis))
+                                new_message = await settings.channel.send(embed=embed, files=[pfp_file], view=StarboardView(self.bot, self.bookmark_redis))
 
                             # add the new message to the database
                             await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
@@ -746,9 +747,9 @@ class StarboardCog(commands.Cog):
         msg = await self.bot.get_or_fetch_message(ctx.message.reference.message_id, ctx.message.reference.channel_id) if ctx.message.reference else ctx.message
         embed, pfp_file, video_file = await generate_embed(msg, randint(1, 1000), "⭐", True, self.bot.aiohttp_session,self.bot.tenor_token)
         if video_file:
-            await ctx.send(embed=embed,files=[pfp_file, video_file], view=StarboardView(self.bookmark_redis))
+            await ctx.send(embed=embed,files=[pfp_file, video_file], view=StarboardView(self.bot, self.bookmark_redis))
         else:
-            await ctx.send(embed=embed,files=[pfp_file], view=StarboardView(self.bookmark_redis))
+            await ctx.send(embed=embed,files=[pfp_file], view=StarboardView(self.bot, self.bookmark_redis))
     
     #endregion
 
