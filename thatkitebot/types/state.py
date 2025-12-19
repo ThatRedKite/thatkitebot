@@ -48,10 +48,10 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
     def parse_message_create(self, data):
         channel, _ = self._get_guild_channel(data)
-        # channel would be the correct type here
-
-        message = self.create_message(channel=channel, data=data)  # type: ignore
         self.r_cache.add_message_dict(data)
+        # channel would be the correct type here
+        message = self.create_message(channel=channel, data=data)  # type: ignore
+        
         # cache the message
         self.dispatch("message", message)
 
@@ -103,7 +103,8 @@ class PartiallyCachedState(discord.state.ConnectionState):
         self.dispatch("raw_reaction_add", raw)
 
         # rich interface here
-        if (message := self._get_message(raw.message_id)) is not None:
+        if (message := self._get_message_with_data(raw.message_id)) is not None:
+            message, data_old = message
             emoji = self._upgrade_partial_emoji(emoji)
             reaction = message._add_reaction(data, emoji, raw.user_id)
             self.r_cache.add_message_object(message)
@@ -113,16 +114,19 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
     def parse_message_update(self, data) -> None:
         raw = discord.RawMessageUpdateEvent(data)
-        if (message := self._get_message(raw.message_id)) is not None:
-            older_message = copy.copy(message)
-            raw.cached_message = older_message
+        if (message := self._get_message_with_data(raw.message_id)) is not None:
             self.dispatch("raw_message_edit", raw)
-            # Coerce the `after` parameter to take the new updated Member
-            # ref: #5999
-            older_message.author = message.author
+            message, original_data = message # unpack the message tuple containing the message and the old data
+            new_message: Message = copy.copy(message)
+            
+            original_data.update(data) # update the original data
+            self.r_cache.add_message_dict(original_data) # add updated data to the cache
+            new_message._update(data) # update the message object
 
-            self.r_cache.update_message(data)
-            self.dispatch("message_edit", older_message, message)
+            raw.cached_message = message
+            new_message.author = message.author
+
+            self.dispatch("message_edit", message, new_message)
         else:
             self.r_cache.add_message_dict(data)
             self.dispatch("raw_message_edit", raw)
@@ -134,17 +138,20 @@ class PartiallyCachedState(discord.state.ConnectionState):
         if (d := data.get("message_reference")) is not None:
             if not d.get("channel_id"):
                 data["message_reference"].update({"channel_id": data["channel_id"]})
-        try:
-            return Message(state=self, channel=channel, data=data)
-        except KeyError as e:
-            self.logger.error(f"Failed to create message {data.get('id')} due to KeyError")
-        except AttributeError:
-            self.logger.error(f"Failed to create message {data.get('id')} due to KeyError")
+        return Message(state=self, channel=channel, data=data)
+
         
     def _get_message(self, msg_id: int) -> Message:
         if (data := self.r_cache.get_message_dict(msg_id)) is not None:
             channel, _ = self._get_guild_channel(data)
             return self.create_message(channel=channel, data=data)
+    
+    def _get_message_with_data(self, msg_id: int) -> tuple[Message, dict]:
+        if (data := self.r_cache.get_message_dict(msg_id)) is not None:
+            channel, _ = self._get_guild_channel(data)
+            a = copy.copy(data)
+            message = self.create_message(channel=channel, data=a), data
+            return message
     
 
 # insanely buggy mess
