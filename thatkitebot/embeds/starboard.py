@@ -92,7 +92,8 @@ class StarboardEmbed(Embed):
                 # only content is an image url
                 if url in content and url != content:
                     content = content.replace(url, f"[{content_type} link]({url})")
-                elif content == url:
+                    
+                elif content.strip() == url:
                     content = ""
 
                 # check if any text content present
