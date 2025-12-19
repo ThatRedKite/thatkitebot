@@ -29,12 +29,6 @@ import discord
 from thatkitebot.tkb_redis.serialization import message_to_dict
 
 class Message(discord.Message):
-    def __init__(self, *, state, channel, data):
-        # pycord expects channel_id to be always present, despite it being optional, so we have to add it in case it doesn't exist
-        if data.get("message_reference",{}).get("channel_id"):
-            data["message_reference"].update({"channel_id": data["channel_id"]})
-        super().__init__(state=state, channel=channel, data=data)
-
     @property
     def is_remix(self) -> bool:
         if not self.attachments or not self.reference:

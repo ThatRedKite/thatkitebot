@@ -50,7 +50,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
         channel, _ = self._get_guild_channel(data)
         # channel would be the correct type here
 
-        message = Message(channel=channel, data=data, state=self)  # type: ignore
+        message = self.create_message(channel=channel, data=data)  # type: ignore
         self.r_cache.add_message_dict(data)
         # cache the message
         self.dispatch("message", message)
@@ -121,7 +121,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
             # ref: #5999
             older_message.author = message.author
 
-            self.r_cache.add_message_dict(data)
+            self.r_cache.update_message(data)
             self.dispatch("message_edit", older_message, message)
         else:
             self.r_cache.add_message_dict(data)
@@ -131,14 +131,19 @@ class PartiallyCachedState(discord.state.ConnectionState):
             self._view_store.update_from_message(raw.message_id, data["components"])
 
     def create_message(self, *, channel, data) -> Message:
+        if (d := data.get("message_reference")) is not None:
+            if not d.get("channel_id"):
+                data["message_reference"].update({"channel_id": data["channel_id"]})
         try:
             return Message(state=self, channel=channel, data=data)
         except KeyError as e:
-            self.logger.error(f"Failed to create message {data.get('id')} due to KeyError")       
+            self.logger.error(f"Failed to create message {data.get('id')} due to KeyError")
+        except AttributeError:
+            self.logger.error(f"Failed to create message {data.get('id')} due to KeyError")
         
     def _get_message(self, msg_id: int) -> Message:
         if (data := self.r_cache.get_message_dict(msg_id)) is not None:
-            channel = self.get_channel(data["channel_id"])
+            channel, _ = self._get_guild_channel(data)
             return self.create_message(channel=channel, data=data)
     
 
