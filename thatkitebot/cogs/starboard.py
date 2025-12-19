@@ -118,7 +118,7 @@ class StarboardSettings:
             "channel_id": int(self.channel.id),
             "threshold": int(self.threshold),
             "star_emoji": self.emoji.strip(),
-            "channels": ";".join(self.channels) if self.channels else None,
+            "channels": ";".join(self.channels) if self.channels else "",
             "max_age": int(self.max_age),
             "video": int(self.video_enabled),
             "threads": int(self.ignore_threads),
@@ -259,8 +259,8 @@ class StarboardCog(commands.Cog):
         settings.channel = channel
         settings.emoji = emoji
         settings.max_age = parse_timestring(max_age) or 0
-        settings.video_enabled = enable_video
-        settings.ignore_threads = ignore_threads
+        settings.video_enabled = enable_video or True
+        settings.ignore_threads = ignore_threads or False
 
         await settings.save()
 
@@ -674,7 +674,7 @@ class StarboardCog(commands.Cog):
                         else:
                             # try fetching the original message with the id from the database
                             try:
-                                starboard_message = await self.bot.get_or_fetch_message(in_database)
+                                starboard_message = await self.bot.get_or_fetch_message(in_database, settings.channel.id)
                                 already_posted = True
 
                             except discord.NotFound:
