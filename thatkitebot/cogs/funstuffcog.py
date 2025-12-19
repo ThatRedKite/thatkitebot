@@ -75,7 +75,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                 cache_counter += 1
         
             if len(messages) < 200:
-                async for message in channel.history(limit=1000, before=self._last_time(messages)).filter(lambda m: m not in messages and m.author.id == member.id):
+                async for message in channel.history(limit=2000, before=self._last_time(messages)).filter(lambda m: m not in messages and m.author.id == member.id):
                     messages.append(message)
                     await self.cache.add_message_object(message)
                     api_counter += 1
@@ -86,7 +86,7 @@ class FunStuff(commands.Cog, name="fun commands"):
                 cache_counter += 1
 
             if len(messages) < 200:
-                async for message in channel.history(limit=1000, before=self._last_time(messages)).filter(lambda m: m not in messages):
+                async for message in channel.history(limit=2000, before=self._last_time(messages)).filter(lambda m: m not in messages):
                     messages.append(message)
                     await self.cache.add_message_object(message)
                     api_counter += 1
