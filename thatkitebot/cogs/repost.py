@@ -34,6 +34,7 @@ import discord
 
 from redis import asyncio as aioredis
 from discord.ext import commands
+from discord_emoji import discord_to_uni
 
 from thatkitebot.base.image_stuff import hasher, download_image
 from thatkitebot.base.url import get_image_urls, get_tenor_image_url
@@ -80,7 +81,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
     async def hash_from_url(self, urls: list[str]):
         for url in urls:
             image_data = await download_image(self.aiohttp, url)
-            yield await hasher(self.loop, image_data)
+            yield await hasher(self.loop, image_data, self.hasher_pool)
 
     async def extract_imagehash(self, message):
         """
@@ -113,7 +114,7 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                             # download and hash the tenor gif
                             try:
                                 async with self.aiohttp.get(get_tenor_image_url(message.content)) as r:
-                                    yield hasher(self.loop, await r.read(), self.hasher_pool)
+                                    yield await hasher(self.loop, await r.read(), self.hasher_pool)
                             except:
                                 yield None
                     case "video":
@@ -269,31 +270,18 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                 if image_hash is None:
                     return
                 
-                # first check for a direct match
-                async for scan_key in self.repost_redis.scan_iter(f"*:{image_hash}"):
-                    # get the jump url
-                    jump_url = await self.repost_redis.hget(scan_key, "jump_url")
-
-                    # turn the jump url into IDs
-                    message_id, channel_id, guild_id = ids_from_link(jump_url)
-
-                    repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
-                    if repost:
-                        # direct match found, break loop and bypass scanning for similar images
-                        hash_key = scan_key
+                async for distance, hash_key in self.check_distance(image_hash):
+                    # if the distance is less than 20, it's a repost
+                    if distance <= 20:
+                        jump_url = await self.repost_redis.hget(hash_key, "jump_url")
+                        _, channel_id, guild_id = ids_from_link(jump_url)
+                        repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
                         break
 
-                if not repost:
-                    async for distance, hash_key in self.check_distance(image_hash):
-                        # if the distance is less than 20, it's a repost
-                        if distance <= 20:
-                            jump_url = await self.repost_redis.hget(hash_key, "jump_url")
-                            _, channel_id, guild_id = ids_from_link(jump_url)
-                            repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
-                            break
-
-                if repost:
-                    await message.add_reaction("♻️")  # add the repost reaction
+                if repost:      
+                    await message.add_reaction(discord_to_uni("recycle"))  # add the repost reaction
+                    if int(await self.repost_redis.hget(hash_key, "repost_count")) > 5:
+                        await message.add_reaction(discord_to_uni("yawning_face"))
                     await self.repost_redis.hincrby(hash_key, "repost_count", 1)  # increment the repost count
                 else:
                     # the message does not appear to be a repost, let's add it to the database

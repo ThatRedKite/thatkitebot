@@ -146,7 +146,7 @@ class ListenerCog(commands.Cog):
 
         self.logger.info(f"{self.bot.user.name} is now ready")
         await self.bot.change_presence(
-            activity=discord.Activity(name="suffering", type=5),
+            activity=discord.Activity(name="bugs", type=5),
             status=discord.Status.online,
         )
 
@@ -225,4 +225,3 @@ class ListenerCog(commands.Cog):
 
 def setup(bot) -> None:
     bot.add_cog(ListenerCog(bot))
-
