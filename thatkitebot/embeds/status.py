@@ -69,7 +69,8 @@ async def gen_embed(bot, redis) -> Embed:
                f"Commands invoked this hour: **{bot.command_invokes_hour}**\n"
                f"Events per hour: **{si_prefix.si_format(bot.events_hour, 0)}**\n"
                f"Events total: **{si_prefix.si_format(bot.events_total, 0)}**\n"
-               f"Bookmarks: **{await bot.redis_bookmarks.dbsize() or 0}**"
+               f"Bookmarks: **{await bot.redis_bookmarks.dbsize() or 0}**\n"
+               f"Repost Hashes: **{await bot.redis_repost.dbsize() or 0}**"
                ),
         inline=False
     )
