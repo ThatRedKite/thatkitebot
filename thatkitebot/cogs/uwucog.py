@@ -62,7 +62,7 @@ def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw
     for embed in message.embeds:
         match embed.type:
             # ignore embeds that just contain media
-            case "image" | "gifv" | "youtube":
+            case "image" | "youtube":
                 embeds.append(embed)
 
             # bot rich embeds often contain fields and footers which will need to be uwuified as well
@@ -121,7 +121,7 @@ def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw
                 embeds.append(uwu_article)
 
             case _:
-                raise
+                return embeds
     return embeds
                 
 #endregion
