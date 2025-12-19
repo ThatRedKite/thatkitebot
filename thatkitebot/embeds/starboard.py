@@ -90,8 +90,10 @@ class StarboardEmbed(Embed):
                     self._set_tenor_gif = True
 
                 # only content is an image url
-                if url in content:
+                if url in content and url != content:
                     content = content.replace(url, f"[{content_type} link]({url})")
+                elif content == url:
+                    content = ""
 
                 # check if any text content present
                 if url and content == url and content_type == "image":
