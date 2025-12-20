@@ -118,6 +118,7 @@ def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw
                 )
                 if embed.provider:
                     uwu_article.set_author(name=uwu.uwuify(embed.provider.name), url=embed.provider.url)
+                
                 embeds.append(uwu_article)
 
             case _:
@@ -322,7 +323,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         process_embeds = True
         uwu_embeds = None
         output = None
-
+        
         # copy attachments if they are not remixes
         if not message.is_remix and message.attachments:
             for attachment in message.attachments:
@@ -335,10 +336,14 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         msg_content = unidecode(message.content, errors="preserve")
         
         # if the user cant embed links, make links not embed by surrounding them with <>
-        if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
-            links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
-            msg_content = re.sub(links, r"<\1>", msg_content)
-            process_embeds = False
+        try:
+            if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
+                links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
+                msg_content = re.sub(links, r"<\1>", msg_content)
+                process_embeds = False
+                
+        except AttributeError:
+            process_embeds = True
         
         msg_small = textwrap.wrap(msg_content, msg_len)
 
@@ -348,7 +353,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         
         # get the first non-None intensity or default to 1.0 if there isn't any intensity set
         intensity = next((float(i) for i in intensities if i is not None), 1.0)
-
+        
         # check if we have text in the message and uwuify it
         if len(msg_small) > 0:
             msg_content = uwuify(msg_small[0], message.id, intensity, message.channel.nsfw) 
@@ -361,6 +366,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # process the embeds
         if process_embeds:
             uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
+            if output:
+                for embed in uwu_embeds:
+                    output[0] = output[0].replace(embed.url, f"<{embed.url}>")
         
         if output:
             return output[0], files, uwu_embeds
@@ -386,6 +394,22 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         await ctx.reply(output, files=files, embeds=uwu_embeds)
 
     #region main listener
+    @commands.Cog.listener()
+    async def on_message_edit(self, old: Message, new: Message):
+        self.bot.events_hour += 1
+        self.bot.events_total += 1
+        
+        if not old.webhook_id or old.embeds or not new.embeds:
+            return
+        
+        wh = await self.get_uwu_webhook(old.channel)
+
+        if wh and old.webhook_id == wh.id:
+            intensities = await self.redis.hmget(f"uwui:{new.guild.id}", [f"u:{new.author.id}", f"c:{new.channel.id}", "g"])
+            intensity = next((float(i) for i in intensities if i is not None), 1.0)
+            embeds = uwuify_embeds(new, new.id, intensity, new.channel.nsfw)
+            await wh.edit_message(old.id, embeds=embeds)
+
     @commands.Cog.listener()
     async def on_message(self, message: Message):
         self.bot.events_hour += 1
