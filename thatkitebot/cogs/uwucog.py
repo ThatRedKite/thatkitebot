@@ -388,6 +388,8 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                     if lock := self.locks.pop(str(message.id), None):
                         del lock
 
+                    self.uwuiufied_embeds.pop(str(message.id), None)
+
             elif message.embeds:
                 # if the message alrea
                 uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
