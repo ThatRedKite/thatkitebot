@@ -47,6 +47,7 @@ TENOR_PATTERN = re.compile(r"(?i)^https://tenor.com\S+-(?P<id>\d+)$")
 # pattern for
 EMOJI_PATTERN = re.compile(r"(?i)<:(?P<name>\S+):(?P<id>\d+)>")
 
+LINK_PATTERN = re.compile(r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)")
 
 def get_avatar_url(user: discord.User) -> str:
     if user.avatar:
