@@ -64,7 +64,9 @@ class EmbedColors:
 
 def parse_timestring(time_string:str):
     total_delta = 0
-
+    if not time_string:
+        return 0
+    
     for matched in re.finditer(LE_REGEX, time_string):
         match matched[2]:
             case "s":
