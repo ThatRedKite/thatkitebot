@@ -391,6 +391,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             elif message.embeds:
                 # if the message alrea
                 uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
+            
+            else:
+                uwu_embeds = message.embeds
 
         if output:
             return output[0], files, uwu_embeds
