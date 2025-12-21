@@ -114,8 +114,8 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
     def parse_message_update(self, data) -> None:
         raw = discord.RawMessageUpdateEvent(data)
+        self.dispatch("raw_message_edit", raw)
         if (message := self._get_message_with_data(raw.message_id)) is not None:
-            self.dispatch("raw_message_edit", raw)
             message, original_data = message # unpack the message tuple containing the message and the old data
             new_message: Message = copy.copy(message)
             
@@ -125,11 +125,10 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
             raw.cached_message = message
             new_message.author = message.author
-
+            
             self.dispatch("message_edit", message, new_message)
         else:
             self.r_cache.add_message_dict(data)
-            self.dispatch("raw_message_edit", raw)
 
         if "components" in data and self._view_store.is_message_tracked(raw.message_id):
             self._view_store.update_from_message(raw.message_id, data["components"])
