@@ -711,15 +711,16 @@ class StarboardCog(commands.Cog):
 
                         elif already_posted and isinstance(starboard_message, Message):
                             # update the starboard message
-                            embed, pfp_file, _ = await generate_embed(
-                                message,
-                                count,
-                                settings.emoji,
-                                aiohttp_session=self.bot.aiohttp_session,
-                                return_file=True,
-                                tenor_token=self.bot.tenor_token
-                            )
-                            await starboard_message.edit(embed=embed, files=[pfp_file])
+                            if starboard_message.author.id == self.bot.user.id:
+                                embed, pfp_file, _ = await generate_embed(
+                                    message,
+                                    count,
+                                    settings.emoji,
+                                    aiohttp_session=self.bot.aiohttp_session,
+                                    return_file=True,
+                                    tenor_token=self.bot.tenor_token
+                                )
+                                await starboard_message.edit(embed=embed, files=[pfp_file])
 
                         else:
                             return
