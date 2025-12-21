@@ -370,20 +370,26 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         # process the embeds
         if process_embeds:
+            # if a message that should contain an embed doesn't have it yet wait for it to be edited in
             if not message.embeds and re.match(LINK_PATTERN, message.content):
+                # add a lock for this message to the dict and acquire it
                 self.locks.update({str(message.id): asyncio.Lock()})
                 await self.locks[str(message.id)].acquire() # acquire lock
                 try:
-                    #try to acquire it again 
+                    # try to acquire it again with a timeout of 2 seconds, blocking until the embeds have been edited in
                     await asyncio.wait_for(self.locks[str(message.id)].acquire(), timeout=2)
-                    uwu_embeds = self.uwuiufied_embeds.pop(str(message.id), [])
+                    # get the embeds which were uwuified in the message edit event
+                    uwu_embeds = self.uwuiufied_embeds.pop(str(message.id), [])                
                 except TimeoutError:
+                    # set the embeds to [] if it times out
                     uwu_embeds = message.embeds
                 finally:
+                    # make sure the lock is removed from the dict containing the locks
                     if lock := self.locks.pop(str(message.id), None):
                         del lock
 
             elif message.embeds:
+                # if the message alrea
                 uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
 
         if output:
@@ -414,13 +420,19 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     async def on_message_edit(self, old: Message, new: Message):
         self.bot.events_hour += 1
         self.bot.events_total += 1
-        
-        if old.embeds or not new.embeds:
-            return
-    
         try:
+            if old.embeds or not new.embeds:
+                # get the lock from the dict
+                condition = self.locks.pop(str(old.id))
+                # return embeds unuwuified and release the lock
+                self.uwuiufied_embeds.update({str(old.id): old.embeds})
+                condition.release()
+
+            # get the lock for the message from the dict
             condition = self.locks.pop(str(old.id))
+            # uwuify the now-added embeds
             uwuified_embeds = uwuify_embeds(new, new.id, await self._get_intensity(new.guild.id, new.author.id, new.channel.id))
+            # store them in the dict and release the lock
             self.uwuiufied_embeds.update({str(old.id): uwuified_embeds})
             condition.release()
         except Exception as e:
