@@ -30,6 +30,7 @@ import io
 import textwrap
 import asyncio
 
+from functools import partial
 from typing import Union
 import discord
 
@@ -40,7 +41,7 @@ from discord.ext import commands, tasks
 from redis import asyncio as aioredis
 
 import thatkitebot
-from thatkitebot.base.url import get_avatar_url
+from thatkitebot.base.url import get_avatar_url, LINK_PATTERN
 from thatkitebot.base.util import PermissonChecks as pc
 from thatkitebot.base.util import set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
@@ -123,8 +124,8 @@ def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw
 
             case _:
                 return embeds
-    return embeds
-                
+    return embeds         
+
 #endregion
 
 #region Cog
@@ -132,7 +133,9 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     def __init__(self, bot):
         self.bot: thatkitebot.ThatKiteBot = bot
         self.redis: aioredis.Redis = bot.redis
-        self.webhooks = {}
+        self.webhooks: dict[str, discord.Webhook] = {}
+        self.locks: dict[str, asyncio.Lock] = {}
+        self.uwuiufied_embeds: dict[str, list[discord.Embed]] = {}
 
 
     @tasks.loop(hours=1)
@@ -142,6 +145,17 @@ class UwuCog(commands.Cog, name="UwU Commands"):
     #region private methods
     async def _uwu_enabled(self, ctx):
         return await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU)
+
+    def _has_embed_updated(self, message_id: str):
+        return self.uwuiufied_embeds.pop(message_id, None)
+
+    async def _get_intensity(self, guild_id, user_id, channel_id) -> float:
+        # - all intensities override each other, individual user being the strongest one -
+        # get the intensities in order author, channel, global
+        intensities = await self.redis.hmget(f"uwui:{guild_id}", [f"u:{user_id}", f"c:{channel_id}", "g"])
+        
+        # get the first non-None intensity or default to 1.0 if there isn't any intensity set
+        return next((float(i) for i in intensities if i is not None), 1.0)
     
     async def _change_uwu_status(self, ctx:discord.ApplicationContext, to_change: Union[abc.GuildChannel, discord.User, discord.Member], intensity: float) -> bool:
         logger = set_up_guild_logger(ctx.guild.id)
@@ -337,27 +351,18 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         
         # if the user cant embed links, make links not embed by surrounding them with <>
         try:
-            if not message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links:
-                links = r"(https?:\/\/[A-Za-z0-9\-._~!$&'()*+,;=:@\/?]+)"
-                msg_content = re.sub(links, r"<\1>", msg_content)
+            if not (message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links):
+                msg_content = re.sub(LINK_PATTERN, r"<\1>", msg_content)
                 process_embeds = False
                 
         except AttributeError:
             process_embeds = True
         
         msg_small = textwrap.wrap(msg_content, msg_len)
-
-        # - all intensities override each other, individual user being the strongest one -
-        # get the intensities in order author, channel, global
-        intensities = await self.redis.hmget(f"uwui:{message.guild.id}", [f"u:{message.author.id}", f"c:{message.channel.id}", "g"])
-        
-        # get the first non-None intensity or default to 1.0 if there isn't any intensity set
-        intensity = next((float(i) for i in intensities if i is not None), 1.0)
-        
+        intensity = await self._get_intensity(message.guild.id, message.author.id, message.channel.id)
         # check if we have text in the message and uwuify it
         if len(msg_small) > 0:
             msg_content = uwuify(msg_small[0], message.id, intensity, message.channel.nsfw) 
-
             # split it up while maintaining whole words
             output = textwrap.wrap(msg_content, 2000)
             # for each new "message" send it in the channel
@@ -365,11 +370,22 @@ class UwuCog(commands.Cog, name="UwU Commands"):
 
         # process the embeds
         if process_embeds:
-            uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
-            if output:
-                for embed in uwu_embeds:
-                    output[0] = output[0].replace(embed.url, f"<{embed.url}>")
-        
+            if not message.embeds and re.match(LINK_PATTERN, message.content):
+                self.locks.update({str(message.id): asyncio.Lock()})
+                await self.locks[str(message.id)].acquire() # acquire lock
+                try:
+                    #try to acquire it again 
+                    await asyncio.wait_for(self.locks[str(message.id)].acquire(), timeout=2)
+                    uwu_embeds = self.uwuiufied_embeds.pop(str(message.id), [])
+                except TimeoutError:
+                    uwu_embeds = message.embeds
+                finally:
+                    if lock := self.locks.pop(str(message.id), None):
+                        del lock
+
+            elif message.embeds:
+                uwu_embeds = uwuify_embeds(message, message.id, intensity, message.channel.nsfw)
+
         if output:
             return output[0], files, uwu_embeds
         else:
@@ -399,16 +415,17 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         self.bot.events_hour += 1
         self.bot.events_total += 1
         
-        if not old.webhook_id or old.embeds or not new.embeds:
+        if old.embeds or not new.embeds:
             return
-        
-        wh = await self.get_uwu_webhook(old.channel)
-
-        if wh and old.webhook_id == wh.id:
-            intensities = await self.redis.hmget(f"uwui:{new.guild.id}", [f"u:{new.author.id}", f"c:{new.channel.id}", "g"])
-            intensity = next((float(i) for i in intensities if i is not None), 1.0)
-            embeds = uwuify_embeds(new, new.id, intensity, new.channel.nsfw)
-            await wh.edit_message(old.id, embeds=embeds)
+    
+        try:
+            condition = self.locks.pop(str(old.id))
+            uwuified_embeds = uwuify_embeds(new, new.id, await self._get_intensity(new.guild.id, new.author.id, new.channel.id))
+            self.uwuiufied_embeds.update({str(old.id): uwuified_embeds})
+            condition.release()
+        except Exception as e:
+            return
+            
 
     @commands.Cog.listener()
     async def on_message(self, message: Message):
@@ -422,11 +439,6 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         if not await self._listener_checks(message):
             return
         
-        # Check if the user is a bot and if they are affected by uwuify
-        # Carter's code (Updated)
-        
-        # get or create the uwu webhook
-        # if we failed to create it somehow, raise 
         try:
             if not (webhook := await self.get_uwu_webhook(message.channel)):
                 return
