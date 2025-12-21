@@ -68,6 +68,7 @@ class FunStuff(commands.Cog, name="fun commands"):
         messages = []
         api_counter = 0
         cache_counter = 0
+        limit = 2000
 
         if channel and member:
             async for message in self.cache.channel_history_iter(channel, member.id, limit=None):
@@ -76,11 +77,13 @@ class FunStuff(commands.Cog, name="fun commands"):
                     cache_counter += 1
         
             if len(messages) < 200:
-                async for message in channel.history(limit=2000, before=self._last_time(messages)).filter(lambda m: m not in messages and m.author.id == member.id):
+                async for message in channel.history(limit=limit, before=self._last_time(messages)).filter(lambda m: m not in messages and m.author.id == member.id):
                     if len(message.content) > 2:
                         messages.append(message)
                         await self.cache.add_message_object(message)
                         api_counter += 1
+                    else:
+                        limit += 1
 
         elif channel and not member:
             async for message in self.cache.channel_history_iter(channel, limit=None):
@@ -89,11 +92,13 @@ class FunStuff(commands.Cog, name="fun commands"):
                     cache_counter += 1
 
             if len(messages) < 200:
-                async for message in channel.history(limit=2000, before=self._last_time(messages)).filter(lambda m: m not in messages):
+                async for message in channel.history(limit=limit, before=self._last_time(messages)).filter(lambda m: m not in messages):
                     if len(message.content) > 2:
                         messages.append(message)
                         await self.cache.add_message_object(message)
                         api_counter += 1
+                    else:
+                        limit += 1
 
 
         output = set()
