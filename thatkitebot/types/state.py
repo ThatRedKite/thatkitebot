@@ -137,8 +137,10 @@ class PartiallyCachedState(discord.state.ConnectionState):
         if (d := data.get("message_reference")) is not None:
             if not d.get("channel_id"):
                 data["message_reference"].update({"channel_id": data["channel_id"]})
-        return Message(state=self, channel=channel, data=data)
-
+        try:
+            return Message(state=self, channel=channel, data=data)
+        except KeyError:
+            self.logger.error(f"failed to create message {data["id"]} due to KeyError")
         
     def _get_message(self, msg_id: int) -> Message:
         if (data := self.r_cache.get_message_dict(msg_id)) is not None:
