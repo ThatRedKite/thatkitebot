@@ -715,7 +715,7 @@ class StarboardCog(commands.Cog):
                             # update the starboard message
 
                             # update the leaderboard
-                            await self.star_redis.zadd(f"leaderboard:{payload.guild_id}", {starboard_message.id: count})
+                            await self.star_redis.zadd(f"leaderboard:{payload.guild_id}", {message.id: count})
 
                             if starboard_message.author.id == self.bot.user.id:
                                 embed, pfp_file, _ = await generate_embed(
