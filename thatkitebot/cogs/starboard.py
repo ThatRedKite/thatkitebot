@@ -707,10 +707,16 @@ class StarboardCog(commands.Cog):
 
                             # add the new message to the database
                             await self.star_redis.set(f"{payload.guild_id}:{message.id}", new_message.id)
+                            # update the leaderboard
+                            await self.star_redis.zadd(f"leaderboard:{payload.guild_id}", {message.id: count})
                             return
 
                         elif already_posted and isinstance(starboard_message, Message):
                             # update the starboard message
+
+                            # update the leaderboard
+                            await self.star_redis.zadd(f"leaderboard:{payload.guild_id}", {starboard_message.id: count})
+
                             if starboard_message.author.id == self.bot.user.id:
                                 embed, pfp_file, _ = await generate_embed(
                                     message,
@@ -731,6 +737,13 @@ class StarboardCog(commands.Cog):
                 case _:
                     return
                    
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        # check if message is on starboard
+        if await self.star_redis.exists(f"{payload.guild_id}:{payload.message_id}"):
+            # delete message from the database and the leaderboard
+            await self.star_redis.delete(f"{payload.guild_id}:{payload.message_id}")
+            await self.star_redis.zrem(f"leaderboard:{payload.guild_id}", payload.message_id)
 
     @commands.Cog.listener()
     async def on_application_command_error(self, ctx: discord.ApplicationContext, exception):
