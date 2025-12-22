@@ -70,7 +70,7 @@ class StarboardView(discord.ui.View):
 
     @discord.ui.button(label="Bookmark Post", style=discord.ButtonStyle.secondary, custom_id=f"starboard-bookmark-button", emoji="🔖")
     async def button(self, button: discord.Button, interaction: discord.Interaction):
-        bm = Bookmark.from_message(self.redis, interaction.user.id, interaction.message, f"Starboard Message by {interaction.message.author.name}")
+        bm = Bookmark.from_message(self.redis, interaction.user.id, interaction.message, f"Starboard Message by {interaction.message.embeds[0].title}")
         await bm.save()
         del bm
 
