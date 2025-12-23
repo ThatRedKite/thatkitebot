@@ -259,7 +259,9 @@ class RedisCacheAsync:
             await self.message_cache.expire(entry_name, timedelta(seconds=15), lt=True)
 
             # clean up the LUT
-            await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+            await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
+            await self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
+            await self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
             await self.message_pipeline.execute()
             await self.id_pipeline.execute()
 
@@ -273,7 +275,9 @@ class RedisCacheAsync:
             else:
                 continue
 
-        await self.message_pipeline.delete(*names), self.message_pipeline.execute(), self.id_pipeline.execute()
+        await self.message_pipeline.delete(names)
+        await self.message_pipeline.execute()
+        await self.id_pipeline.execute()
 
     async def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
         await self.id_pipeline.execute()
@@ -439,9 +443,9 @@ class RedisCacheSyncPartial:
         guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
         name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
 
-        data_old = self.compressed_read_key(self.message_cache, name)
-        data_old.update(data_new)
-        self.compressed_write_key(self.message_pipeline, name, data_old)
+        if data_old := self.compressed_read_key(self.message_cache, name):
+            data_old.update(data_new)
+            self.compressed_write_key(self.message_pipeline, name, data_old)
 
     def compressed_write_hash(self, pipeline, name: str, key: str, dict_data:dict):
         return pipeline.hset(name, key, compress_data(dict_data))
@@ -711,7 +715,7 @@ class RedisCacheSync(RedisCacheSyncPartial):
             else:
                 continue
 
-        self.message_pipeline.delete(*names)
+        self.message_pipeline.delete(names)
         self.message_pipeline.execute()
         self.id_pipeline.execute()
 #endregion
