@@ -114,8 +114,8 @@ class PartiallyCachedState(discord.state.ConnectionState):
     def parse_message_update(self, data) -> None:
         raw = discord.RawMessageUpdateEvent(data)
         self.dispatch("raw_message_edit", raw)
-        if None not in (message := self._get_message_with_data(raw.message_id)):
-            message, original_data = message # unpack the message tuple containing the message and the old data
+        if None not in (message_tuple := self._get_message_with_data(raw.message_id)):
+            message, original_data = message_tuple # unpack the message tuple containing the message and the old data
             new_message: Message = copy.copy(message)
             
             original_data.update(data) # update the original data
@@ -124,7 +124,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
 
             raw.cached_message = message
             new_message.author = message.author
-            
+                
             self.dispatch("message_edit", message, new_message)
         else:
             self.r_cache.add_message_dict(data)
