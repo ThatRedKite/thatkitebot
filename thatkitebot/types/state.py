@@ -151,7 +151,9 @@ class PartiallyCachedState(discord.state.ConnectionState):
             channel, _ = self._get_guild_channel(data)
             a = copy.copy(data)
             message = self.create_message(channel=channel, data=a), data
-            return message
+            return message, data
+        else:
+            return None, None
     
 
 # insanely buggy mess
