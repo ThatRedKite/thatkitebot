@@ -9,12 +9,12 @@ services:
     ports:
       - 5678:5678
     volumes:
-      - ./thatkitebot/:/app/thatkitebot
-      - ./data/:/app/data/
-      - ./trains/:/app/data/trains/
-      - ./.git/:/app/.git
-      - ./logs/:/var/log/thatkitebot/
-      - ./config/policy.xml:/etc/ImageMagick-6/policy.xml
+      - ./thatkitebot/:/app/thatkitebot:Z
+      - ./data/:/app/data/:Z
+      - ./trains/:/app/data/trains/:Z
+      - ./.git/:/app/.git:Z
+      - ./logs/:/var/log/thatkitebot/:Z
+      - ./config/policy.xml:/etc/ImageMagick-6/policy.xml:Z
     restart:  "no"
     environment:
       - PYTHONUNBUFFERED=1
@@ -26,7 +26,7 @@ services:
   redis:
     container_name: thatkitebot_redis
     volumes:
-      - ./data/redis:/data
+      - ./data/redis:/data:Z
     image: "valkey/valkey:alpine"
     entrypoint: valkey-server --appendonly yes --hz 50
 
