@@ -101,21 +101,20 @@ class PartiallyCachedState(discord.state.ConnectionState):
             raw.member = None
 
         self.dispatch("raw_reaction_add", raw)
-
+        self.r_cache.update_message(data)
+        
         # rich interface here
-        if (message := self._get_message_with_data(raw.message_id)) is not None:
-            message, data_old = message
+        if (message := self._get_message(raw.message_id)) is not None:
             emoji = self._upgrade_partial_emoji(emoji)
-            reaction = message._add_reaction(data, emoji, raw.user_id)
-            self.r_cache.add_message_object(message)
-
-            if user := (raw.member or self._get_reaction_user(message.channel, raw.user_id)):
+            
+            if (user := (raw.member or self._get_reaction_user(message.channel, raw.user_id))) and message:
+                reaction = message._add_reaction(data, emoji, raw.user_id)
                 self.dispatch("reaction_add", reaction, user)
 
     def parse_message_update(self, data) -> None:
         raw = discord.RawMessageUpdateEvent(data)
         self.dispatch("raw_message_edit", raw)
-        if (message := self._get_message_with_data(raw.message_id)) is not None:
+        if None not in (message := self._get_message_with_data(raw.message_id)):
             message, original_data = message # unpack the message tuple containing the message and the old data
             new_message: Message = copy.copy(message)
             
