@@ -150,7 +150,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
         if (data := self.r_cache.get_message_dict(msg_id)) is not None:
             channel, _ = self._get_guild_channel(data)
             a = copy.copy(data)
-            message = self.create_message(channel=channel, data=a), data
+            message = self.create_message(channel=channel, data=a)
             return message, data
         else:
             return None, None
