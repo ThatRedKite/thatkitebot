@@ -101,7 +101,6 @@ class PartiallyCachedState(discord.state.ConnectionState):
             raw.member = None
 
         self.dispatch("raw_reaction_add", raw)
-        self.r_cache.update_message(data)
         
         # rich interface here
         if (message := self._get_message(raw.message_id)) is not None:
@@ -109,6 +108,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
             
             if (user := (raw.member or self._get_reaction_user(message.channel, raw.user_id))) and message:
                 reaction = message._add_reaction(data, emoji, raw.user_id)
+                self.r_cache.add_message_object(message)
                 self.dispatch("reaction_add", reaction, user)
 
     def parse_message_update(self, data) -> None:
