@@ -435,15 +435,18 @@ class RedisCacheSyncPartial:
             pipeline.execute()
 
     def update_message(self, data_new: dict) -> None:
-        message_id = int(data_new.get("id"))
-        author_id = int(data_new.get("author").get("id"))
-        guild_id = int(data_new.get("guild_id", 0))
-        channel_id = int(data_new.get("channel_id", 0))
-
+        try:
+            message_id = int(data_new.get("id"))
+            author_id = int(data_new.get("author").get("id"))
+            guild_id = int(data_new.get("guild_id", 0))
+            channel_id = int(data_new.get("channel_id", 0))
+        except KeyError | AttributeError:
+            return
+        
         guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
         name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
 
-        if data_old := self.compressed_read_key(self.message_cache, name):
+        if (data_old := self.compressed_read_key(self.message_cache, name)) and data_new:
             data_old.update(data_new)
             self.compressed_write_key(self.message_pipeline, name, data_old)
 
@@ -714,8 +717,8 @@ class RedisCacheSync(RedisCacheSyncPartial):
 
             else:
                 continue
-
-        self.message_pipeline.delete(names)
-        self.message_pipeline.execute()
+                
+        self.message_pipeline.delete(*names)
+        self.message_pipeline.execute(raise_on_error=False)
         self.id_pipeline.execute()
 #endregion
