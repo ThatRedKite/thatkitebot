@@ -717,8 +717,9 @@ class RedisCacheSync(RedisCacheSyncPartial):
 
             else:
                 continue
-                
-        self.message_pipeline.delete(*names)
-        self.message_pipeline.execute(raise_on_error=False)
-        self.id_pipeline.execute()
+        
+        if names:
+            self.message_pipeline.delete(*names)
+            self.message_pipeline.execute(raise_on_error=False)
+            self.id_pipeline.execute()
 #endregion
