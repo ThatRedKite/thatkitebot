@@ -110,6 +110,7 @@ class StarboardSettings:
         new.channels = data["channels"].split(";")
         new.ignore_threads = data.get("threads", False)
         new.video_enabled = data.get("video", True)
+        new.max_age = int(data.get("max_age", 0))
 
         return new
 
