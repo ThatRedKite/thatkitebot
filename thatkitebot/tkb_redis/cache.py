@@ -315,8 +315,11 @@ class RedisCacheAsync:
 
 
     async def add_message_object(self, message: Message):
-        await self.add_message_dict(message_to_dict(message))
-
+        try:
+            await self.add_message_dict(dict(message))
+        except NotImplementedError:
+            pass
+        
     async def add_channel_object(self, channel: discord.abc.GuildChannel):
         channel_data = channel_to_dict(channel)
 
@@ -578,8 +581,11 @@ class RedisCacheSyncPartial:
         self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, mapping={str(channel_id): str(guild_id)})
 
     def add_message_object(self, message: Message):
-        self.add_message_dict(message_to_dict(message))
-        del message
+        try:
+            self.add_message_dict(dict(message))
+            del message
+        except NotImplementedError:
+            pass # ignore
     
 #region sync class
 class RedisCacheSync(RedisCacheSyncPartial):
