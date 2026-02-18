@@ -213,7 +213,8 @@ def message_to_dict(message: discord.Message) -> dict:
         webhook_id = message.webhook_id if message.webhook_id else REMOVE,
         guild_id = message.guild.id or None,
         flags = message.flags.value if message.flags else REMOVE,
-        components = [component.to_dict() for component in message.components] if message.components else REMOVE,
+        # FIXME: add components
+        components = [] if message.components else REMOVE,
         poll = message.poll.to_dict() if message.poll else REMOVE,
         call = call_to_dict(message.call) if message.call else REMOVE,
         activity = dict(message.activity) if message.application else REMOVE,

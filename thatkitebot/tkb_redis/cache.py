@@ -316,7 +316,7 @@ class RedisCacheAsync:
 
     async def add_message_object(self, message: Message):
         try:
-            await self.add_message_dict(dict(message))
+            await self.add_message_dict(message.__dict__())
         except NotImplementedError:
             pass
         
@@ -582,7 +582,7 @@ class RedisCacheSyncPartial:
 
     def add_message_object(self, message: Message):
         try:
-            self.add_message_dict(dict(message))
+            self.add_message_dict(message.__dict__())
             del message
         except NotImplementedError:
             pass # ignore
