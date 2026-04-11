@@ -162,14 +162,16 @@ class ThatKiteBot(commands.Bot, ABC):
 
         self.logger.info("Redis: Trying to connect")
         try:
+            conn_pool = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False)
+
             # db 0 is free at the moment as it formerly contained the auth stuff
             # this initializes all the different redis connections needed to run kitebot
-            self.redis = aioredis.Redis(host=self.redis_host, db=1, decode_responses=True)
-            self.redis_repost = aioredis.Redis(host=self.redis_host, db=2, decode_responses=True)
-            self.redis_welcomes = aioredis.Redis(host=self.redis_host, db=3, decode_responses=True)
-            self.redis_bookmarks = aioredis.Redis(host=self.redis_host, db=4, decode_responses=True)
-            self.redis_starboard = aioredis.Redis(host=self.redis_host, db=5, decode_responses=True)
-            self.persistent_cache = aioredis.Redis(host=self.redis_host, db=6, decode_responses=False)
+            self.redis = aioredis.Redis(connection_pool=conn_pool, db=1, decode_responses=True)
+            self.redis_repost = aioredis.Redis(connection_pool=conn_pool, db=2, decode_responses=True)
+            self.redis_welcomes = aioredis.Redis(connection_pool=conn_pool, db=3, decode_responses=True)
+            self.redis_bookmarks = aioredis.Redis(connection_pool=conn_pool, db=4, decode_responses=True)
+            self.redis_starboard = aioredis.Redis(connection_pool=conn_pool, db=5, decode_responses=True)
+            self.persistent_cache = aioredis.Redis(connection_pool=conn_pool, db=6, decode_responses=False)
             
             # initialize the async and the normal cache classes
             self.r_cache = RedisCacheAsync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
