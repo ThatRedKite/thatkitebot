@@ -163,17 +163,21 @@ class ThatKiteBot(commands.Bot, ABC):
 
         self.logger.info("Redis: Trying to connect")
         try:
-            conn_pool = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False)
+            conn_pool = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False, db=1, decode_responses=True)
+            conn_pool_repost = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False, db=2, decode_responses=True)
+            conn_pool_welcome = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False, db=3, decode_responses=True)
+            conn_pool_bookmarks = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False, db=4, decode_responses=True)
+            conn_pool_starboard = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False, db=5, decode_responses=True)
+            conn_pool_persistent_cache = aioredis.ConnectionPool(host=self.redis_host, socket_keepalive=False, db=6, decode_responses=False)
 
             # db 0 is free at the moment as it formerly contained the auth stuff
             # this initializes all the different redis connections needed to run kitebot
-            self.redis = aioredis.Redis(connection_pool=conn_pool, db=1, decode_responses=True)
-
-            self.redis_repost = aioredis.Redis(connection_pool=conn_pool, db=2, decode_responses=True)
-            self.redis_welcomes = aioredis.Redis(connection_pool=conn_pool, db=3, decode_responses=True)
-            self.redis_bookmarks = aioredis.Redis(connection_pool=conn_pool, db=4, decode_responses=True)
-            self.redis_starboard = aioredis.Redis(connection_pool=conn_pool, db=5, decode_responses=True)
-            self.persistent_cache = aioredis.Redis(connection_pool=conn_pool, db=6, decode_responses=False)
+            self.redis = aioredis.Redis(connection_pool=conn_pool)
+            self.redis_repost = aioredis.Redis(connection_pool=conn_pool_repost)
+            self.redis_welcomes = aioredis.Redis(connection_pool=conn_pool_welcome)
+            self.redis_bookmarks = aioredis.Redis(connection_pool=conn_pool_bookmarks)
+            self.redis_starboard = aioredis.Redis(connection_pool=conn_pool_starboard)
+            self.persistent_cache = aioredis.Redis(connection_pool=conn_pool_persistent_cache)
 
             for _ in range(0,9):
                 try:
