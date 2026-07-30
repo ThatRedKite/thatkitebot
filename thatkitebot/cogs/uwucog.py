@@ -157,7 +157,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         # get the first non-None intensity or default to 1.0 if there isn't any intensity set
         return next((float(i) for i in intensities if i is not None), 1.0)
     
-    async def _change_uwu_status(self, ctx:discord.ApplicationContext, to_change: Union[abc.GuildChannel, discord.User, discord.Member], intensity: float) -> bool:
+    async def _change_uwu_status(self, ctx:discord.ApplicationContext, to_change: Union[abc.GuildChannel, discord.User, discord.Member], intensity: float, text_only: bool = False) -> bool:
         logger = set_up_guild_logger(ctx.guild.id)
 
         # make sure none of the IDs are 0
@@ -183,12 +183,16 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             if intensity != 1.0:
                 # set the intensity
                 await self.redis.hset(f"uwui:{ctx.guild.id}", int_key, intensity)
-            logger.info(f"UWU: {ctx.author.name} uwuified {symbol}{to_change.name} in '{ctx.guild.name}'")
+            if text_only:
+                # set the text-only flag
+                await self.redis.hset(f"uwut:{ctx.guild.id}", int_key, 1)
+            logger.info(f"UWU: {ctx.author.name} uwuified {symbol}{to_change.name}{' (text-only)' if text_only else ''} in '{ctx.guild.name}'")
             return False
-        
+
         else:
             # if successful, do nothing but resetting the intensity and logging, we already removed the thing from the list
             await self.redis.hdel(f"uwui:{ctx.guild.id}", int_key)
+            await self.redis.hdel(f"uwut:{ctx.guild.id}", int_key)
             logger.info(f"UWU: {ctx.author.name} de-uwuified {symbol}{to_change.name} in '{ctx.guild.name}'")
             return True
 
@@ -257,13 +261,14 @@ class UwuCog(commands.Cog, name="UwU Commands"):
             min_value=0.1,
             max_value=10.0,
             ),#type:ignore
+        text_only: discord.Option(bool, description="Only repeat the text, dropping any images and embeds", default=False, required=False),#type:ignore
         silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
             return await ctx.interaction.response.send_message("This command is disabled on this server.")
 
-        if not await self._change_uwu_status(ctx, channel, intensity):
-            await ctx.interaction.response.send_message(f"{channel.mention} has been uwuified. Run for your lives!", ephemeral=silent)
+        if not await self._change_uwu_status(ctx, channel, intensity, text_only):
+            await ctx.interaction.response.send_message(f"{channel.mention} has been uwuified{' (text-only)' if text_only else ''}. Run for your lives!", ephemeral=silent)
         else:
             await ctx.interaction.response.send_message(f"{channel.mention} has been liberated from uwuification. Thank goodneess!", ephemeral=silent)
     
@@ -281,13 +286,14 @@ class UwuCog(commands.Cog, name="UwU Commands"):
                 min_value=0.1,
                 max_value=10.0,
             ),#type:ignore
+        text_only: discord.Option(bool, description="Only repeat the text, dropping any images and embeds", default=False, required=False),#type:ignore
         silent: discord.Option(bool, description="Hide the confirmation message?", default=False)#type:ignore
     ):
         if not await self._uwu_enabled(ctx):
             return await ctx.interaction.response.send_message("This command is **disabled** on this server.")
 
-        if not await self._change_uwu_status(ctx, user, intensity):
-            await ctx.interaction.response.send_message(f"{user.name} is now fucked. **Pick a god and pray**.", ephemeral=silent)
+        if not await self._change_uwu_status(ctx, user, intensity, text_only):
+            await ctx.interaction.response.send_message(f"{user.name} is now fucked{' (text-only)' if text_only else ''}. **Pick a god and pray**.", ephemeral=silent)
         else:
             await ctx.interaction.response.send_message(f"{user.name} is now unfucked.", ephemeral=silent)
 
@@ -332,31 +338,35 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         await ctx.send(f"This command is deprecated, please use {self._add_channel.mention}")
     #endregion
 
-    async def uwuify_message(self, message: Message) -> tuple[str, list, list]:
+    async def uwuify_message(self, message: Message, text_only: bool = False) -> tuple[str, list, list]:
         files = []
         process_embeds = True
         uwu_embeds = None
         output = None
-        
-        # copy attachments if they are not remixes
-        if not message.is_remix and message.attachments:
+
+        # copy attachments if they are not remixes (or if text-only mode is active)
+        if not text_only and not message.is_remix and message.attachments:
             for attachment in message.attachments:
                 async with self.bot.aiohttp_session.get(attachment.url) as resp:
                     fp = io.BytesIO(await resp.read())
                     files.append(discord.File(fp, filename=attachment.filename))
-        
+
         # convert the input string to ascii
         msg_len = len(message.content) + 20
         msg_content = unidecode(message.content, errors="preserve")
-        
-        # if the user cant embed links, make links not embed by surrounding them with <>
-        try:
-            if not (message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links):
-                msg_content = re.sub(LINK_PATTERN, r"<\1>", msg_content)
-                process_embeds = False
-                
-        except AttributeError:
-            process_embeds = True
+
+        # if the user cant embed links (or text-only mode is active), make links not embed by surrounding them with <>
+        if text_only and not message.author.bot:
+            msg_content = re.sub(LINK_PATTERN, r"<\1>", msg_content)
+            process_embeds = False
+        else:
+            try:
+                if not (message.channel.permissions_for(message.guild.get_member(message.author.id)).embed_links):
+                    msg_content = re.sub(LINK_PATTERN, r"<\1>", msg_content)
+                    process_embeds = False
+
+            except AttributeError:
+                process_embeds = True
         
         msg_small = textwrap.wrap(msg_content, msg_len)
         intensity = await self._get_intensity(message.guild.id, message.author.id, message.channel.id)
@@ -470,8 +480,29 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         except discord.Forbidden:
             return
         
-        output, files, uwu_embeds = await self.uwuify_message(message)
+        # check if the channel or the user is set to text-only mode
+        text_only = (
+            await self.redis.hexists(f"uwut:{message.guild.id}", f"c:{message.channel.id}")
+            or await self.redis.hexists(f"uwut:{message.guild.id}", f"u:{message.author.id}")
+        )
 
+        output, files, uwu_embeds = await self.uwuify_message(message, text_only)
+
+        # in text-only mode a message without any text has nothing to re-send, just delete it
+        if text_only and not output and not message.author.bot:
+            await message.delete(reason="UwU Delete")
+            return
+
+        # remove images from bot embeds in text_only mode
+        if text_only and message.author.bot and uwu_embeds:
+            text_only_embeds = []
+            for embed in uwu_embeds:
+                embed: discord.Embed
+                if embed.type == "rich":
+                    embed.remove_image()
+                    text_only_embeds.append(embed)
+            uwu_embeds = text_only_embeds
+        
         # get the username to use for the webhook, uses new usernames if discriminator is 0 else it uses old usernames (bots tend to have old usernames)
         username = message.author.name if message.author.discriminator == "0" else message.author.name + "#" + message.author.discriminator
 
