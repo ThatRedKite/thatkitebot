@@ -278,11 +278,14 @@ class RepostCog(commands.Cog, name="Repost Commands"):
                         repost = (int(message.guild.id) == int(guild_id) and int(message.channel.id) == int(channel_id))
                         break
 
-                if repost:      
-                    await message.add_reaction(discord_to_uni("recycle"))  # add the repost reaction
-                    if int(await self.repost_redis.hget(hash_key, "repost_count")) > 5:
-                        await message.add_reaction(discord_to_uni("yawning_face"))
-                    await self.repost_redis.hincrby(hash_key, "repost_count", 1)  # increment the repost count
+                if repost:
+                    try:      
+                        await message.add_reaction(discord_to_uni("recycle"))  # add the repost reaction
+                        if int(await self.repost_redis.hget(hash_key, "repost_count")) > 5:
+                            await message.add_reaction(discord_to_uni("yawning_face"))
+                        await self.repost_redis.hincrby(hash_key, "repost_count", 1)  # increment the repost count
+                    except discord.NotFound:
+                        pass
                 else:
                     # the message does not appear to be a repost, let's add it to the database
                     await pipe.hset(key := f"{message.id}:{image_hash}", "jump_url", message.jump_url)
