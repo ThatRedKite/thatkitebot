@@ -61,21 +61,21 @@ def image_command(is_gif=False, *args, **kwargs):
                     image = ImageFunction(buf, 0, loop=self.loop, process_pool=self.process_pool)
                     await func(self, ctx, image, *args)
                     embed, file = image.save_image(is_gif=is_gif)
-                    await ctx.reply(embed=embed, file=file, mention_author=False)
+                    await ctx.send(embed=embed, file=file, mention_author=False)
                 
                 except ImageTooLargeException:
                     embed = discord.Embed(title="Error", description="The image is too large (>6000x6000).", color=ec.traffic_red)
-                    await ctx.reply(embed=embed, mention_author=False)
+                    await ctx.send(embed=embed, mention_author=False)
                     return
 
                 except ImageScaleTooHighException:
                     embed = discord.Embed(title="Error", description="Scaled image would be larger than allowed (>6000x6000).", color=ec.traffic_red)
-                    await ctx.reply(embed=embed, mention_author=False)
+                    await ctx.send(embed=embed, mention_author=False)
                     return
                 
                 except Exception as e:
                     embed = discord.Embed(title="Error", description="There has been an error processing the image.", color=ec.traffic_red)
-                    await ctx.reply(embed=embed, mention_author=False)
+                    await ctx.send(embed=embed, mention_author=False)
                     return
 
                 finally:
