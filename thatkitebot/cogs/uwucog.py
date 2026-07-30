@@ -356,7 +356,7 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         msg_content = unidecode(message.content, errors="preserve")
 
         # if the user cant embed links (or text-only mode is active), make links not embed by surrounding them with <>
-        if text_only:
+        if text_only and not message.author.bot:
             msg_content = re.sub(LINK_PATTERN, r"<\1>", msg_content)
             process_embeds = False
         else:
@@ -489,10 +489,20 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         output, files, uwu_embeds = await self.uwuify_message(message, text_only)
 
         # in text-only mode a message without any text has nothing to re-send, just delete it
-        if text_only and not output:
+        if text_only and not output and not message.author.bot:
             await message.delete(reason="UwU Delete")
             return
 
+        # remove images from bot embeds in text_only mode
+        if text_only and message.author.bot and uwu_embeds:
+            text_only_embeds = []
+            for embed in uwu_embeds:
+                embed: discord.Embed
+                if embed.type == "rich":
+                    embed.remove_image()
+                    text_only_embeds.append(embed)
+            uwu_embeds = text_only_embeds
+        
         # get the username to use for the webhook, uses new usernames if discriminator is 0 else it uses old usernames (bots tend to have old usernames)
         username = message.author.name if message.author.discriminator == "0" else message.author.name + "#" + message.author.discriminator
 
