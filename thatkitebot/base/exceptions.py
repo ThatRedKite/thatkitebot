@@ -46,3 +46,8 @@ class NotEnoughMessagesException(Exception):
 
 class StarboardDisabledException(Exception):
     pass
+
+class TextOnlyUwUCaptionException(Exception):
+    pass
+
+#

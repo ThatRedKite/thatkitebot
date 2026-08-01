@@ -35,7 +35,7 @@ from typing import Callable
 
 import discord
 from discord.ext import commands
-
+from uwuipy import uwuipy
 
 from thatkitebot.base.exceptions import *
 from thatkitebot.base import util, image_stuff
@@ -43,6 +43,7 @@ from thatkitebot.base.image_stuff import ImageFunction
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.base.util import EmbedColors as ec
 from thatkitebot.base.url import get_avatar_url
+
 #endregion
 
 def image_command(is_gif=False, *args, **kwargs):
@@ -71,6 +72,10 @@ def image_command(is_gif=False, *args, **kwargs):
                 except ImageScaleTooHighException:
                     embed = discord.Embed(title="Error", description="Scaled image would be larger than allowed (>6000x6000).", color=ec.traffic_red)
                     await ctx.send(embed=embed, mention_author=False)
+                    return
+                
+                except TextOnlyUwUCaptionException:
+                    # do nothing
                     return
                 
                 except Exception as e:
@@ -116,6 +121,8 @@ class ImageStuff(commands.Cog, name="image commands"):
         self.loop = bot.loop
         self.sem = asyncio.Semaphore(12)
         self.process_pool = bot.process_pool
+
+        self.redis = bot.redis
 
     async def cog_check(self, ctx) -> bool:
         is_enabled = await RedisFlags.get_guild_flag(self.bot.redis, ctx.guild, RedisFlags.FlagEnum.IMAGE)
@@ -190,13 +197,33 @@ class ImageStuff(commands.Cog, name="image commands"):
 
 
     @image_command()
-    async def caption(self, ctx, image: ImageFunction, text: str = "", color: str = "") -> None:
+    async def caption(self, ctx, image: ImageFunction, *text: str) -> None:
         """
         Adds a caption to an image. You can add `color:` to the message to change text color using hex or decimal RGB values.
         Example: \n `caption funny color:ff2315` or  `caption funny color:255,123,22` or `caption funny color:firebrick`
         A full list of colors can be found here: https://imagemagick.org/script/color.php
         """
-        await image.caption(text=f"{text} {color}", path="/app/data/static-resources/")
+        
+        # check if uwuification is enabled
+        if await RedisFlags.get_guild_flag(self.redis, ctx.guild, RedisFlags.FlagEnum.UWU):
+                # check if channel, the user issuing the command or the bot itself are uwuified
+                is_channel = await self.redis.sismember(f"uwu_channels:{ctx.guild.id}", str(ctx.channel.id))
+                is_user = await self.redis.sismember(f"uwu_users:{ctx.guild.id}", str(ctx.author.id))
+                is_self = await self.redis.sismember(f"uwu_users:{ctx.guild.id}", str(self.bot.user.id))
+                if is_user or is_channel or is_self:
+                    # check if we are in text_only mode
+                    text_only = (
+                        await self.redis.hexists(f"uwut:{ctx.guild.id}", f"c:{ctx.channel.id}")
+                        or await self.redis.hexists(f"uwut:{ctx.guild.id}", f"u:{ctx.author.id}")
+                    )
+                    if not text_only:
+                        uwu = uwuipy(ctx.message.id, face_chance=0, action_chance=0)
+                        await image.caption(text=f"{uwu.uwuify(" ".join(text))}", path="/app/data/static-resources/")
+                    else:
+                        raise TextOnlyUwUCaptionException
+
+        else:
+            await image.caption(text=" ".join(text), path="/app/data/static-resources/")
 
 
     @image_command()
