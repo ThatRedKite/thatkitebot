@@ -112,14 +112,21 @@ def uwuify_embeds(message: Message, id: int, intensity: float = 1.0, enable_nsfw
                 uwu_article = discord.Embed(
                     title=uwu.uwuify(embed.title),
                     description=uwu.uwuify(embed.description),
-                    image=embed.thumbnail if embed.thumbnail else None,
                     url=embed.url if embed.url else None,
+                    image=embed.image,
+                    thumbnail=embed.thumbnail,
                     color=embed.color,
-                    type="article"
+                    type=embed.type
                 )
+
+                if embed.thumbnail and not uwu_article.image:
+                    if embed.thumbnail.height >= 300 or embed.thumbnail.width >= 400:
+                        uwu_article.image = embed.thumbnail
+                        uwu_article.thumbnail = None
+                                
                 if embed.provider:
                     uwu_article.set_author(name=uwu.uwuify(embed.provider.name), url=embed.provider.url)
-                
+
                 embeds.append(uwu_article)
 
             case _:
