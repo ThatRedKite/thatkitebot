@@ -111,6 +111,64 @@ class PartiallyCachedState(discord.state.ConnectionState):
                 self.r_cache.add_message_object(message)
                 self.dispatch("reaction_add", reaction, user)
 
+    def parse_message_reaction_remove_all(self, data) -> None:
+        raw = discord.RawReactionClearEvent
+        self.dispatch("raw_reaction_clear", raw)
+
+        if (message := self._get_message(data.get("message_id"))) is not None:
+            old_reactions = message.reactions.copy()
+            message.reactions.clear()
+            self.r_cache.add_message_object(message)
+            self.dispatch("reaction_clear", message, old_reactions)
+
+    def parse_message_reaction_remove(self, data) -> None:
+        emoji = data["emoji"]
+        emoji_id = discord.utils._get_as_snowflake(emoji, "id")
+        emoji = discord.PartialEmoji.with_state(self, id=emoji_id, name=emoji["name"])
+        raw = discord.RawReactionActionEvent(data, emoji, "REACTION_REMOVE")
+
+        member_data = data.get("member")
+        if member_data:
+            guild = self._get_guild(raw.guild_id)
+            if guild is not None:
+                raw.member = discord.Member(data=member_data, guild=guild, state=self)
+            else:
+                raw.member = None
+        else:
+            raw.member = None
+
+        self.dispatch("raw_reaction_remove", raw)
+
+        if (message := self._get_message(raw.message_id)) is not None:
+            emoji = self._upgrade_partial_emoji(emoji)
+            try:
+                reaction = message._remove_reaction(data, emoji, raw.user_id)
+                self.r_cache.add_message_object(message)
+            except (AttributeError, ValueError):  # eventual consistency lol
+                pass
+            else:
+                user = self._get_reaction_user(message.channel, raw.user_id)
+                if user:
+                    self.dispatch("reaction_remove", reaction, user)
+
+    def parse_message_reaction_remove_emoji(self, data) -> None:
+        emoji = data["emoji"]
+        emoji_id = discord.utils._get_as_snowflake(emoji, "id")
+        emoji = discord.PartialEmoji.with_state(self, id=emoji_id, name=emoji["name"])
+        raw = discord.RawReactionClearEmojiEvent(data, emoji)
+        self.dispatch("raw_reaction_clear_emoji", raw)
+
+        message = self._get_message(raw.message_id)
+        if message is not None:
+            try:
+                reaction = message._clear_emoji(emoji)
+                self.r_cache.add_message_object(message)
+            except (AttributeError, ValueError):  # eventual consistency lol
+                pass
+            else:
+                if reaction:
+                    self.dispatch("reaction_clear_emoji", reaction)
+
     def parse_message_update(self, data) -> None:
         raw = discord.RawMessageUpdateEvent(data)
         self.dispatch("raw_message_edit", raw)

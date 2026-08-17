@@ -443,7 +443,11 @@ class RedisCacheSyncPartial:
             author_id = int(data_new.get("author").get("id"))
             guild_id = int(data_new.get("guild_id", 0))
             channel_id = int(data_new.get("channel_id", 0))
-        except KeyError | AttributeError:
+
+        except KeyError:
+            return
+
+        except AttributeError:
             return
         
         guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
@@ -548,7 +552,7 @@ class RedisCacheSyncPartial:
     def get_message_dict(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None, fetch=True) -> Optional[dict]:
         self.id_pipeline.execute()
         self.message_pipeline.execute()
-
+    
         guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
                 
         if guild_id and author_id and channel_id and message_id:
