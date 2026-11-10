@@ -1,9 +1,9 @@
 # ThatKiteBot - A Discord bot for science and nonsense
 
 # Section 1. Installing docker
-The instructions below are for installing Docker specifically on **Debian Linux**, and will cover official methods for adding Docker's repositories to your installation. In section 4, you will also find an addendum on setup under Arch Linux, which the production ThatKiteBot is hosted on. **If you get stuck, reference [Docker's documentation](https://docs.docker.com/engine/install/)** - these instructions may not be up to date!
+The instructions below are for installing Docker specifically on **Debian Linux**, and will cover official methods for adding Docker's repositories to your installation. Additionally, the addendum provides instructions for setup on Arch Linux, which TKB is developed on. **If you get stuck, reference [Docker's documentation](https://docs.docker.com/engine/install/)** - these instructions may not be up to date!
 
-> 📝 **Note:** If you are on an operating system other than **Debian Linux** or **Arch Linux**, please reference the docs for official Docker setup instructions, then skip to step 2. Note also that utilizing SELinux (default under RHEL/Fedora and SUSE/openSUSE) or AppArmor (default under Ubuntu) may cause issues and is not recommended, nor is `wsl`. Podman may also be used in place of Docker, though this is to be considered unofficial and support may be hit or miss.
+> 📝 **Note:** Systems utilizing SELinux (default under RHEL/Fedora and SUSE/openSUSE) or AppArmor (default under Ubuntu) may experience issues with Docker, and may experience breakages. It is additionally recommended to avoid `wsl`.
 
 ### System requirements:
 It is recommended you run the bot with **no less** than 2GB of RAM, though for the best experience your host device should have at least 4GB. Raspberry Pi and other non-`amd64`/`x86_64` computers are currently unsupported, though this should be fixed soon.
@@ -127,10 +127,12 @@ docker compose stop
 
 ---
 
-# Section 4. Other distributions
+# Addendum: Unsupported and Partially Supported Platforms
 As of the time of writing, Arch Linux is the only other supported distribution for the bot - and is the main one development is done on - though it will likely run on most others fine. Note that the method of installation is **NOT**, however, supported by Docker, and will involve third-party packaged software.
 
-## 4.1 Arch Linux
+Additionally, Podman may be used as almost a drop-in replacement for Docker, though this is beyond the scope of this guide, and your mileage may vary.
+
+## Arch Linux
 
 Install the `docker` and `docker-compose` packages from the `Extra` repository.
 ```sh
