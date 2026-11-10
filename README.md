@@ -1,24 +1,24 @@
 # ThatKiteBot - A Discord bot for science and nonsense
 
 # Section 1. Installing docker
-The instructions below are for installing Docker specifically on **Debian Linux**, and will cover the current official methods for adding Docker's repositories to your installation. In section 4, you will also find **unnofficial** instructions for running on Arch Linux (btw). **If you get stuck, reference [Docker's documentation](https://docs.docker.com/engine/install/)** - these instructions may not be up to date!
+The instructions below are for installing Docker specifically on **Debian Linux**, and will cover official methods for adding Docker's repositories to your installation. In section 4, you will also find an addendum on setup under Arch Linux, which the production ThatKiteBot is hosted on. **If you get stuck, reference [Docker's documentation](https://docs.docker.com/engine/install/)** - these instructions may not be up to date!
 
-> 📝 **Note:** If you are on a distribution other than **Debian Linux** or **Arch Linux**, please reference the aforementioned Docker docs, then skip to step 2. Note also that SELinux may cause issues and is not recommended for use with this project, nor is `wsl`.
+> 📝 **Note:** If you are on an operating system other than **Debian Linux** or **Arch Linux**, please reference the docs for official Docker setup instructions, then skip to step 2. Note also that utilizing SELinux (default under RHEL/Fedora and SUSE/openSUSE) or AppArmor (default under Ubuntu) may cause issues and is not recommended, nor is `wsl`. Podman may also be used in place of Docker, though this is to be considered unofficial and support may be hit or miss.
 
 ### System requirements:
-It is recommended you run the bot with **no less** than 2GB of RAM, though for the best experience, your host device should have at least 4GB of RAM. Raspberry Pi and other non-`amd64` computers are currently not supported, though this should be fixed soon.
+It is recommended you run the bot with **no less** than 2GB of RAM, though for the best experience your host device should have at least 4GB. Raspberry Pi and other non-`amd64`/`x86_64` computers are currently unsupported, though this should be fixed soon.
 
 ## 1.1 Preinstallation
-Verify that you do not have the unnofficial Docker packages from Debian's default repositories installed.
+Verify that you do not have a third party packaged version of Docker installed from the Debian repos.
 ```sh
 sudo apt-get remove docker.io docker-doc docker-compose podman-docker containerd runc
 ```
-This will likely result in no packages being removed, especially on a fresh install. This is to be expected, and according to the documentation will not remove any images, containers, volumes, or networks stored in `/var/lib/docker/`.
+This will likely result in no packages being removed, especially on a fresh install - this is expected behavior. According to the documentation, if you were to have such a version installed, this will not remove any images, containers, volumes, or networks stored in `/var/lib/docker/`.
 
-## 1.2 Installing from the official Docker repositories
+## 1.2 Installing from Docker's official repositories
 This step will add Docker's repositories to `apt` and will import their signing key. 
 
-If you not on mainline Debian, substitute the line `$(. /etc/os-release && echo "$VERSION_CODENAME")` with the codename of the release it is based on. As of the time of writing, this is most likely `bookworm` (current stable) or potentially `trixie` (current testing).
+If you are not on mainline Debian, substitute the line `$(. /etc/os-release && echo "$VERSION_CODENAME")` with the codename of the release it is based on. As of the time of writing, this is most likely `trixie` (current stable) or potentially `forky` (current development).
 ```sh
 sudo apt-get update
 sudo apt-get install ca-certificates curl
@@ -32,7 +32,8 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
 ```
-To install the most recent version, run the following command:
+
+Now that the repos are configured, we can install Docker and its dependencies.
 ```sh
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
@@ -43,13 +44,11 @@ To ensure everything installed correctly, run Docker's "Hello, world!" script.
 sudo docker run hello-world
 ```
 
-## 1.4 Check your docker compose verison
-Before running, make sure that your version of compose is at least 2.X. Note that `docker compose` is a more recent build than `docker-compose`, so if something breaks it may be worth attempting the older syntax.
-```sh
+## 1.4 Check your docker compose version
+Before running, ensure you are running a Docker Compose version  of at least 2.X. Note that `docker compose` is fundamentally different from `docker-compose`, which executes a legacy (deprecated) version.
 docker compose version
-```
 
-It is also recommended for security that you add yourself to the docker group.
+It is also recommended that you add yourself to the docker group for simplicity (though you should be aware of relevant [security implications](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)).
 ```sh
 groupadd docker
 usermod -aG docker $USER
@@ -59,27 +58,27 @@ usermod -aG docker $USER
 
 # Section 2. Setup and first run
 
-This will walk you through setting up and installing specifically the bot now that you have Docker installed. For the smoothest experience, you may want to set up a bot through Discord's Developer Portal prior to configuring the bot, however there is a simple guide later on that should get you through the basics. That said, you'll be on your own as far as authorizing it and adding it to your server.
+This will walk you through setting up your bot now that you have Docker installed. For the smoothest experience, you may want to visit Discord's Developer Portal prior to configuring the bot, though there will be a simplified explanation later on that should roughly explain the basics of getting a bot token.
 
 ## 2.1 Clone the repository
-This will download the necessary files from GitHub for you to be able to build and run the Docker container.
+The first step to getting everything running is to first pull in the TKB codebase from GitHub.
 ```sh
 git clone https://github.com/ThatRedKite/thatkitebot.git
 ```
 
 ## 2.2 Building the image
-This will tell docker to grab all of the necessary dependencies and build the image, then run it. This step may take a while, and the bot should throw a token error; once this occurs everything should stop updating, and you'll be ready to close it with `ctrl+c` and move to the next step.
+The following command will tell docker to grab all of the necessary dependencies for the containers the bot uses and build the image. This step may take a while, and the bot should throw a token error at the end - this is to be expected as you haven't yet given it a bot token to run with. Once this occurs, your terminal should stop updating, and you should close the program with `ctrl+c` before proceeding to the next step.
 ```sh
 cd thatkitebot
 docker compose up --build
 ```
 
 ## 2.3 Set API keys
-Now you need to open up the bot's configuration file and give it a bot token so it can connect and run.
+To get the bot connected and running, it needs a valid token. Open the config file in your editor of choice. We're opting to use `nano` as it is installed by default on most Linux distributions.
 ```sh
 nano ./data/init_settings.json 
 ```
-This will open the `nano` text editor where you will see something like this:
+Inside of that file, you should see something like this:
 ```json
 {
     "discord token": "",
@@ -87,21 +86,21 @@ This will open the `nano` text editor where you will see something like this:
     "prefix": "+",
 }
 ```
-`discord_token` is the discord bot API token you can get from the [Discord Developer Portal](https://discord.com/developers/) after making a bot. To do this, create an application, then go to the "bot" option in the settings bar to the left. From here, you'll generate a token and paste it inside the double quotes. 
+`discord_token` is the discord bot API token mentioned above, which you can get from the [Discord Developer Portal](https://discord.com/developers/). You should create an application, then go to the "bot" option in the settings bar to the left. From here, you'll generate a token and paste it inside the double quotes. 
 
 > 📝 Note: Feel free to customize the bot while you're here - give it a name, profile picture, etc. 
 
-### ⚠️ Warning: NEVER share your API keys with anyone, and do NOT edit this file in the GitHub interface!
+### ⚠️ Warning: NEVER share your API keys with anyone, and do NOT edit this file in the GitHub interface! This will allow them direct access to your bot, and potential admin access to any servers it's in!
 
 The tenor api key is not necessary for operation.
-After that is done hit `ctrl + x`, `y` and `enter`. The settings will be saved.
+To save and exit, hit `ctrl + x`, `y`, and then `enter`. Your configuration should now be done!
 
 ## 2.4 Starting the bot 
-Start the bot from a stopped state (like we have right now).
+Starting the bot at this point can be done with one last command.
 ```sh
 docker compose up -d thatkitebot
 ```
-This will start the bot in the background. If you do not wish to start the bot in the background, you can omit the `-d` and any logs will be printed to the terminal. To view the logs, run:
+This will launch the bot as a background process. If you would like to start it in the foreground (i.e. for debugging), you may omit the `-d` and any logs will be printed to the terminal. To view the logs, run:
 ```sh
 docker logs thatkitebot-thatkitebot-1
 ```
@@ -112,13 +111,14 @@ docker logs thatkitebot-thatkitebot-1
 For security and stability, it is advised to allot some downtime to updating the bot whenever a new release comes out. This will prevent breakage should a dependency change upstream and should give access to all the latest functionality.
 
 ## 3.1 Updating
-To update, you will need to sync your local copy of the bot with the `git` repo and rebuild the container. This is required to get any potential missing libraries.
+To update, you will need to sync your local copy of the bot with the `git` repo and rebuild the container. This is required to fetch any potential missing or upgraded libraries.
 ```sh
 git pull
 docker compose up --build -d thatkitebot
 ```
 
-To check the status of the container run `docker container ls`. You should see 2 containers: `redis:alpine` and `thatkitebot_thatkitebot`. That will mean everything is running. Assuming everything is functioning correctly, you should now have an online and functional bot. To double check, you can run `+help` in your server (unless you set a different prefix in an above step).
+To check the status of the container, run `docker container ls`. You should see 2 containers: `redis:alpine` and `thatkitebot_thatkitebot`. Assuming your config is set up correctly, you should now have an online and functional bot. To double check, you can run `+help` in your server (unless you set a different prefix in an above step).
+
 ## 3.2 Stopping
 To stop the bot, run
 ```
@@ -128,7 +128,7 @@ docker compose stop
 ---
 
 # Section 4. Other distributions
-As of the time of writing, Arch Linux is the only other supported distribution for the bot - and is the main one development is done on - though it will likely run on most others fine. Note that the method of installation is **NOT**, however, supported by Docker and will involve third-party packages.
+As of the time of writing, Arch Linux is the only other supported distribution for the bot - and is the main one development is done on - though it will likely run on most others fine. Note that the method of installation is **NOT**, however, supported by Docker, and will involve third-party packaged software.
 
 ## 4.1 Arch Linux
 
