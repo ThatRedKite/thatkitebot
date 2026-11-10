@@ -56,8 +56,6 @@ groupadd docker
 usermod -aG docker $USER
 ```
 
----
-
 # Section 2. Setup and first run
 
 This will walk you through setting up your bot now that you have Docker installed. For the smoothest experience, you may want to visit Discord's Developer Portal prior to configuring the bot, though there will be a simplified explanation later on that should roughly explain the basics of getting a bot token.
@@ -107,8 +105,6 @@ This will launch the bot as a background process. If you would like to start it 
 docker logs thatkitebot-thatkitebot-1
 ```
 
----
-
 # Section 3. Maintenance
 For security and stability, it is advised to allot some downtime to updating the bot whenever a new release comes out. This will prevent breakage should a dependency change upstream and should give access to all the latest functionality.
 
@@ -126,8 +122,6 @@ To stop the bot, run
 ```
 docker compose stop
 ```
-
----
 
 # Addendum: Unsupported and Partially Supported Platforms
 As of the time of writing, Arch Linux is the only other supported distribution for the bot - and is the main one development is done on - though it will likely run on most others fine. Note that the method of installation is **NOT**, however, supported by Docker, and will involve third-party packaged software.
@@ -155,7 +149,5 @@ Next, add yourself to the `docker` group to allow commands to run without `sudo`
 groupadd docker
 usermod -aG docker $USER
 ```
-
----
 
 Made with ❤️
