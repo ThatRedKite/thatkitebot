@@ -29,6 +29,9 @@ services:
       core:
         soft: 0
         hard: 0
+      nofile:
+        soft: 65536
+        hard: 65536
     command: bash -c "cd /app/ && /app/thatkitebot-venv/bin/python3 -m thatkitebot"
 
   redis:
