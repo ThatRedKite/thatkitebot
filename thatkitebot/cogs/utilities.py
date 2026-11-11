@@ -119,12 +119,13 @@ class UtilityCommands(commands.Cog, name="Potentially useful commands"):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(pass_context=True)
+    @discord.command(name="gdpr")
     async def gdpr(self, ctx):
         """
         This command shows you what data the bot collects and how it is used.
         """
         await ctx.send(embed=gdpr_embed(self))
-
+    
     @commands.command()
     async def invite(self, ctx):
         """This sends you an invite for the bot if you want to add it to one of your servers."""
