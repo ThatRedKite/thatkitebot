@@ -102,11 +102,12 @@ class FunStuff(commands.Cog, name="fun commands"):
 
 
         output = set()
-        model = markovify.NewlineText("\n".join([m.clean_content for m in messages]))
+        if messages:
+            model = markovify.NewlineText("\n".join([m.clean_content for m in messages]))
 
-        for _ in range(length):
-            if sentence := model.make_sentence(tries=100):
-                output.add(sentence)
+            for _ in range(length):
+                if sentence := model.make_sentence(tries=100):
+                    output.add(sentence)
     
         embed = discord.Embed(description=". ".join(output))
 
@@ -121,7 +122,7 @@ class FunStuff(commands.Cog, name="fun commands"):
             embed.title = f"Output for {channel.mention}"
         else:
             embed.title = f"Output ..."            
-        embed.set_footer(text=f"Channel: #{message.channel.name} | Messages: {cache_counter + api_counter} (Cache: {cache_counter}, API: {api_counter})")
+        embed.set_footer(text=f"Channel: #{channel.name} | Messages: {cache_counter + api_counter} (Cache: {cache_counter}, API: {api_counter})")
 
         return embed
 

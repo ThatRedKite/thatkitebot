@@ -112,7 +112,7 @@ class PartiallyCachedState(discord.state.ConnectionState):
                 self.dispatch("reaction_add", reaction, user)
 
     def parse_message_reaction_remove_all(self, data) -> None:
-        raw = discord.RawReactionClearEvent
+        raw = discord.RawReactionClearEvent(data)
         self.dispatch("raw_reaction_clear", raw)
 
         if (message := self._get_message(data.get("message_id"))) is not None:
@@ -184,8 +184,8 @@ class PartiallyCachedState(discord.state.ConnectionState):
             new_message.author = message.author
                 
             self.dispatch("message_edit", message, new_message)
-        else:
-            self.r_cache.add_message_dict(data)
+        # On a cache miss, the incomplete edit payload can't reconstruct full message state,
+        # Fall through so that any tracked view can still receive updates
 
         if "components" in data and self._view_store.is_message_tracked(raw.message_id):
             self._view_store.update_from_message(raw.message_id, data["components"])

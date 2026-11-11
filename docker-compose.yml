@@ -19,6 +19,16 @@ services:
       - PYTHONUNBUFFERED=1
       - KITEBOT_DEBUG=0
       - DISCORD_DEBUG=0
+      - ENCRYPT_MESSAGE_CACHE=1
+    ulimits:
+      # memfd_secret uses the locked memory allowance, 64kb is enough for the key
+      memlock:
+        soft: 65536
+        hard: 65536
+      # Disable crash dumps, which could leak the encryption key
+      core:
+        soft: 0
+        hard: 0
     command: bash -c "cd /app/ && /app/thatkitebot-venv/bin/python3 -m thatkitebot"
 
   redis:

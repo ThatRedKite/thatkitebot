@@ -106,10 +106,17 @@ class RedisCacheAsync:
             return decompress_data(data_compressed)
     
     async def compressed_write_key(self, pipeline, key: str, dict_data:dict):
-        return await pipeline.set(key, compress_data(dict_data))
+        data = compress_data(dict_data)
+        if pipeline is self.message_pipeline:
+            data = self.bot.message_cache_cipher.encrypt(data, key)
+        return await pipeline.set(key, data)
     
     async def compressed_read_key(self, redis: aioredis.Redis, key: str) -> dict:
         if data_compressed := await redis.get(key):
+            if redis is self.message_cache:
+                data_compressed = self.bot.message_cache_cipher.decrypt(data_compressed, key)
+                if data_compressed is None:
+                    return None
             return decompress_data(data_compressed)
     
     async def add_user(self, user: discord.User):
@@ -146,24 +153,9 @@ class RedisCacheAsync:
             return data
 
     async def update_message_raw(self, payload: discord.RawMessageUpdateEvent):
-        await self.add_message_dict(payload.data)
-
-    async def add_message_dict(self, message_data: dict):
-        message_id = message_data.get("id")
-        author_id = message_data.get("author").get("id")
-        guild_id = message_data.get("guild_id", 0)
-        channel_id = message_data.get("channel_id", 0)
-
-        assert None not in (message_id, guild_id, channel_id, author_id)
-
-        entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
-        await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
-        await self.message_pipeline.expire(entry_name, self.autoexpire)
-
-        await self.id_pipeline.hset(LUT_Keys.AUTHOR.value, mapping={str(message_id): str(author_id)})
-        await self.id_pipeline.hset(LUT_Keys.CHANNEL.value, mapping={str(message_id): str(channel_id)})
-        await self.id_pipeline.hset(LUT_Keys.GUILD.value, mapping={str(message_id): str(guild_id)})
-        await self.id_pipeline.hset(LUT_Keys.CHANNEL_TO_GUILD.value, mapping={str(channel_id): str(guild_id)})
+        if (message_data := await self.get_message_dict(payload.message_id)) is not None:
+            message_data.update(payload.data)
+            await self.add_message_dict(message_data)
 
     async def get_author_id(self, message_id: Union[int, str]):
         # exectue the write pipeline to commit any pending changes before reading
@@ -243,6 +235,9 @@ class RedisCacheAsync:
                 ids: str = key.decode("ASCII")
                 gid, uid, cid, mid = ids.split(":")
                 message_data = await self.get_message_dict(mid, gid, cid, uid, fetch=False)
+                # None is returned if we can't decrypt the message, so we need to skip it explicitly
+                if message_data is None:
+                    continue
                 yield self.bot._connection.create_message(channel=channel, data=message_data)
                 
             else:
@@ -250,6 +245,9 @@ class RedisCacheAsync:
             counter += 1
 
     async def expire_message_now(self, message_id: int, guild_id: Optional[int]=None, channel_id: Optional[int]=None, author_id: Optional[int]=None):
+        # Commit pending writes before shortening the TTL so any queued commands don't reset it
+        await self.message_pipeline.execute()
+        await self.id_pipeline.execute()
         guild_id, author_id, channel_id = await self._get_ids(message_id, guild_id, channel_id, author_id)
 
         if guild_id and author_id and channel_id:
@@ -271,11 +269,15 @@ class RedisCacheAsync:
         for message_id in message_ids:
             if author_id := await self.get_author_id(message_id):
                 names.append(f"{guild_id}:{author_id}:{channel_id}:{message_id}")
-                await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id)), self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
+                await self.id_pipeline.hdel(LUT_Keys.AUTHOR.value, str(message_id))
+                await self.id_pipeline.hdel(LUT_Keys.CHANNEL.value, str(message_id))
+                await self.id_pipeline.hdel(LUT_Keys.GUILD.value, str(message_id))
             else:
                 continue
 
-        await self.message_pipeline.delete(names)
+        if names:
+            # redis cache needs the list unpacked
+            await self.message_pipeline.delete(*names)
         await self.message_pipeline.execute()
         await self.id_pipeline.execute()
 
@@ -438,24 +440,11 @@ class RedisCacheSyncPartial:
             pipeline.execute()
 
     def update_message(self, data_new: dict) -> None:
-        try:
-            message_id = int(data_new.get("id"))
-            author_id = int(data_new.get("author").get("id"))
-            guild_id = int(data_new.get("guild_id", 0))
-            channel_id = int(data_new.get("channel_id", 0))
-
-        except KeyError:
+        if (message_id := data_new.get("id")) is None:
             return
-
-        except AttributeError:
-            return
-        
-        guild_id, author_id, channel_id = self._get_ids(message_id, guild_id, channel_id, author_id)
-        name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
-
-        if (data_old := self.compressed_read_key(self.message_cache, name)) and data_new:
+        if (data_old := self.get_message_dict(message_id)) is not None:
             data_old.update(data_new)
-            self.compressed_write_key(self.message_pipeline, name, data_old)
+            self.add_message_dict(data_old)
 
     def compressed_write_hash(self, pipeline, name: str, key: str, dict_data:dict):
         return pipeline.hset(name, key, compress_data(dict_data))
@@ -465,10 +454,17 @@ class RedisCacheSyncPartial:
             return decompress_data(data_compressed)
     
     def compressed_write_key(self, pipeline, key: str, dict_data:dict):
-        return pipeline.set(key, compress_data(dict_data))
+        data = compress_data(dict_data)
+        if pipeline is self.message_pipeline:
+            data = self.bot.message_cache_cipher.encrypt(data, key)
+        return pipeline.set(key, data)
     
     def compressed_read_key(self, redis: aioredis.Redis, key: str) -> dict:
         if data_compressed := redis.get(key):
+            if redis is self.message_cache:
+                data_compressed = self.bot.message_cache_cipher.decrypt(data_compressed, key)
+                if data_compressed is None:
+                    return None
             return decompress_data(data_compressed)
 
         return None

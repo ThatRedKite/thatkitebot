@@ -238,7 +238,12 @@ class DetrackCog(commands.Cog, name="Detrack commands"):
         if len(message) == 0:
             # check if this is a reply
             if ctx.message.reference is not None:
-                message = (await self.bot.get_message(ctx.message.reference.message_id)).content
+                reference = ctx.message.reference
+                referenced_message = await self.bot.get_or_fetch_message(reference.message_id, reference.channel_id or ctx.channel.id)
+                if referenced_message is None:
+                    await errormsg(ctx, "Could not find the referenced message.")
+                    return
+                message = referenced_message.content
             else:
                 await errormsg(ctx, "No message provided.")
                 return
