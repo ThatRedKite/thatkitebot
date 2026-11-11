@@ -25,7 +25,7 @@ SOFTWARE.
 #endregion
 
 #region imports
-from datetime import datetime
+from datetime import datetime, timezone
 
 from discord import Embed
 
@@ -33,10 +33,21 @@ from thatkitebot.base.util import EmbedColors as ec
 #endregion
 
 def gen_embed(self) -> Embed:
+    if self.bot.message_cache_cipher.enabled:
+        message_storage = (
+            "Message cache encryption is **enabled** on this instance. Cached messages are encrypted with AES-256.\n"
+            "All cached user messages are encrypted using a key generated at startup. And is automatically erased when the bot stops.\n"
+            "Messages are decrypted for a short period of time while the bot processes them."
+        )
+    else:
+        message_storage = (
+            "Message cache encryption is **disabled** on this instance. Cached message are not encrypted.\n"
+        )
+
     embed = Embed(
         color=ec.purple_violet,
         title="ThatKiteBot Privacy Policy",
-        description="ThatKiteBot is run by ThatRedKite#4842. This privacy policy will explain how this bot uses the personal data collected from you when you use it."
+        description="ThatKiteBot is run by @thatredkite. This privacy policy will explain how this bot uses the personal data collected from you when you use it."
     )
 
     embed.add_field(
@@ -46,41 +57,63 @@ def gen_embed(self) -> Embed:
               "- Your Discord username\n"
               "- Your Discord avatar\n"
               "- Reactions you add to messages\n"
-              "- Messages sent by you\n"
-              "- Any other data you provide the bot with while using it's commands"
+              "- Messages sent by you in channels the bot can access, including content, embeds, mentions and attachment metadata\n"
+              "- Server and channel information needed for the bot's features\n"
+              "- Any other data you provide the bot with while using its commands"
     )
 
     embed.add_field(
         name="How is the data collected?",
         value="The bot collects the data it needs to function. It does this only by using the Discord API.\n"
               "You directly provide the bot with most of the data we collect. The bot collects and processes the data when you:\n"
-              "- Send a messages\n"
+              "- Send or edit a message\n"
               "- Use a command\n"
               "- Use a reaction\n"
     )
 
     embed.add_field(
         name="How will your data be used?",
-        value="The bot collects so that it can:\n"
+        value="The bot collects data so that it can:\n"
               "- Process your commands\n"
               "- Provide Markov functionality\n"
               "- Understand the context of commands\n"
-              "The data is not transferred to any third parties."
+              "- Provide enabled features such as moderation, bookmarks, repost detection and starboard\n"
+              "Some commands contact Discord or other external services and send the input or request data needed for that feature."
     )
 
     embed.add_field(
         name="How is your data stored?",
-        value="The bot securely stores the data on a server in Nuremberg (Germany).\n"
-              "- All message data is stored in RAM.\n"
-              "- All message data is automatically deleted, when it is not needed anymore.\n"
-              "- The RAM data is wiped whenever the bot is rebooted.\n"
-              "- The only data that is permanently stored are Discord IDs, which are required for certain settings.\n"
+        value="The bot is hosted on a server in Nuremberg (Germany). Only bot operators have access to the server, and we do not share any data with third parties.\n"
+              "The message cache uses a separate RAM-only database configured without disk persistence. Other feature data is stored separately and can persist across restarts."
+    )
+
+    embed.add_field(
+        name="Is the message cache encrypted?",
+        value=message_storage,
+        inline=False
+    )
+
+    embed.add_field(
+        name="How long are cached messages retained?",
+        value="Message cache entries expire 14 days after their last write. Updating or caching a message again can restart this timer.\n"
+              "When a message deletion event is processed, its cache entry is removed or given a shorter expiry automatically.\n"
+              "These expiry rules apply to the the bot's own message cache, not to separately stored feature data or copies posted to Discord.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="What data is stored separately?",
+        value="Message, user, channel and server IDs used as cache keys or lookup records are not encrypted.\n"
+              "User, channel and server caches are also outside message cache encryption and have no default expiry.\n"
+              "Settings, bookmarks and their comments, repost image hashes and message links, starboard mappings, and operational or moderation logs are persistent.\n"
+              "Messages posted by bot features to Discord remain subject to Discord's storage and deletion behavior.",
+        inline=False
     )
 
     embed.add_field(
         name="What are your data protection rights?",
         value="We would like to make sure you are fully aware of all of your data protection rights. Every user is entitled to the following:\n"
-              "If you make a request, we have one month to respond to you. If you would like to exercise any of these rights, please contact ThatRedKite#4842 on Discord.\n"
+              "If you make a request, we have one month to respond to you. If you would like to exercise any of these rights, please contact @thatredkite on Discord.\n"
     )
 
     embed.add_field(
@@ -96,5 +129,5 @@ def gen_embed(self) -> Embed:
 
     embed.set_thumbnail(url=str(self.bot.user.avatar.url))
     embed.set_footer(text=f"{self.bot.user.name} v{self.bot.version} this policy was last updated: ")
-    embed.timestamp = datetime(2023, 1, 22, 12, 22, 0, 0)
+    embed.timestamp = datetime(2026, 11, 11, tzinfo=timezone.utc)
     return embed
