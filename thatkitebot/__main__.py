@@ -48,6 +48,7 @@ from thatkitebot.types.state import PartiallyCachedState
 
 from .extensions import ENABLED_EXTENSIONS
 from .tkb_redis.cache import RedisCacheAsync, RedisCacheSync
+from .tkb_redis.encryption import MessageCacheCipher
 #endregion
 
 __name__ = "ThatKiteBot"
@@ -185,9 +186,15 @@ class ThatKiteBot(commands.Bot, ABC):
                 except aioredis.BusyLoadingError:
                     sleep(1)
             
-            # initialize the async and the normal cache classes
+            # initialize the async and the normal cache classes and the crypto
+            self.message_cache_cipher = MessageCacheCipher()
             self.r_cache = RedisCacheAsync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
             self.sync_cache = RedisCacheSync(self, auto_exec=False, host=self.redis_host_cache, persistent_host=self.redis_host)
+
+            if self.message_cache_cipher.enabled:
+                # we only enter after a restart, old key is gone
+                # nuke the DB from orbit
+                self.sync_cache.message_cache.flushdb()
             
             self.settings_lock = asyncio.Lock()
             self.cache_lock = self.r_cache.lock
