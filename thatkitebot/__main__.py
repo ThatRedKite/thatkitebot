@@ -42,6 +42,7 @@ import psutil
 import discord
 
 from redis import asyncio as aioredis
+from redis.exceptions import BusyLoadingError
 from discord.ext import commands
 from dulwich.repo import Repo
 from thatkitebot.types.state import PartiallyCachedState
@@ -285,9 +286,14 @@ class ThatKiteBot(commands.Bot, ABC):
         self.aiohttp_session = aiohttp.ClientSession(headers=headers)
 
         # try to get and set the last online thingies
-        self.last_online = int(await self.redis.get("last") or 0)
-        if self.last_online > 0:
-            self.logger.info(f"{__name__} was last online at {datetime.fromtimestamp(float(self.last_online))} UTC")
+        for _ in range(0,60):
+            try:
+                self.last_online = int(await self.redis.get("last") or 0)
+            except BusyLoadingError:
+                await asyncio.sleep(1)
+                continue
+            else:
+                break
 
         await self.redis.set("last", int(datetime.now().timestamp()))
         # load the cogs aka extensions
