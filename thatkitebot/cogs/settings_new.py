@@ -173,8 +173,8 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # set the settings, log everything and generate an embed
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION, further_config=True))
 
-    @settings.command(name="disable_caching", guild_ids=[759419755253465188])
-    async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
+    @settings.command(name="disable_caching")
+    async def disable_caching(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
         """
         Prevents the bot from caching messages sent by you, might break some features. Can be used by anyone
         """
