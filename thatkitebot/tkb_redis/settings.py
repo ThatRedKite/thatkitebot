@@ -29,10 +29,11 @@ import enum
 from typing import Union
 
 
-from discord import Guild
+from discord import Guild, User
 from redis import asyncio as aioredis
+from redis import Redis
 
-from .exceptions import InvalidGuildException
+from .exceptions import InvalidGuildException, InvalidUserException
 #endregion
 
 #region main class
@@ -50,6 +51,74 @@ class RedisFlags:
         MODERATION = 9
         STARBOARD = 10
 
+    class UserFlagEnum(enum.Enum):
+        DO_NOT_CACHE = 0
+
+    @staticmethod
+    async def set_user_flag(redis: aioredis.Redis, uid: Union[Guild, int, None], flag_offset: UserFlagEnum, value: bool) -> int:
+        """
+        Sets flags for a user. They are stored as Bitfields. The flags are stored at the following offsets:
+        0: DO_NOT_CACHE
+        """
+        # raise invalid guild exception if command is somehow doesn't get a guild id or guild object
+        if not uid:
+            raise InvalidUserException
+        
+        if isinstance(uid, int):
+            user_id = uid
+        elif isinstance(uid, User):
+            user_id = uid.id
+
+        return await redis.setbit(f"uflags:{user_id}", flag_offset.value, int(value))
+    
+    @staticmethod
+    async def get_user_flag(redis: aioredis.Redis, user: Union[User, int, None], flag_offset: UserFlagEnum) -> bool:
+        """
+        Gets flags for a user. They are stored as Bitfields. The flags are stored at the following offsets:
+        0: DO_NOT_CACHE
+        """
+        if user is not None:
+            if isinstance(user, int):
+                user_id = user
+            elif isinstance(user, User):
+                user_id = user.id
+
+            return await redis.getbit(f"uflags:{user_id}", flag_offset.value)
+        else:
+            return True
+        
+    @staticmethod
+    def set_user_flag_sync(redis: Redis, uid: Union[User, int, None], flag_offset: UserFlagEnum, value: bool) -> int:
+        """
+        Sets flags for a user. They are stored as Bitfields. The flags are stored at the following offsets:
+        0: DO_NOT_CACHE
+        """
+        # raise invalid user exception if command somehow doesn't get a user id or user object
+        if not uid:
+            raise InvalidUserException
+        
+        if isinstance(uid, int):
+            user_id = uid
+        elif isinstance(uid, User):
+            user_id = uid.id
+
+        return redis.setbit(f"uflags:{user_id}", flag_offset.value, int(value))
+    
+    @staticmethod
+    def get_user_flag_sync(redis: Redis, user: Union[User, int, None], flag_offset: UserFlagEnum) -> bool:
+        """
+        Gets flags for a user. They are stored as Bitfields. The flags are stored at the following offsets:
+        0: DO_NOT_CACHE
+        """
+        if user is not None:
+            if isinstance(user, int):
+                user_id = user
+            elif isinstance(user, User):
+                user_id = user.id
+
+            return redis.getbit(f"uflags:{user_id}", flag_offset.value)
+        else:
+            return True
 
     @staticmethod
     async def set_guild_flag(redis: aioredis.Redis, gid: Union[Guild, int, None], flag_offset: FlagEnum, value: bool) -> int:

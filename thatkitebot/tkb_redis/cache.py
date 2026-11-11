@@ -40,6 +40,7 @@ from thatkitebot.base.channels import get_channel
 from .exceptions import *
 from .util import compress_data, decompress_data
 from .serialization import channel_to_dict, guild_to_dict, user_to_dict, message_to_dict
+from .settings import RedisFlags
 
 from thatkitebot.types.message import Message
 #endregion
@@ -63,12 +64,12 @@ class RedisCacheAsync:
         self.host = kwargs.get("host", "thatkitebot_redis_cache") 
         
         self.lut            =   aioredis.Redis(host=self.persistent_host, db=15, decode_responses=False)
+        self.user_flags     =   aioredis.Redis(host=self.persistent_host, db=1, decode_responses=False)
         self.message_cache  =   aioredis.Redis(host=self.host, db=0, decode_responses=False)
         self.guild_cache    =   aioredis.Redis(host=self.host, db=1, decode_responses=False)
         self.channel_cache  =   aioredis.Redis(host=self.host, db=2, decode_responses=False)
         self.user_cache     =   aioredis.Redis(host=self.host, db=3, decode_responses=False)
         
-
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
         self.message_pipeline   =   self.message_cache.pipeline(transaction=False)
         self.channel_pipeline   =   self.channel_cache.pipeline(transaction=True)
@@ -305,7 +306,13 @@ class RedisCacheAsync:
         channel_id = int(message_data.get("channel_id", 0))
 
         assert None not in (message_id, guild_id, channel_id, author_id)
-
+                      
+        try:
+            if await RedisFlags.get_user_flag(self.user_flags, author_id, RedisFlags.UserFlagEnum.DO_NOT_CACHE):
+                return
+        except InvalidUserException:
+            return
+       
         entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
 
         await self.compressed_write_key(self.message_pipeline, entry_name, message_data)
@@ -424,6 +431,7 @@ class RedisCacheSyncPartial:
         self.host = kwargs.get("host", "thatkitebot_redis_cache") 
 
         self.lut            =   syncredis.Redis(host=self.persistent_host, db=15, decode_responses=False)
+        self.user_flags     =   syncredis.Redis(host=self.persistent_host, db=1, decode_responses=False)
         self.message_cache  =   syncredis.Redis(host=self.host, db=0, decode_responses=False)
 
         self.id_pipeline        =   self.lut.pipeline(transaction=True)
@@ -443,6 +451,7 @@ class RedisCacheSyncPartial:
         if (message_id := data_new.get("id")) is None:
             return
         if (data_old := self.get_message_dict(message_id)) is not None:
+
             data_old.update(data_new)
             self.add_message_dict(data_old)
 
@@ -566,7 +575,13 @@ class RedisCacheSyncPartial:
         author_id = int(message_data.get("author").get("id"))
         guild_id = int(message_data.get("guild_id", 0))
         channel_id = int(message_data.get("channel_id", 0))
-
+        
+        try:
+            if RedisFlags.get_user_flag_sync(self.user_flags, author_id, RedisFlags.UserFlagEnum.DO_NOT_CACHE):
+                return
+        except InvalidUserException:
+            return
+        
         assert None not in (message_id, guild_id, channel_id, author_id)
 
         entry_name = f"{guild_id}:{author_id}:{channel_id}:{message_id}"
@@ -601,6 +616,7 @@ class RedisCacheSync(RedisCacheSyncPartial):
         self.host = kwargs.get("host", "thatkitebot_redis_cache") 
         
         self.lut            =   syncredis.Redis(host=self.persistent_host, db=15, decode_responses=False)
+        self.user_flags     =   syncredis.Redis(host=self.persistent_host, db=1, decode_responses=False)
         self.message_cache  =   syncredis.Redis(host=self.host, db=0, decode_responses=False)
         self.guild_cache    =   syncredis.Redis(host=self.host, db=1, decode_responses=False)
         self.channel_cache  =   syncredis.Redis(host=self.host, db=2, decode_responses=False)

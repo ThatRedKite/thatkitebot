@@ -173,6 +173,15 @@ class SettingsCogV2(commands.Cog, name="Settings"):
         # set the settings, log everything and generate an embed
         await ctx.respond(embed=await self.gen_settings_embed(ctx, "Moderation Features", enable, RedisFlags.FlagEnum.MODERATION, further_config=True))
 
+    @settings.command(name="disable_caching", guild_ids=[759419755253465188])
+    async def enable_moderation(self, ctx, enable: discord.Option(bool, name="enable", description="Whether to enable or disable the setting", required=True)):#type:ignore
+        """
+        Prevents the bot from caching messages sent by you, might break some features. Can be used by anyone
+        """
+        await ctx.defer()
+        await RedisFlags.set_user_flag(self.redis, ctx.user.id, RedisFlags.UserFlagEnum.DO_NOT_CACHE, value=bool(enable))
+        await ctx.respond(f"""Message caching has been {"Disabled" if enable else "Enabled"}""", ephemeral=True)
+
     @discord.guild_only()
     @settings.command(name="add_mod", description="Add a moderator role. Mod commands will be available to this role.")
     async def _add_mod(self, ctx: discord.ApplicationContext, role: discord.Role):

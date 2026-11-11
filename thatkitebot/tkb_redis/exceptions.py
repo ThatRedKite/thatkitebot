@@ -36,6 +36,10 @@ class NoDataException(Exception):
 class InvalidGuildException(Exception):
     pass
 
+
+class InvalidUserException(Exception):
+    pass
+
 class CacheMissException(Exception):
     pass
 
