@@ -65,6 +65,7 @@ EXTENSIONS = [extension.split(".")[-1] for extension in ENABLED_EXTENSIONS]
 
 # this is a pretty dumb way of doing things, but it works
 intents = discord.Intents.all()
+intents.presences = False
 
 # set up logging
 

@@ -29,6 +29,7 @@ import re
 import io
 import textwrap
 import asyncio
+import copy
 
 from functools import partial
 from typing import Union
@@ -43,7 +44,7 @@ from redis import asyncio as aioredis
 import thatkitebot
 from thatkitebot.base.url import get_avatar_url, LINK_PATTERN
 from thatkitebot.base.util import PermissonChecks as pc
-from thatkitebot.base.util import set_up_guild_logger
+from thatkitebot.base.util import errormsg, set_up_guild_logger
 from thatkitebot.tkb_redis.settings import RedisFlags
 from thatkitebot.types.message import Message
 #endregion
@@ -426,16 +427,26 @@ class UwuCog(commands.Cog, name="UwU Commands"):
         """
         UwUify your text (now even more cursed)
         """
-        message = None
-        # fetch the message from the reference
-        if ctx.message.reference:
+        if msg:
+            # Process only the supplied text
+            message = copy.copy(ctx.message)
+            message.content = msg
+            message.attachments = []
+            message.embeds = []
+        elif ctx.message.reference:
             ref = ctx.message.reference
             message = await self.bot.get_or_fetch_message(ref.message_id, ref.channel_id)
+        else:
+            await errormsg(ctx, f"Usage: `{ctx.prefix}uwu <text>`, or reply to a message with `{ctx.prefix}uwu`.")
+            return
         
-        # if the message content is empty, return
         output, files, uwu_embeds = await self.uwuify_message(message)
+
+        if not output and not files and not uwu_embeds:
+            await errormsg(ctx, "That message has no text or media to uwuify.")
+            return
         
-        await ctx.reply(output, files=files, embeds=uwu_embeds)
+        await ctx.reply(output, files=files, embeds=uwu_embeds or [])
 
     #region main listener
     @commands.Cog.listener()
